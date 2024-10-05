@@ -1,57 +1,85 @@
-# Battlehack SP20
+# snek
 
-♛
+This repository contains all the code for the Battlecode Python engine.
 
-## Repository Structure
+## Installation and Usage
 
-- `/backend`: Backend API in Django Rest Framework
-- `/frontend`: Frontend dashboard in React
-- `/engine`: Game engine in PYTHON
-- `/specs`: Game specs in Markdown (and HTML generation)
-
-## Development
-
-### Website
-
-To get set up, make sure you have [Node](https://nodejs.org/en/download/) and [Docker](https://docs.docker.com/docker-for-mac/install/) installed. For Windows, you will need Docker Toolbox. If you have Windows, I'd also recommend installing [Cygwin](https://www.cygwin.com/), since we have some bash scripts that won't work with the standard Windows command prompt. (Docker is not strictly necessary, but it makes stuff easier, especially if you want to work on the backend of the website.)
-
-Go to the `frontend` folder and run `npm install`.
-
-Then, you can start the frontend by running `npm run start` in the `frontend` folder. (If this fails on Windows, make sure you are using Cygwin.) After this step, you should be able to view the website at http://localhost:3000.
-
-If you also want to run the backend (which will enable things like signing in to the website, and a rankings table, etc) then run `docker-compose -f docker-compose-b.yml up --build` in this folder. If you don't have Docker, you can try following the instructions in the `/backend` folder instead.
-
-You can also run both the backend and the frontend in a Docker container, by running `docker-compose up --build`, but that might be slower.
-
-### Engine
-
-See the `engine` folder for documentation!
-
-## Notes for porting this to battlecode21
-
-When Battlecode 2021 comes around, it will probably useful to reuse a fair amount of this codebase. Mainting git history is nice. Use `git-filter-repo` for this:
+### Installation
+To install the engine as a local package, run
 ```
-pip3 install git-filter-repo
+$ pip install --user -e .
 ```
 
-Make sure you have a recent git version (run `git --version` and make sure it's compatible with git-filter-repo). The following steps were taken to port from `battlecode20` to this repo:
+(Note for mac people: you may need to replace `pip` with `pip3`.) 
+
+The `-e` flag allows you to change the source code and have the changes be automatically reflected without needing to reinstall.
+
+Test it out by trying:
 
 ```
-cd ..
-git clone https://github.com/battlecode/battlecode20
-cd battlecode20
-git checkout -b battlecode20export
-git filter-repo --path backend --path frontend --path infrastructure --path specs --path docker-compose-b.yml --path docker-compose.yml --path README.md --path pre_release.py --path post_release.py --tag-rename '':'bc20-'
-cd ..
-cd battlehack20
-git pull ../battlecode20 —allow-unrelated-histories
+$ python3 run.py examplefuncsplayer examplefuncsplayer
 ```
 
-Note that if you want to rename directories, that is also possible.
-
-For the engine, the same procedure was followed, but the `filter-repo` commands were as follows instead:
+You should see a game between `examplefuncsplayer` and `examplefuncsplayer` being played.
+If your code is in a directory `~/yourcode/coolplayer` then you can run it against examplefuncsplayer using
 
 ```
-git filter-repo --invert-paths --path-regex '(arvidplayer)|(ezouplayer)|(lectureplayer)|(testplayer)'
-git filter-repo --to-subdirectory-filter engine
+$ python3 run.py examplefuncsplayer ~/yourcode/coolplayer
 ```
+
+If you would like to uninstall, simply run
+```
+$ pip uninstall battlehack20
+```
+
+### Running Interactively
+
+Run
+
+```
+$ python3 -i run.py examplefuncsplayer examplefuncsplayer
+```
+
+This will open an interactive Python shell. There, you can run
+
+```
+>>> step()
+```
+
+which advances the game 1 turn. This is very useful for debugging.
+
+
+### Advanced Usage
+
+Interacting directly with the `battlehack20` API will give you more freedom and might make it easier to debug your code. The following is a minimal example of how to do that.
+
+```
+$ python3
+>>> import battlehack20 as bh20
+>>> code = bh20.CodeContainer.from_directory('./examplefuncsplayer')
+>>> game = bh20.Game([code, code], debug=True)
+>>> game.turn()
+```
+
+You should see the output:
+```
+[Game info] Turn 1
+[Game info] Queue: {}
+[Game info] Lords: [<ROBOT WHITE HQ WHITE>, <ROBOT BLACK HQ BLACK>]
+[Robot WHITE HQ log] Starting Turn!
+[Robot WHITE HQ log] Team: Team.WHITE
+[Robot WHITE HQ log] Type: RobotType.OVERLORD
+[Robot WHITE HQ log] Bytecode: 4981
+[Robot WHITE HQ log] Spawned unit at: (0, 0)
+[Robot WHITE HQ log] done!
+[Robot WHITE HQ info] Remaining bytecode: 4955
+[Robot BLACK HQ log] Starting Turn!
+[Robot BLACK HQ log] Team: Team.BLACK
+[Robot BLACK HQ log] Type: RobotType.OVERLORD
+[Robot BLACK HQ log] Bytecode: 4981
+[Robot BLACK HQ log] Spawned unit at: (7, 6)
+[Robot BLACK HQ log] done!
+[Robot BLACK HQ info] Remaining bytecode: 4954
+```
+
+If you're curious, this is how the `run.py` script works. Study the source code of `run.py` to figure out how to set up a viewer.
