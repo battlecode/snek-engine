@@ -20,11 +20,10 @@ class Game:
 
         self.robot_count = 0
         self.queue = {}
-        self.leaders = []
 
         self.sensor_radius = sensor_radius
         self.board_size = board_size
-        self.board = [[None] * self.board_size for _ in range(self.board_size)]
+        self.robots = [[None] * self.board_size for _ in range(self.board_size)]
         self.round = 0
         self.max_rounds = max_rounds
 
@@ -63,13 +62,13 @@ class Game:
                     robot.turn()
 
                 self.lords.reverse()  # the HQ's will alternate spawn order
-                self.board_states.append([row[:] for row in self.board])
+                self.board_states.append([row[:] for row in self.robots])
         else:
             raise GameError('game is over')
 
     def delete_robot(self, i):
         robot = self.queue[i]
-        self.board[robot.row][robot.col] = None
+        self.robots[robot.row][robot.col] = None
         robot.kill()
         del self.queue[i]
 
@@ -80,7 +79,7 @@ class Game:
 
             return {'id': robot.id, 'team': robot.team, 'health': robot.health, 'logs': robot.logs[:]}
 
-        return [[serialize_robot(c) for c in r] for r in self.board]
+        return [[serialize_robot(c) for c in r] for r in self.robots]
 
     def log_info(self, msg):
         if self.colored_logs:
@@ -93,8 +92,8 @@ class Game:
 
         white, black = 0, 0
         for col in range(self.board_size):
-            if self.board[0][col] and self.board[0][col].team == Team.BLACK: black += 1
-            if self.board[self.board_size - 1][col] and self.board[self.board_size - 1][col].team == Team.WHITE: white += 1
+            if self.robots[0][col] and self.robots[0][col].team == Team.BLACK: black += 1
+            if self.robots[self.board_size - 1][col] and self.robots[self.board_size - 1][col].team == Team.WHITE: white += 1
 
         if black >= (self.board_size + 1) // 2:
             winner = True
@@ -112,8 +111,8 @@ class Game:
                     if tie:
                         w, b = 0, 0
                         for c in range(self.board_size):
-                            if self.board[r][c] and self.board[r][c].team == Team.BLACK: b += 1
-                            if self.board[self.board_size - r - 1][c] and self.board[self.board_size - r - 1][c].team == Team.WHITE: w += 1
+                            if self.robots[r][c] and self.robots[r][c].team == Team.BLACK: b += 1
+                            if self.robots[self.board_size - r - 1][c] and self.robots[self.board_size - r - 1][c].team == Team.WHITE: w += 1
                         if w == b: continue
                         self.winner = Team.WHITE if w > b else Team.BLACK
                         tie = False
@@ -124,7 +123,7 @@ class Game:
             self.running = False
 
         if not self.running:
-            self.board_states.append([row[:] for row in self.board])
+            self.board_states.append([row[:] for row in self.robots])
             self.process_over()
 
     def process_over(self):
@@ -175,7 +174,7 @@ class Game:
 
         if robot_type == RobotType.PAWN:
             self.queue[self.robot_count] = robot
-            self.board[row][col] = robot
+            self.robots[row][col] = robot
         else:
             self.lords.append(robot)
 
@@ -227,8 +226,8 @@ class Game:
 
         for i in range(self.board_size):
             for j in range(self.board_size):
-                if self.board[i][j]:
-                    board[i][j] = self.board[i][j].team
+                if self.robots[i][j]:
+                    board[i][j] = self.robots[i][j].team
 
         return board
 
@@ -239,9 +238,9 @@ class Game:
         Checks whether a specific board space is occupied and if yes returns the team of the robot occupying the space;
         otherwise returns False. Pawns have a similar method but can only see within their sensory radius
         """
-        if not self.board[row][col]:
+        if not self.robots[row][col]:
             return False
-        return self.board[row][col].team
+        return self.robots[row][col].team
 
     def spawn(self, robot, row, col):
         """
@@ -260,7 +259,7 @@ class Game:
         if not self.is_on_board(row, col):
             raise RobotError('you cannot spawn a unit on a space that is not on the board')
 
-        if self.board[row][col]:
+        if self.robots[row][col]:
             raise RobotError('you cannot spawn a unit on a space that is already occupied')
 
         self.new_robot(row, col, robot.team, RobotType.PAWN)
@@ -282,16 +281,16 @@ class Game:
 
         row, col = robot.row, robot.col
 
-        if self.board[row][col] != robot:
+        if self.robots[row][col] != robot:
             raise RobotError
 
         if not self.is_on_board(new_row, new_col):
             raise RobotError('you cannot capture a space that is not on the board')
 
-        if not self.board[new_row][new_col]:
+        if not self.robots[new_row][new_col]:
             raise RobotError('you cannot capture an empty space')
 
-        if self.board[new_row][new_col].team == robot.team:
+        if self.robots[new_row][new_col].team == robot.team:
             raise RobotError('you cannot capture your own piece')
 
         if abs(col - new_col) != 1:
@@ -300,15 +299,15 @@ class Game:
         if (robot.team == Team.WHITE and row - new_row != -1) or (robot.team == Team.BLACK and row - new_row != 1):
             raise RobotError('you must capture diagonally forwards')
 
-        captured_robot = self.board[new_row][new_col]
+        captured_robot = self.robots[new_row][new_col]
 
         self.delete_robot(captured_robot.id)
-        self.board[row][col] = None
+        self.robots[row][col] = None
 
         robot.row = new_row
         robot.col = new_col
 
-        self.board[new_row][new_col] = robot
+        self.robots[new_row][new_col] = robot
         robot.has_moved = True
 
     def get_location(self, robot):
@@ -318,7 +317,7 @@ class Game:
         Return the current location of the robot
         """
         row, col = robot.row, robot.col
-        if self.board[row][col] != robot:
+        if self.robots[row][col] != robot:
             raise RobotError('something went wrong; please contact the devs')
         return row, col
 
@@ -332,7 +331,7 @@ class Game:
             raise RobotError('this unit has already moved this turn; robots can only move once per turn')
 
         row, col = robot.row, robot.col
-        if self.board[row][col] != robot:
+        if self.robots[row][col] != robot:
             raise RobotError('something went wrong; please contact the devs')
 
         if robot.team == Team.WHITE:
@@ -343,14 +342,14 @@ class Game:
         if not self.is_on_board(new_row, new_col):
             raise RobotError('you cannot move to a space that is not on the board')
 
-        if self.board[new_row][new_col]:
+        if self.robots[new_row][new_col]:
             raise RobotError('you cannot move to a space that is already occupied')
 
-        self.board[row][col] = None
+        self.robots[row][col] = None
 
         robot.row = new_row
         robot.col = new_col
-        self.board[new_row][new_col] = robot
+        self.robots[new_row][new_col] = robot
         robot.has_moved = True
 
     def pawn_check_space(self, robot, row, col):
@@ -364,16 +363,16 @@ class Game:
 
         HQs have a similar method but can see the full board
         """
-        if self.board[robot.row][robot.col] != robot:
+        if self.robots[robot.row][robot.col] != robot:
             raise RobotError('something went wrong; please contact the devs')
 
         drow, dcol = abs(robot.row - row), abs(robot.col - col)
         if max(drow, dcol) > 2:
             raise RobotError('that space is not within sensory radius of this robot')
 
-        if not self.board[row][col]:
+        if not self.robots[row][col]:
             return False
-        return self.board[row][col].team
+        return self.robots[row][col].team
 
     def sense(self, robot):
         """
@@ -395,8 +394,8 @@ class Game:
                 if not self.is_on_board(new_row, new_col):
                     continue
 
-                if self.board[new_row][new_col]:
-                    robots.append((new_row, new_col, self.board[new_row][new_col].team))
+                if self.robots[new_row][new_col]:
+                    robots.append((new_row, new_col, self.robots[new_row][new_col].team))
 
         return robots
 
@@ -413,14 +412,14 @@ class Game:
         board = ''
         for i in range(self.board_size):
             for j in range(self.board_size):
-                if self.board[i][j]:
+                if self.robots[i][j]:
                     board += '['
                     if colors:
-                        if self.board[i][j].team == Team.WHITE:
+                        if self.robots[i][j].team == Team.WHITE:
                             board += '\033[1m\u001b[37m'
                         else:
                             board += '\033[1m\u001b[36m'
-                    board += str(self.board[i][j])
+                    board += str(self.robots[i][j])
                     if colors:
                         board += '\033[0m\u001b[0m] '
                 else:
