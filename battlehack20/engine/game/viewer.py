@@ -52,17 +52,13 @@ class BasicViewer:
         for i in range(self.board_size):
             for j in range(self.board_size):
                 if board[i][j]:
-                    new_board += '['
                     if self.colors:
                         if board[i][j].team == Team.WHITE:
                             new_board += '\033[1m\u001b[37m'
                         else:
                             new_board += '\033[1m\u001b[36m'
-                    new_board += str(board[i][j])
-                    if self.colors:
-                        new_board += '\033[0m\u001b[0m'
-                    new_board += '] '
+                    new_board += str(board[i][j].id)
                 else:
-                    new_board += '[    ] '
-            new_board += '\n'
+                    new_board += ' '
+            new_board += '\n'            
         return new_board
