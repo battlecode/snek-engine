@@ -3,7 +3,7 @@ from .robot import Robot
 from .team import Team
 from .robottype import RobotType
 from .constants import GameConstants
-import robot_controller
+from robot_controller import *
 
 class Game:
 
@@ -147,25 +147,25 @@ class Game:
             'RobotType': RobotType,
             'RobotError': RobotError,
             'Team': Team,
-            'get_board_size': lambda : robot_controller.get_board_size(),
+            'get_board_size': lambda : get_board_size(self),
             'get_bytecode' : lambda : robot.runner.bytecode,
-            'get_team': lambda : robot_controller.get_team(robot),
-            'get_type': lambda: robot_controller.get_type(robot),
+            'get_team': lambda : get_team(self, robot),
+            'get_type': lambda: get_type(self, robot),
         }
 
         if robot_type == RobotType.OVERLORD:
             methods = {
-                'check_space': lambda row, col: robot_controller.hq_check_space(row, col),
-                'get_board': lambda : robot_controller.get_board(),
-                'spawn': lambda row, col: robot_controller.spawn(robot, row, col)
+                'check_space': lambda row, col: hq_check_space(self, row, col),
+                'get_board': lambda : get_board(self),
+                'spawn': lambda row, col: spawn(self, robot, row, col)
             }
         else:
             methods = {
-                'capture': lambda row, col: robot_controller.capture(robot, row, col),
-                'check_space': lambda row, col: robot_controller.pawn_check_space(robot, row, col),
-                'get_location': lambda : robot_controller.get_location(robot),
-                'move_forward': lambda: robot_controller.move_forward(robot),
-                'sense': lambda : robot_controller.sense(robot)
+                'capture': lambda row, col: capture(self, robot, row, col),
+                'check_space': lambda row, col: pawn_check_space(self, robot, row, col),
+                'get_location': lambda : get_location(self, robot),
+                'move_forward': lambda: move_forward(self, robot),
+                'sense': lambda : sense(self, robot)
             }
 
         methods.update(shared_methods)
