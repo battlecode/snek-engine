@@ -3,7 +3,7 @@ from .robot import Robot
 from .team import Team
 from .robottype import RobotType
 from .constants import GameConstants
-from robot_controller import *
+from .robot_controller import *
 
 class Game:
 

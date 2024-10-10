@@ -3,7 +3,6 @@ from .robot import Robot
 from .team import Team
 from .robottype import RobotType
 from .constants import GameConstants
-from .game import RobotError
 
 #### SHARED METHODS ####
 
@@ -217,3 +216,7 @@ def sense(game, robot):
                 robots.append((new_row, new_col, game.robots[new_row][new_col].team))
 
     return robots
+
+class RobotError(Exception):
+    """Raised for illegal robot inputs"""
+    pass
