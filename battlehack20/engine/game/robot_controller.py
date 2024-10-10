@@ -3,9 +3,9 @@ from .robot import Robot
 from .team import Team
 from .robottype import RobotType
 from .constants import GameConstants
-from .game import RobotError
+from .game import RobotError, Game
 
-class RobotController:
+class RobotController(Game):
 
     #### SHARED METHODS ####
 
