@@ -8,33 +8,32 @@ import math
 
 class Game:
 
-    def __init__(self, code, board_width=GameConstants.BOARD_WIDTH, board_height=GameConstants.BOARD_HEIGHT, max_rounds=GameConstants.MAX_ROUNDS, 
-                 seed=GameConstants.DEFAULT_SEED, sensor_radius=2, debug=False, colored_logs=True):
+    def __init__(self, code, board_size=GameConstants.BOARD_SIZE, max_rounds=GameConstants.MAX_ROUNDS, 
+                 seed=GameConstants.DEFAULT_SEED, debug=False):
         random.seed(seed)
 
         self.code = code
 
         self.debug = debug
-        self.colored_logs = colored_logs
         self.running = True
         self.winner = None
 
         self.robot_count = 0
         self.queue = {}
+        self.board_states = []
+        self.lords = []
 
-        self.sensor_radius = sensor_radius
-        self.board_width = board_width
-        self.board_height = board_height
-        self.center = 
-        self.robots = [[None] * self.board_size for _ in range(self.board_size)]
+        self.board_width = board_size
+        self.board_height = board_size
+        self.board_size = board_size #TODO remove board_size
+        self.robots = [[None] * self.board_width for _ in range(self.board_height)]
+        self.paint = [[None] * self.board_width for _ in range(self.board_height)]
+        self.walls = [[None] * self.board_width for _ in range(self.board_height)]
         self.round = 0
         self.max_rounds = max_rounds
 
-        self.lords = []
         self.new_robot(None, None, Team.WHITE, RobotType.OVERLORD)
         self.new_robot(None, None, Team.BLACK, RobotType.OVERLORD)
-
-        self.board_states = []
 
         if self.debug:
             self.log_info(f'Seed: {seed}')
@@ -85,10 +84,7 @@ class Game:
         return [[serialize_robot(c) for c in r] for r in self.robots]
 
     def log_info(self, msg):
-        if self.colored_logs:
-            print(f'\u001b[32m[Game info] {msg}\u001b[0m')
-        else:
-            print(f'[Game info] {msg}')
+        print(f'\u001b[32m[Game info] {msg}\u001b[0m')
 
     def check_over(self):
         winner = False
