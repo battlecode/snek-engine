@@ -6,6 +6,7 @@ class GameConstants:
     # the board size
     BOARD_WIDTH = 16
     BOARD_HEIGHT = 16
+    BOARD_SIZE = 16
 
     # the default seed
     DEFAULT_SEED = 1337

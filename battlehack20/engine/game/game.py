@@ -5,10 +5,11 @@ from .robottype import RobotType
 from .constants import GameConstants
 from .robot_controller import *
 import math
+from .map_location import MapLocation
 
 class Game:
 
-    def __init__(self, code, board_size=GameConstants.BOARD_SIZE, max_rounds=GameConstants.MAX_ROUNDS, 
+    def __init__(self, code, board_width, board_height, max_rounds=GameConstants.MAX_ROUNDS, 
                  seed=GameConstants.DEFAULT_SEED, debug=False):
         random.seed(seed)
 
@@ -23,9 +24,9 @@ class Game:
         self.board_states = []
         self.lords = []
 
-        self.board_width = board_size
-        self.board_height = board_size
-        self.board_size = board_size #TODO remove board_size
+        self.board_width = board_width
+        self.board_height = board_height
+        self.board_size = board_width #TODO remove board_size
         self.robots = [[None] * self.board_width for _ in range(self.board_height)]
         self.paint = [[None] * self.board_width for _ in range(self.board_height)]
         self.walls = [[None] * self.board_width for _ in range(self.board_height)]
@@ -232,7 +233,7 @@ class Game:
         for x in range(minX, maxX+1):
             for y in range(minY+1):
                 newLocation = MapLocation(x, y) #TODO: make MapLocation class
-                if (center.isWithinDistanceSquared(newLocation, radius_squared)) #TODO: make isWithinDistanceSquared method in MapLocation
+                if (center.isWithinDistanceSquared(newLocation, radius_squared)): #TODO: make isWithinDistanceSquared method in MapLocation
                     returnLocations.append(newLocation)
 
 class RobotError(Exception):
