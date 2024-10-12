@@ -4,7 +4,8 @@ class GameConstants:
     MAX_ROUNDS = 500
 
     # the board size
-    BOARD_SIZE = 16
+    BOARD_WIDTH = 16
+    BOARD_HEIGHT = 16
 
     # the default seed
     DEFAULT_SEED = 1337

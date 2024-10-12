@@ -30,7 +30,6 @@ def get_type(game, robot):
     """
     return robot.type
 
-
 #### HQ METHODS ####
 
 def get_board(game):
