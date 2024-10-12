@@ -21,9 +21,11 @@ class Game:
         self.robot_count = 0
         self.queue = {}
 
-        self.sensor_radius = sensor_radius
-        self.board_size = board_size
-        self.robots = [[None] * self.board_size for _ in range(self.board_size)]
+        self.board_width = board_size
+        self.board_height = board_size
+        self.robots = [[None] * self.board_width for _ in range(self.board_height)]
+        self.paint = [[None] * self.board_width for _ in range(self.board_height)]
+        self.walls = [[None] * self.board_width for _ in range(self.board_height)]
         self.round = 0
         self.max_rounds = max_rounds
 
