@@ -4,10 +4,11 @@ from .team import Team
 from .robottype import RobotType
 from .constants import GameConstants
 from .robot_controller import *
+import math
 
 class Game:
 
-    def __init__(self, code, board_size=GameConstants.BOARD_SIZE, max_rounds=GameConstants.MAX_ROUNDS, 
+    def __init__(self, code, board_width=GameConstants.BOARD_WIDTH, board_height=GameConstants.BOARD_HEIGHT, max_rounds=GameConstants.MAX_ROUNDS, 
                  seed=GameConstants.DEFAULT_SEED, sensor_radius=2, debug=False, colored_logs=True):
         random.seed(seed)
 
@@ -22,7 +23,9 @@ class Game:
         self.queue = {}
 
         self.sensor_radius = sensor_radius
-        self.board_size = board_size
+        self.board_width = board_width
+        self.board_height = board_height
+        self.center = 
         self.robots = [[None] * self.board_size for _ in range(self.board_size)]
         self.round = 0
         self.max_rounds = max_rounds
@@ -213,6 +216,28 @@ class Game:
             board += '\n'
         return board
 
+    def getAllLocationsWithinRadiusSquared(self, center, radius_squared):
+        """
+        center: MapLocation object
+        radius_squared: square of radius around center that we want locations for
+
+        Returns a list of MapLocations within radius squared of center
+        """
+        returnLocations = []
+        origin = self.origin
+        width = self.board_width
+        height = self.board_height
+        ceiledRadius = math.ceil(math.sqrt(radius_squared)) + 1 # add +1 just to be safe
+        minX = max(center.x - ceiledRadius, 0)
+        minY = max(center.y - ceiledRadius, 0)
+        maxX = min(center.x + ceiledRadius, width - 1)
+        maxY = min(center.y + ceiledRadius, height - 1)
+
+        for x in range(minX, maxX+1):
+            for y in range(minY+1):
+                newLocation = MapLocation(x, y) #TODO: make MapLocation class
+                if (center.isWithinDistanceSquared(newLocation, radius_squared)) #TODO: make isWithinDistanceSquared method in MapLocation
+                    returnLocations.append(newLocation)
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
