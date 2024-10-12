@@ -3,8 +3,6 @@ import argparse
 import faulthandler
 import sys
 import threading
-from battlehack20.engine.game.map_location import MapLocation
-from battlehack20.engine.game.direction import Direction
 
 from battlehack20 import CodeContainer, Game, BasicViewer, GameConstants
 
