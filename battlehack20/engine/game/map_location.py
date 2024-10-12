@@ -16,6 +16,9 @@ class MapLocation:
             return False
         return self.x == other.x and self.y == other.y
     
+    def toString(self):
+        return (self.x, self.y)
+
     def distanceSquaredTo(self, other):
         dx = self.x - other.x
         dy = self.y - other.y
@@ -56,7 +59,7 @@ class MapLocation:
         return MapLocation(self.x + dx, self.y + dy)
 
     def add(self, dir):
-        return self.translate(Direction.dir[0], Direction.dir[1])
+        return self.translate(dir.value[0], dir.value[1])
     
     def subtract(self, dir):
-        return self.translate(-Direction.dir[0], -Direction.dir[1])
+        return self.translate(-dir.value[0], -dir.value[1])
