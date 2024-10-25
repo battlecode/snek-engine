@@ -3,7 +3,7 @@ from .robot import Robot
 from .team import Team
 from .robottype import RobotType
 from .constants import GameConstants
-from .mapLocation import MapLocation
+from .map_location import MapLocation
 from .game import Game, Color
 
 #### SHARED METHODS ####

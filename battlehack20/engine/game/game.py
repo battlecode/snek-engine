@@ -5,7 +5,7 @@ from .team import Team
 from .robottype import RobotType
 from .constants import GameConstants
 from .robot_controller import *
-from .mapLocation import MapLocation
+from .map_location import MapLocation
 
 import math
 class Color(Enum): #marker and paint colors
@@ -221,29 +221,29 @@ class Game:
             board += '\n'
         return board
 
-    def getAllLocationsWithinRadiusSquared(self, center, radius_squared):
+    def get_all_locations_within_radius_squared(self, center, radius_squared):
         """
         center: MapLocation object
         radius_squared: square of radius around center that we want locations for
 
         Returns a list of MapLocations within radius squared of center
         """
-        returnLocations = []
+        return_locations = []
         origin = self.origin
         width = self.board_width
         height = self.board_height
-        ceiledRadius = math.ceil(math.sqrt(radius_squared)) + 1 # add +1 just to be safe
-        minX = max(center.x - ceiledRadius, 0)
-        minY = max(center.y - ceiledRadius, 0)
-        maxX = min(center.x + ceiledRadius, width - 1)
-        maxY = min(center.y + ceiledRadius, height - 1)
+        ceiled_radius = math.ceil(math.sqrt(radius_squared)) + 1 # add +1 just to be safe
+        minX = max(center.x - ceiled_radius, 0)
+        minY = max(center.y - ceiled_radius, 0)
+        maxX = min(center.x + ceiled_radius, width - 1)
+        maxY = min(center.y + ceiled_radius, height - 1)
 
         for x in range(minX, maxX+1):
             for y in range(minY+1):
-                newLocation = MapLocation(x, y) 
-                if (center.isWithinDistanceSquared(newLocation, radius_squared)): #TODO: make isWithinDistanceSquared method in MapLocation
-                    returnLocations.append(newLocation)
-    def markLocation(self, team, loc, color):
+                new_location = MapLocation(x, y) 
+                if (center.is_within_distance_squared(new_location, radius_squared)):
+                    return_locations.append(new_location)
+    def mark_location(self, team, loc, color):
         self.markers[team][loc.x][loc.y] = color
 
 

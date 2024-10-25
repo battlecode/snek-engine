@@ -6,7 +6,7 @@ class MapLocation:
         self.x = x
         self.y = y
     
-    def compareTo(self, other):
+    def compare_to(self, other):
         if self.x != other.x:
             return self.x - other.x
         return self.y - other.y
@@ -16,23 +16,23 @@ class MapLocation:
             return False
         return self.x == other.x and self.y == other.y
     
-    def toString(self):
+    def to_string(self):
         return (self.x, self.y)
 
-    def distanceSquaredTo(self, other):
+    def distance_squared_to(self, other):
         dx = self.x - other.x
         dy = self.y - other.y
         return dx*dx + dy*dy
     
-    def isWithinDistanceSquared(self, other, distanceSquared):
-        return self.distanceSquaredTo(other) <= distanceSquared
+    def is_within_distance_squared(self, other, distance_squared):
+        return self.distance_squared_to(other) <= distance_squared
     
-    def isAdjacentTo(self, other):
+    def is_adjacent_to(self, other):
         dx = self.x - other.x
         dy = self.y - other.y
         return -1 <= dx <= 1 and -1 <= dy <= 1
     
-    def directionTo(self, other):
+    def direction_to(self, other):
         if other is None:
             return None
         

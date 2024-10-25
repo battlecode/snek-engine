@@ -1,6 +1,6 @@
 from ..container.runner import RobotRunner
 from .robottype import RobotType
-from .mapLocation import MapLocation
+from .map_location import MapLocation
 
 class Robot:
     STARTING_HEALTH = 1
