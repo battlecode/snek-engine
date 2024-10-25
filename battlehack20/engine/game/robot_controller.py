@@ -236,8 +236,12 @@ def assert_can_move(game, robot, dir):
     assert game.isPassable(newLocation), "Trying to move to an impassable location"
 
 def can_move(game, robot, dir):
-    try: assert_can_move(game, robot, dir)
-    except: print("Not a valid move for robot")
+    try:
+        assert_can_move(game, robot, dir)
+        return True
+    except:
+        print("Not a valid move for robot")
+        return False
 
 def move(game, robot, dir):
     assert_can_move(game, robot, dir)
