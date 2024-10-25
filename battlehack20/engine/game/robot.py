@@ -1,24 +1,26 @@
 from ..container.runner import RobotRunner
 from .robottype import RobotType
+from .mapLocation import MapLocation
 
 class Robot:
     STARTING_HEALTH = 1
 
-    def __init__(self, row, col, team, id, type=RobotType.PAWN):
+    def __init__(self, x, y, team, id, type=RobotType.PAWN):
         self.id = id
         self.type = type
 
-        self.row = row
-        self.col = col
+        self.loc = MapLocation(x, y)
         self.has_moved = False
 
         self.health = Robot.STARTING_HEALTH
         self.logs = []
-
         self.team = team
 
         self.runner = None
         self.debug = False
+
+    def get_location(self):
+        return self.loc
 
     def animate(self, code, methods, debug=False):
         self.runner = RobotRunner(code, methods, self.log, self.error, debug=debug)

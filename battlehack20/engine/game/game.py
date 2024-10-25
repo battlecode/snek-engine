@@ -1,11 +1,17 @@
 import random
+from enum import Enum
 from .robot import Robot
 from .team import Team
 from .robottype import RobotType
 from .constants import GameConstants
 from .robot_controller import *
+from .mapLocation import MapLocation
+
 import math
-from .map_location import MapLocation
+class Color(Enum): #marker and paint colors
+        NONE=0
+        FOREGROUND=1
+        BACKGROUND=2
 
 class Game:
 
@@ -32,7 +38,10 @@ class Game:
         self.walls = [[None] * self.board_width for _ in range(self.board_height)]
         self.round = 0
         self.max_rounds = max_rounds
+        
+        self.markers = {Team.WHITE: [[0]*self.board_width for i in range(self.board_height)], Team.BLACK: [[0]*self.board_width for i in range(self.board_height)]}
 
+        self.lords = []
         self.new_robot(None, None, Team.WHITE, RobotType.OVERLORD)
         self.new_robot(None, None, Team.BLACK, RobotType.OVERLORD)
 
@@ -185,7 +194,6 @@ class Game:
             return True
         return False
 
-
     #### DEBUG METHODS: NOT AVAILABLE DURING CONTEST ####
 
     def view_board(self, colors=True):
@@ -232,14 +240,16 @@ class Game:
 
         for x in range(minX, maxX+1):
             for y in range(minY+1):
-                newLocation = MapLocation(x, y) #TODO: make MapLocation class
+                newLocation = MapLocation(x, y) 
                 if (center.isWithinDistanceSquared(newLocation, radius_squared)): #TODO: make isWithinDistanceSquared method in MapLocation
                     returnLocations.append(newLocation)
+    def markLocation(self, team, loc, color):
+        self.markers[team][loc.x][loc.y] = color
+
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
     pass
-
 
 class GameError(Exception):
     """Raised for errors that arise within the Game"""
