@@ -232,6 +232,16 @@ def assertAttack(game, robot, target_location):
     required_paint = robot.max_paint
     if robot.paint < required_paint:
         raise RobotError(f"Not enough paint. Requires {required_paint}, but only has {robot.paint}.")
+    
+    if robot.type in [RobotType.SOLDIER, RobotType.SPLASHER, RobotType.MOPPER]:
+        robot_location = MapLocation(robot.row, robot.col)
+        distance_squared = robot_location.distanceSquaredTo(target_location)
+        if distance_squared > robot.attack_range_squared:
+            raise RobotError(f"Target is out of range for {robot.type.name}.")
+    if robot.type == RobotType.SOLDIER:
+        target = game.robots.get((target_location.x, target_location.y))
+        if target and target.team != robot.team and target.type != RobotType.TOWER:
+            raise RobotError("Soldiers can only attack towers.")
 
 def canAttack(game, robot, target_location):
     """
@@ -253,21 +263,14 @@ def attack(game, robot, target_location, attack_type='single'):
     distance_squared = robot_location.distanceSquaredTo(target_location)
 
     if robot.type == RobotType.SOLDIER:
-        if distance_squared > robot.attack_range_squared:
-            raise RobotError("Target is out of range for Soldier.")
         if target is None:
             game.paint_tile(target_location, robot.team)
         elif target.team != robot.team:
-            if target.type == RobotType.TOWER:
-                target.health -= 20
-            else:
-                raise RobotError('Soldiers can only attack towers.')
+            target.health -= 20 if target.type == RobotType.TOWER else 0
         robot.use_paint(5)
         robot.set_action_cooldown(10) # not implemented
 
     elif robot.type == RobotType.SPLASHER:
-        if distance_squared > robot.attack_range_squared:
-            raise RobotError("Target is out of range for Splasher.")
         radius = 2
         robot.use_paint(50)
         robot.set_action_cooldown(50) # not implemented
@@ -282,8 +285,6 @@ def attack(game, robot, target_location, attack_type='single'):
                         splash_target.health -= 50
 
     elif robot.type == RobotType.MOPPER:
-        if distance_squared > robot.attack_range_squared:
-            raise RobotError("Target is out of range for Mopper.")
         if attack_type == 'single':
             if target and target.team != robot.team:
                 paint_siphoned = min(10, target.paint)
