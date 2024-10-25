@@ -3,6 +3,8 @@ from .robot import Robot
 from .team import Team
 from .robottype import RobotType
 from .constants import GameConstants
+from .map_location import MapLocation
+from .game import Game
 
 #### SHARED METHODS ####
 
@@ -215,6 +217,35 @@ def sense(game, robot):
                 robots.append((new_row, new_col, game.robots[new_row][new_col].team))
 
     return robots
+
+def onTheMap(loc):
+    assert loc != None, "Not a valid location"
+    checkx = (0 <= loc.x <= GameConstants.BOARD_WIDTH)
+    checky = (0 <= loc.y <= GameConstants.BOARD_HEIGHT)
+    return checkx and checky
+
+def assertCanMove(game, robot, dir):
+    assert dir != None, "Not a valid direction"
+    assert robot.spawned == True, "Robot is not spawned"
+    assert robot.movementCooldown < GameConstants.COOLDOWN_LIMIT, "Robot movement cooldown not yet expired"
+
+    robotLocation = MapLocation(robot.row, robot.col)
+    newLocation = robotLocation.add(dir)
+    assert onTheMap(newLocation), "Robot moved off the map"
+    assert game.robots[newLocation.x][newLocation.y] == None, "Location is already occupied"
+    assert game.isPassable(newLocation), "Trying to move to an impassable location"
+
+def canMove(game, robot, dir):
+    try: assertCanMove(game, robot, dir)
+    except: print("Not a valid move for robot")
+
+def move(game, robot, dir):
+    assertCanMove(game, robot, dir)
+    robotLocation = MapLocation(robot.row, robot.col)
+    robot.movementCooldown = GameConstants.COOLDOWN_LIMIT
+    newLocation = robotLocation.add(dir)
+    robot.row, robot.col = newLocation.x, newLocation.y
+
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""

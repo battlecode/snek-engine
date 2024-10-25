@@ -1,5 +1,6 @@
 from ..container.runner import RobotRunner
 from .robottype import RobotType
+from .constants import GameConstants
 
 class Robot:
     STARTING_HEALTH = 1
@@ -11,6 +12,8 @@ class Robot:
         self.row = row
         self.col = col
         self.has_moved = False
+        self.spawned = True
+        self.movementCooldown = GameConstants.COOLDOWN_LIMIT
 
         self.health = Robot.STARTING_HEALTH
         self.logs = []
