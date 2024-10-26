@@ -1,18 +1,16 @@
 from ..container.runner import RobotRunner
 from .robottype import RobotType
+from .map_location import MapLocation
 from .constants import GameConstants
 
 class Robot:
     STARTING_HEALTH = 1
     STARTING_PAINT = 0
 
-    def __init__(self, row, col, team, id, type=RobotType.PAWN):
+    def __init__(self, x, y, team, id, type=RobotType.PAWN):
         self.id = id
         self.type = type
-
-
-        self.row = row
-        self.col = col
+        self.loc = MapLocation(x, y)
         self.has_moved = False
         self.spawned = True
         self.movement_cooldown = GameConstants.COOLDOWN_LIMIT
@@ -44,7 +42,6 @@ class Robot:
             self.max_paint = Robot.STARTING_PAINT
         
         self.logs = []
-
         self.team = team
 
         self.runner = None
@@ -62,6 +59,9 @@ class Robot:
             raise RuntimeError("Not enough paint to perform this action.")
         self.paint -= amount
 
+
+    def get_location(self):
+        return self.loc
 
     def animate(self, code, methods, debug=False):
         self.runner = RobotRunner(code, methods, self.log, self.error, debug=debug)
