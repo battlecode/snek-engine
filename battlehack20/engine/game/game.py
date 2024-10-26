@@ -190,7 +190,7 @@ class Game:
 
         self.robot_count += 1
 
-    def is_on_board(self, row, col):
+    def on_the_map(self, row, col):
         if 0 <= row < self.board_size and 0 <= col < self.board_size:
             return True
         return False

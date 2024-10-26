@@ -13,7 +13,8 @@ class Robot:
         self.loc = MapLocation(x, y)
         self.has_moved = False
         self.spawned = True
-        self.movement_cooldown = GameConstants.COOLDOWN_LIMIT
+        self.movement_cooldown = 0
+        self.action_cooldown = 0
 
         if self.type == RobotType.SOLDIER:
             self.health = 250
@@ -59,6 +60,12 @@ class Robot:
             raise RuntimeError("Not enough paint to perform this action.")
         self.paint -= amount
 
+    def add_health(self, amount):
+        self.health += amount
+        health = max(health, self.type.health)
+        if health < 0:
+            pass
+            #TODO kill robot
 
     def get_location(self):
         return self.loc
