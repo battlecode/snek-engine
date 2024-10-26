@@ -13,9 +13,7 @@ def mark(game, robot, loc, color):
     color: Color enum specifying the color of the mark
     Marks the specified map location
     """
-    team = get_team(game, robot)
-    game.markLocation(team, loc, color)
-
+    game.mark_location(robot.team, loc, color)
 
 def get_location(robot, game):
     pass
