@@ -4,10 +4,12 @@ from .constants import GameConstants
 
 class Robot:
     STARTING_HEALTH = 1
+    STARTING_PAINT = 0
 
     def __init__(self, row, col, team, id, type=RobotType.PAWN):
         self.id = id
         self.type = type
+
 
         self.row = row
         self.col = col
@@ -15,13 +17,51 @@ class Robot:
         self.spawned = True
         self.movement_cooldown = GameConstants.COOLDOWN_LIMIT
 
-        self.health = Robot.STARTING_HEALTH
+        if self.type == RobotType.SOLDIER:
+            self.health = 250
+            self.max_paint = 200
+            self.paint = 100 
+            self.attack_range_squared = 20
+        elif self.type == RobotType.SPLASHER:
+            self.health = 150
+            self.max_paint = 300
+            self.paint = 150
+            self.attack_range_squared = 9
+        elif self.type == RobotType.MOPPER:
+            self.health = 50
+            self.max_paint = 100
+            self.paint = 50
+            self.attack_range_squared = 4
+        elif self.type == RobotType.TOWER:
+            self.health = 500
+            self.max_paint = 0
+            self.paint = 0
+            self.single_attack_range_squared = 1
+            self.aoe_attack_range_squared = 4 
+        else:
+            self.healt = Robot.STARTING_HEALTH
+            self.paint = Robot.STARTING_PAINT
+            self.max_paint = Robot.STARTING_PAINT
+        
         self.logs = []
 
         self.team = team
 
         self.runner = None
         self.debug = False
+    
+    def add_paint(self, amount):
+        """Increase paint, but not exceeding max_paint."""
+        if amount < 0:
+            raise ValueError("Cannot add a negative amount of paint.")
+        self.paint = min(self.paint + amount, self.max_paint)
+
+    def use_paint(self, amount):
+        """Use paint, ensuring enough paint is available."""
+        if amount > self.paint:
+            raise RuntimeError("Not enough paint to perform this action.")
+        self.paint -= amount
+
 
     def animate(self, code, methods, debug=False):
         self.runner = RobotRunner(code, methods, self.log, self.error, debug=debug)
