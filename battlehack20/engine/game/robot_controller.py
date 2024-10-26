@@ -4,10 +4,19 @@ from .team import Team
 from .robottype import RobotType
 from .constants import GameConstants
 from .map_location import MapLocation
-from .game import Game
-
+from .game import Game, Color
 
 #### SHARED METHODS ####
+def mark(game, robot, loc, color):
+    """ 
+    loc: MapLocation we want to mark
+    color: Color enum specifying the color of the mark
+    Marks the specified map location
+    """
+    game.mark_location(robot.team, loc, color)
+
+def get_location(robot, game):
+    pass
 
 def get_board_size(game):
     """
