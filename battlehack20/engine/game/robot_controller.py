@@ -239,7 +239,7 @@ def assert_can_move(game, robot, dir):
     assert robot.spawned == True, "Robot is not spawned"
     assert robot.movement_cooldown < GameConstants.COOLDOWN_LIMIT, "Robot movement cooldown not yet expired"
 
-    robot_location = MapLocation(robot.row, robot.col)
+    robot_location = robot.loc
     new_location = robot_location.add(dir)
     assert on_the_map(new_location), "Robot moved off the map"
     assert game.robots[new_location.x][new_location.y] == None, "Location is already occupied"
@@ -255,10 +255,10 @@ def can_move(game, robot, dir):
 
 def move(game, robot, dir):
     assert_can_move(game, robot, dir)
-    robot_location = MapLocation(robot.row, robot.col)
-    robot.movement_cooldown += GameConstants.COOLDOWN_LIMIT
+    robot_location = robot.loc
     new_location = robot_location.add(dir)
-    robot.row, robot.col = new_location.x, new_location.y
+    robot.movement_cooldown += GameConstants.COOLDOWN_LIMIT
+    robot.loc = MapLocation(new_location.x, new_location.y)
 
 #### ATTACK METHODS ####
 def assertAttack(game, robot, target_location):
