@@ -1,5 +1,6 @@
 from ..container.runner import RobotRunner
 from .robottype import RobotType
+from .constants import GameConstants
 
 class Robot:
     STARTING_HEALTH = 1
@@ -13,6 +14,8 @@ class Robot:
         self.row = row
         self.col = col
         self.has_moved = False
+        self.spawned = True
+        self.movement_cooldown = GameConstants.COOLDOWN_LIMIT
 
         if self.type == RobotType.SOLDIER:
             self.health = 250

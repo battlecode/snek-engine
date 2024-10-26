@@ -4,6 +4,8 @@ from .team import Team
 from .robottype import RobotType
 from .constants import GameConstants
 from .map_location import MapLocation
+from .game import Game
+
 
 #### SHARED METHODS ####
 
@@ -217,6 +219,38 @@ def sense(game, robot):
 
     return robots
 
+def on_the_map(loc):
+    assert loc != None, "Not a valid location"
+    checkx = (0 <= loc.x <= GameConstants.BOARD_WIDTH)
+    checky = (0 <= loc.y <= GameConstants.BOARD_HEIGHT)
+    return checkx and checky
+
+def assert_can_move(game, robot, dir):
+    assert dir != None, "Not a valid direction"
+    assert robot.spawned == True, "Robot is not spawned"
+    assert robot.movement_cooldown < GameConstants.COOLDOWN_LIMIT, "Robot movement cooldown not yet expired"
+
+    robot_location = MapLocation(robot.row, robot.col)
+    new_location = robot_location.add(dir)
+    assert on_the_map(new_location), "Robot moved off the map"
+    assert game.robots[new_location.x][new_location.y] == None, "Location is already occupied"
+    assert game.is_passable(new_location), "Trying to move to an impassable location"
+
+def can_move(game, robot, dir):
+    try:
+        assert_can_move(game, robot, dir)
+        return True
+    except:
+        print("Not a valid move for robot")
+        return False
+
+def move(game, robot, dir):
+    assert_can_move(game, robot, dir)
+    robot_location = MapLocation(robot.row, robot.col)
+    robot.movement_cooldown += GameConstants.COOLDOWN_LIMIT
+    new_location = robot_location.add(dir)
+    robot.row, robot.col = new_location.x, new_location.y
+
 #### ATTACK METHODS ####
 def assertAttack(game, robot, target_location):
     """
@@ -354,7 +388,6 @@ def attack(game, robot, target_location, attack_type='single'):
                         if target_robot.health <= 0:
                             game.delete_robot(target_robot.id)
 
-        
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
     pass
