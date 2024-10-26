@@ -13,7 +13,7 @@ class Robot:
         self.col = col
         self.has_moved = False
         self.spawned = True
-        self.movementCooldown = GameConstants.COOLDOWN_LIMIT
+        self.movement_cooldown = GameConstants.COOLDOWN_LIMIT
 
         self.health = Robot.STARTING_HEALTH
         self.logs = []

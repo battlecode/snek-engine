@@ -227,13 +227,13 @@ def on_the_map(loc):
 def assert_can_move(game, robot, dir):
     assert dir != None, "Not a valid direction"
     assert robot.spawned == True, "Robot is not spawned"
-    assert robot.movementCooldown < GameConstants.COOLDOWN_LIMIT, "Robot movement cooldown not yet expired"
+    assert robot.movement_cooldown < GameConstants.COOLDOWN_LIMIT, "Robot movement cooldown not yet expired"
 
-    robotLocation = MapLocation(robot.row, robot.col)
-    newLocation = robotLocation.add(dir)
-    assert on_the_map(newLocation), "Robot moved off the map"
-    assert game.robots[newLocation.x][newLocation.y] == None, "Location is already occupied"
-    assert game.isPassable(newLocation), "Trying to move to an impassable location"
+    robot_location = MapLocation(robot.row, robot.col)
+    new_location = robot_location.add(dir)
+    assert on_the_map(new_location), "Robot moved off the map"
+    assert game.robots[new_location.x][new_location.y] == None, "Location is already occupied"
+    assert game.is_passable(new_location), "Trying to move to an impassable location"
 
 def can_move(game, robot, dir):
     try:
@@ -245,10 +245,10 @@ def can_move(game, robot, dir):
 
 def move(game, robot, dir):
     assert_can_move(game, robot, dir)
-    robotLocation = MapLocation(robot.row, robot.col)
-    robot.movementCooldown = GameConstants.COOLDOWN_LIMIT
-    newLocation = robotLocation.add(dir)
-    robot.row, robot.col = newLocation.x, newLocation.y
+    robot_location = MapLocation(robot.row, robot.col)
+    robot.movement_cooldown += GameConstants.COOLDOWN_LIMIT
+    new_location = robot_location.add(dir)
+    robot.row, robot.col = new_location.x, new_location.y
 
 
 class RobotError(Exception):

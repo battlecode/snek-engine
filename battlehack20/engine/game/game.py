@@ -237,7 +237,7 @@ class Game:
                 if (center.isWithinDistanceSquared(newLocation, radius_squared)): #TODO: make isWithinDistanceSquared method in MapLocation
                     returnLocations.append(newLocation)
         
-    def isPassable(self, loc):
+    def is_passable(self, loc):
         assert self.walls[loc.x][loc.y] is None
         assert self.towers[loc.x][loc.y] is None
 
