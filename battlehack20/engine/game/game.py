@@ -36,6 +36,7 @@ class Game:
         self.robots = [[None] * self.board_width for _ in range(self.board_height)]
         self.paint = [[None] * self.board_width for _ in range(self.board_height)]
         self.walls = [[None] * self.board_width for _ in range(self.board_height)]
+        self.towers = [[None] * self.board_width for _ in range(self.board_height)]
         self.round = 0
         self.max_rounds = max_rounds
         
@@ -243,9 +244,14 @@ class Game:
                 new_location = MapLocation(x, y) 
                 if (center.is_within_distance_squared(new_location, radius_squared)):
                     return_locations.append(new_location)
+        return return_locations
+      
     def mark_location(self, team, loc, color):
         self.markers[team][loc.x][loc.y] = color
-
+        
+    def is_passable(self, loc):
+        assert self.walls[loc.x][loc.y] is None
+        assert self.towers[loc.x][loc.y] is None
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
