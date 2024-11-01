@@ -74,6 +74,12 @@ class Game:
         self.robots[robot.row][robot.col] = None
         robot.kill()
         del self.queue[i]
+    
+    def add_robot(self, robot):
+        """Adds the new robot to the game board and increments the robot count."""
+        self.robots[robot.row][robot.col] = robot
+        self.queue[self.robot_count] = robot
+        self.robot_count += 1
 
     def serialize(self):
         def serialize_robot(robot):

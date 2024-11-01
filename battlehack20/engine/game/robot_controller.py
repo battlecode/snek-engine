@@ -354,7 +354,52 @@ def attack(game, robot, target_location, attack_type='single'):
                         if target_robot.health <= 0:
                             game.delete_robot(target_robot.id)
 
-        
+# SPAWN METHODS
+def can_build(game, map_location):
+    """
+    Checks if a new robot can be built at the specified map location.
+    Ensures the location is within bounds and unoccupied.
+    """
+    return game.is_on_board(map_location.row, map_location.col) and not game.robots[map_location.row][map_location.col]
+
+def can_spawn(robot):
+    """
+    Checks if the specified robot can spawn a new unit.
+    Ensures that the robot is a tower and its action cooldown is ready.
+    """
+    return robot.type == RobotType.TOWER and robot.is_action_ready()
+
+def assert_spawn(robot):
+    """
+    Asserts that the specified robot can spawn a new unit. Raises RobotError if it can't.
+    """
+    if not can_spawn(robot):
+        raise RobotError("Robot cannot spawn: it must be a tower and its action cooldown must be ready.")
+
+def assert_build(game, map_location):
+    """
+    Asserts that a robot can be built at the specified map location.
+    Raises RobotError if the location is invalid or occupied.
+    """
+    if not can_build(game, map_location):
+        raise RobotError("Cannot build: location is either out of bounds or already occupied.")
+
+def spawn(game, robot, robot_type, map_location):
+    """
+    Spawns a new robot of the given type at a specific map location if conditions are met.
+    """
+    assert_spawn(robot)
+    assert_build(game, map_location)
+    buildRobot(game, robot_type, map_location, robot.team)
+    robot.set_action_cooldown(10)  # not implemented
+
+def buildRobot(game, robot_type, map_location, team):
+    """
+    Creates and places a new robot of the specified type at the given map location.
+    """
+    new_robot = Robot(map_location.row, map_location.col, team, game.robot_count, robot_type)
+    game.add_robot(new_robot)
+
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
     pass
