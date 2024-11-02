@@ -1,7 +1,7 @@
 import random
 from .robot import Robot
 from .team import Team
-from .robottype import RobotType
+from .robot_type import RobotType
 from .constants import GameConstants
 from .map_location import MapLocation
 from .game import Game, Color
@@ -138,9 +138,10 @@ def attack(game, robot, target_location, attack_type='single'):
         if target is None:
             game.paint_tile(target_location, robot.team)
         elif target.team != robot.team:
-            target.health -= 20 if target.type == RobotType.TOWER else 0
-        robot.use_paint(5)
-        robot.set_action_cooldown(10) # not implemented
+            if target.type.isTower():
+                target.addHealth(-target.attack_strength_1)
+        robot.use_paint(robot.type.attack_cost)
+        robot.add_action_cooldown(robot.type.action_cooldown)
 
     elif robot.type == RobotType.SPLASHER:
         radius = 2

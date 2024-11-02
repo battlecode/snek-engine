@@ -2,7 +2,7 @@ import random
 from enum import Enum
 from .robot import Robot
 from .team import Team
-from .robottype import RobotType
+from .robot_type import RobotType
 from .constants import GameConstants
 from .robot_controller import *
 from .map_location import MapLocation

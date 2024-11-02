@@ -1,5 +1,5 @@
 from ..container.runner import RobotRunner
-from .robottype import RobotType
+from .robot_type import RobotType
 from .map_location import MapLocation
 from .constants import GameConstants
 
@@ -66,6 +66,12 @@ class Robot:
         if health < 0:
             pass
             #TODO kill robot
+
+    def add_action_cooldown(self, amount):
+        self.action_cooldown += amount
+    
+    def add_movement_cooldown(self, amount):
+        self.movement_cooldown += amount
 
     def get_location(self):
         return self.loc
