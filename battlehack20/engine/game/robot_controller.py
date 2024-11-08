@@ -355,18 +355,24 @@ def attack(game, robot, target_location, attack_type='single'):
                             game.delete_robot(target_robot.id)
 
 # SPAWN METHODS
-def assert_spawn(robot, robot_type, map_location):
+def assert_spawn(game, robot, robot_type, map_location):
     """
     Assert that the specified robot can spawn a new unit. Raises RobotError if it can't.
     """
+    if not game.is_on_board(map_location.x, map_location.y):
+        raise RobotError("Build location is out of bounds.")
+    
+    if game.robots[map_location.x][map_location.y]:
+        raise RobotError("Build location is already occupied.")
+    
     if robot.type != RobotType.TOWER or not robot.is_action_ready():
         raise RobotError("Robot cannot spawn: it must be a tower and its action cooldown must be ready.")
     
     if robot.paint < robot_type.paint_cost or robot.money < robot_type.money_cost:
         raise RobotError("Insufficient resources: Not enough paint or money to spawn this robot.")
-    
-    spawn_radius = 5
-    if abs(robot.loc.x - map_location.x) > spawn_radius // 2 or abs(robot.loc.y - map_location.y) > spawn_radius // 2:
+
+
+    if ((robot.loc.x - map_location.x)**2 + (robot.loc.y - map_location.y)**2)**0.5 > 3:
         raise RobotError("Target location is out of the tower's spawn radius.")
 
 def can_spawn(game, robot, robot_type, map_location):
@@ -382,6 +388,19 @@ def can_spawn(game, robot, robot_type, map_location):
         print(f"Build failed: {e}")
         return False
 
+
+def assert_build(game, map_location):
+    """
+    Assert that a robot can be built at the specified map location.
+    Raises RobotError if the location is invalid or occupied.
+    """
+    if not game.is_on_board(map_location.x, map_location.y):
+        raise RobotError("Build location is out of bounds.")
+    
+    if game.robots[map_location.x][map_location.y]:
+        raise RobotError("Build location is already occupied.")
+    
+    
 def assert_build(game, map_location):
     """
     Assert that a robot can be built at the specified map location.
@@ -398,8 +417,7 @@ def spawn(game, robot, robot_type, map_location):
     """
     Spawns a new robot of the given type at a specific map location if conditions are met.
     """
-    assert_spawn(robot, robot_type, map_location)
-    assert_build(game, map_location)
+    assert_spawn(game, robot, robot_type, map_location)
     game.buildRobot(robot_type, map_location, robot.team)
     robot.set_action_cooldown(10)  # not implemented
     robot.paint -= robot_type.paint_cost
