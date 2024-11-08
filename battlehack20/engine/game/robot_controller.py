@@ -372,7 +372,7 @@ def assert_spawn(game, robot, robot_type, map_location):
         raise RobotError("Insufficient resources: Not enough paint or money to spawn this robot.")
 
 
-    if ((robot.loc.x - map_location.x)**2 + (robot.loc.y - map_location.y)**2)**0.5 > 3:
+    if not robot.loc.isWithinDistanceSquared(map_location, 3):
         raise RobotError("Target location is out of the tower's spawn radius.")
 
 def can_spawn(game, robot, robot_type, map_location):
@@ -388,29 +388,6 @@ def can_spawn(game, robot, robot_type, map_location):
         print(f"Build failed: {e}")
         return False
 
-
-def assert_build(game, map_location):
-    """
-    Assert that a robot can be built at the specified map location.
-    Raises RobotError if the location is invalid or occupied.
-    """
-    if not game.is_on_board(map_location.x, map_location.y):
-        raise RobotError("Build location is out of bounds.")
-    
-    if game.robots[map_location.x][map_location.y]:
-        raise RobotError("Build location is already occupied.")
-    
-    
-def assert_build(game, map_location):
-    """
-    Assert that a robot can be built at the specified map location.
-    Raises RobotError if the location is invalid or occupied.
-    """
-    if not game.is_on_board(map_location.x, map_location.y):
-        raise RobotError("Build location is out of bounds.")
-    
-    if game.robots[map_location.x][map_location.y]:
-        raise RobotError("Build location is already occupied.")
     
 
 def spawn(game, robot, robot_type, map_location):
