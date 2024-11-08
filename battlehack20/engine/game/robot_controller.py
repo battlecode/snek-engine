@@ -227,6 +227,49 @@ def attack(game, robot, target_location, attack_type='single'):
                         if target_robot.health <= 0:
                             game.delete_robot(target_robot.id)
 
+# SPAWN METHODS
+def assert_spawn(game, robot, robot_type, map_location):
+    """
+    Assert that the specified robot can spawn a new unit. Raises RobotError if it can't.
+    """
+    if not game.is_on_board(map_location.x, map_location.y):
+        raise RobotError("Build location is out of bounds.")
+    
+    if game.robots[map_location.x][map_location.y]:
+        raise RobotError("Build location is already occupied.")
+    
+    if robot.type != RobotType.TOWER or not robot.is_action_ready():
+        raise RobotError("Robot cannot spawn: it must be a tower and its action cooldown must be ready.")
+    
+    if robot.paint < robot_type.paint_cost or robot.money < robot_type.money_cost:
+        raise RobotError("Insufficient resources: Not enough paint or money to spawn this robot.")
+
+
+    if not robot.loc.isWithinDistanceSquared(map_location, 3):
+        raise RobotError("Target location is out of the tower's spawn radius.")
+
+def can_spawn(game, robot, robot_type, map_location):
+    """
+    Checks if the specified robot can spawn a new unit.
+    Returns True if spawning conditions are met, otherwise False.
+    """
+    try:
+        assert_spawn(robot, robot_type, map_location)
+        return True
+    except RobotError as e:
+        print(f"Build failed: {e}")
+        return False
+
+def spawn(game, robot, robot_type, map_location):
+    """
+    Spawns a new robot of the given type at a specific map location if conditions are met.
+    """
+    assert_spawn(game, robot, robot_type, map_location)
+    game.buildRobot(robot_type, map_location, robot.team)
+    robot.set_action_cooldown(10)  # not implemented
+    robot.paint -= robot_type.paint_cost
+    robot.money -= robot_type.money_cost
+
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
     pass
