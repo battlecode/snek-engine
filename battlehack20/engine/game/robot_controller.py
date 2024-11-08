@@ -366,19 +366,20 @@ def assert_spawn(robot, robot_type, map_location):
         raise RobotError("Insufficient resources: Not enough paint or money to spawn this robot.")
     
     spawn_radius = 5
-    if abs(robot.row - map_location.row) > spawn_radius // 2 or abs(robot.col - map_location.col) > spawn_radius // 2:
+    if abs(robot.loc.x - map_location.x) > spawn_radius // 2 or abs(robot.loc.y - map_location.y) > spawn_radius // 2:
         raise RobotError("Target location is out of the tower's spawn radius.")
 
-def can_spawn(robot, robot_type, map_location):
+def can_spawn(game, robot, robot_type, map_location):
     """
     Checks if the specified robot can spawn a new unit.
     Returns True if spawning conditions are met, otherwise False.
     """
     try:
+        assert_build(game, map_location)
         assert_spawn(robot, robot_type, map_location)
         return True
     except RobotError as e:
-        print(f"Spawn failed: {e}")
+        print(f"Build failed: {e}")
         return False
 
 def assert_build(game, map_location):
@@ -386,23 +387,12 @@ def assert_build(game, map_location):
     Assert that a robot can be built at the specified map location.
     Raises RobotError if the location is invalid or occupied.
     """
-    if not game.is_on_board(map_location.row, map_location.col):
+    if not game.is_on_board(map_location.x, map_location.y):
         raise RobotError("Build location is out of bounds.")
     
-    if game.robots[map_location.row][map_location.col]:
+    if game.robots[map_location.x][map_location.y]:
         raise RobotError("Build location is already occupied.")
-
-def can_build(game, map_location):
-    """
-    Checks if a new robot can be built at the specified map location.
-    Returns True if the location is valid and unoccupied, otherwise False.
-    """
-    try:
-        assert_build(game, map_location)
-        return True
-    except RobotError as e:
-        print(f"Build failed: {e}")
-        return False
+    
 
 def spawn(game, robot, robot_type, map_location):
     """
@@ -410,17 +400,10 @@ def spawn(game, robot, robot_type, map_location):
     """
     assert_spawn(robot, robot_type, map_location)
     assert_build(game, map_location)
-    buildRobot(game, robot_type, map_location, robot.team)
+    game.buildRobot(robot_type, map_location, robot.team)
     robot.set_action_cooldown(10)  # not implemented
     robot.paint -= robot_type.paint_cost
     robot.money -= robot_type.money_cost
-
-def buildRobot(game, robot_type, map_location, team):
-    """
-    Creates and places a new robot of the specified type at the given map location.
-    """
-    new_robot = Robot(map_location.row, map_location.col, team, game.robot_count, robot_type)
-    game.add_robot(new_robot)
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
