@@ -1,11 +1,17 @@
 import random
+from enum import Enum
 from .robot import Robot
 from .team import Team
-from .robottype import RobotType
+from .robot_type import RobotType
 from .constants import GameConstants
 from .robot_controller import *
-import math
 from .map_location import MapLocation
+
+import math
+class Color(Enum): #marker and paint colors
+        NONE=0
+        FOREGROUND=1
+        BACKGROUND=2
 
 class Game:
 
@@ -30,9 +36,13 @@ class Game:
         self.robots = [[None] * self.board_width for _ in range(self.board_height)]
         self.paint = [[None] * self.board_width for _ in range(self.board_height)]
         self.walls = [[None] * self.board_width for _ in range(self.board_height)]
+        self.towers = [[None] * self.board_width for _ in range(self.board_height)]
         self.round = 0
         self.max_rounds = max_rounds
+        
+        self.markers = {Team.WHITE: [[0]*self.board_width for i in range(self.board_height)], Team.BLACK: [[0]*self.board_width for i in range(self.board_height)]}
 
+        self.lords = []
         self.new_robot(None, None, Team.WHITE, RobotType.OVERLORD)
         self.new_robot(None, None, Team.BLACK, RobotType.OVERLORD)
 
@@ -193,11 +203,10 @@ class Game:
 
         self.robot_count += 1
 
-    def is_on_board(self, row, col):
+    def on_the_map(self, row, col):
         if 0 <= row < self.board_size and 0 <= col < self.board_size:
             return True
         return False
-
 
     #### DEBUG METHODS: NOT AVAILABLE DURING CONTEST ####
 
@@ -226,33 +235,40 @@ class Game:
             board += '\n'
         return board
 
-    def getAllLocationsWithinRadiusSquared(self, center, radius_squared):
+    def get_all_locations_within_radius_squared(self, center, radius_squared):
         """
         center: MapLocation object
         radius_squared: square of radius around center that we want locations for
 
         Returns a list of MapLocations within radius squared of center
         """
-        returnLocations = []
+        return_locations = []
         origin = self.origin
         width = self.board_width
         height = self.board_height
-        ceiledRadius = math.ceil(math.sqrt(radius_squared)) + 1 # add +1 just to be safe
-        minX = max(center.x - ceiledRadius, 0)
-        minY = max(center.y - ceiledRadius, 0)
-        maxX = min(center.x + ceiledRadius, width - 1)
-        maxY = min(center.y + ceiledRadius, height - 1)
+        ceiled_radius = math.ceil(math.sqrt(radius_squared)) + 1 # add +1 just to be safe
+        minX = max(center.x - ceiled_radius, 0)
+        minY = max(center.y - ceiled_radius, 0)
+        maxX = min(center.x + ceiled_radius, width - 1)
+        maxY = min(center.y + ceiled_radius, height - 1)
 
         for x in range(minX, maxX+1):
             for y in range(minY+1):
-                newLocation = MapLocation(x, y) #TODO: make MapLocation class
-                if (center.isWithinDistanceSquared(newLocation, radius_squared)): #TODO: make isWithinDistanceSquared method in MapLocation
-                    returnLocations.append(newLocation)
+                new_location = MapLocation(x, y) 
+                if (center.is_within_distance_squared(new_location, radius_squared)):
+                    return_locations.append(new_location)
+        return return_locations
+      
+    def mark_location(self, team, loc, color):
+        self.markers[team][loc.x][loc.y] = color
+        
+    def is_passable(self, loc):
+        assert self.walls[loc.x][loc.y] is None
+        assert self.towers[loc.x][loc.y] is None
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
     pass
-
 
 class GameError(Exception):
     """Raised for errors that arise within the Game"""

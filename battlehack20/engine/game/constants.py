@@ -10,3 +10,6 @@ class GameConstants:
 
     # the default seed
     DEFAULT_SEED = 1337
+
+    # cooldowns
+    COOLDOWN_LIMIT = 10
