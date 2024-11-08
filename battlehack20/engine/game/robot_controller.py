@@ -135,18 +135,18 @@ def attack(game, robot, target_location, attack_type='single'):
     target = game.robots[target_location.x][target_location.y]
     
     if robot.type == RobotType.SOLDIER:
+        robot.use_paint(robot.type.attack_cost)
+        robot.add_action_cooldown(robot.type.action_cooldown)
+        
         if target is None:
             game.paint_tile(target_location, robot.team)
         elif target.team != robot.team:
             if target.type.isTower():
-                target.addHealth(-target.attack_strength_1)
-        robot.use_paint(robot.type.attack_cost)
-        robot.add_action_cooldown(robot.type.action_cooldown)
+                target.addHealth(-robot.attack_strength_1)
 
     elif robot.type == RobotType.SPLASHER:
-        radius = 2
-        robot.use_paint(50)
-        robot.set_action_cooldown(50) # not implemented
+        robot.use_paint(robot.type.attack_cost)
+        robot.add_action_cooldown(robot.type.action_cooldown)
         for dx in range(-radius, radius + 1):
             for dy in range(-radius, radius + 1):
                 splash_location = target_location.translate(dx, dy)
