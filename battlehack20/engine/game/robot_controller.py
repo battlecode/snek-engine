@@ -381,7 +381,6 @@ def can_spawn(game, robot, robot_type, map_location):
     Returns True if spawning conditions are met, otherwise False.
     """
     try:
-        assert_build(game, map_location)
         assert_spawn(robot, robot_type, map_location)
         return True
     except RobotError as e:
