@@ -6,24 +6,32 @@ from .robot_type import RobotType
 from .constants import GameConstants
 from .robot_controller import *
 from .map_location import MapLocation
+from .team_info import TeamInfo
 
 import math
 class Color(Enum): #marker and paint colors
-        NONE=0
-        FOREGROUND=1
-        BACKGROUND=2
+    NONE=0
+    FOREGROUND=1
+    BACKGROUND=2
+
+class DominationFactor(Enum):
+    PAINTED_AREA=0
+    NUM_ALLIED_TOWERS=1
+    TOTAL_MONEY=2
+    TOTAL_PAINT=3
+    NUM_ALIVE_UNITS=4
+    RANDOM=5
 
 class Game:
-
     def __init__(self, code, board_width, board_height, max_rounds=GameConstants.MAX_ROUNDS, 
                  seed=GameConstants.DEFAULT_SEED, debug=False):
         random.seed(seed)
-
         self.code = code
-
         self.debug = debug
         self.running = True
         self.winner = None
+        self.domination_factor = None
+        self.round_number = 0
 
         self.robot_count = 0
         self.queue = {}
@@ -39,6 +47,8 @@ class Game:
         self.towers = [[None] * self.board_width for _ in range(self.board_height)]
         self.round = 0
         self.max_rounds = max_rounds
+
+        self.teamInfo = TeamInfo(self)
         
         self.markers = {Team.WHITE: [[0]*self.board_width for i in range(self.board_height)], Team.BLACK: [[0]*self.board_width for i in range(self.board_height)]}
 
@@ -97,44 +107,63 @@ class Game:
     def log_info(self, msg):
         print(f'\u001b[32m[Game info] {msg}\u001b[0m')
 
+    def setWinnerIfMoreArea(self):
+        if self.teamInfo.get_tiles_painted(Team.BLACK) > self.teamInfo.get_tiles_painted(Team.BLACK):
+            self.winner = Team.WHITE
+        elif self.teamInfo.get_tiles_painted(Team.BLACK) < self.teamInfo.get_tiles_painted(Team.BLACK):
+            self.winner = Team.BLACK
+        else:
+            return False
+        return True
+    def setWinnerIfMoreAlliedTowers(self):
+        if self.teamInfo.get_num_allied_towers(Team.BLACK) > self.teamInfo.get_num_allied_towers(Team.BLACK):
+            self.winner = Team.WHITE
+        elif self.teamInfo.get_num_allied_towers(Team.BLACK) < self.teamInfo.get_num_allied_towers(Team.BLACK):
+            self.winner = Team.BLACK
+        else:
+            return False
+        return True
+    def setWinnerIfMoreMoney(self):
+        if self.teamInfo.get_num_allied_towers(Team.WHITE) > self.teamInfo.get_num_allied_towers(Team.BLACK):
+            self.winner = Team.WHITE
+        elif self.teamInfo.get_num_allied_towers(Team.WHITE) < self.teamInfo.get_num_allied_towers(Team.BLACK):
+            self.winner = Team.BLACK
+        else:
+            return False
+        return True
+    def setWinnerIfMorePaint(self):
+        if self.teamInfo.get_paint_counts(Team.WHITE) > self.teamInfo.get_paint_counts(Team.BLACK):
+            self.winner = Team.WHITE
+        elif self.teamInfo.get_paint_counts(Team.WHITE) < self.teamInfo.get_paint_counts(Team.BLACK):
+            self.winner = Team.BLACK
+        else:
+            return False
+        return True
+    def setWinnerIfMoreAliveUnits(self):
+        if self.teamInfo.get_num_allied_units(Team.WHITE) > self.teamInfo.get_num_allied_units(Team.BLACK):
+            self.winner = Team.WHITE
+        elif self.teamInfo.get_num_allied_units(Team.WHITE) < self.teamInfo.get_num_allied_units(Team.BLACK):
+            self.winner = Team.BLACK
+        else:
+            return False
+        return True
+    def setWinnerArbitrary(self):
+        rand_num = random.random()
+        if rand_num < 0.5:
+            self.winner = Team.WHITE
+        else:
+            self.winner = Team.BLACK
+
     def check_over(self):
-        winner = False
-
-        white, black = 0, 0
-        for col in range(self.board_size):
-            if self.robots[0][col] and self.robots[0][col].team == Team.BLACK: black += 1
-            if self.robots[self.board_size - 1][col] and self.robots[self.board_size - 1][col].team == Team.WHITE: white += 1
-
-        if black >= (self.board_size + 1) // 2:
-            winner = True
-
-        if white >= (self.board_size + 1) // 2:
-            winner = True
-
-        if self.round > self.max_rounds:
-            winner = True
-
-        if winner:
-            if white == black:
-                tie = True
-                for r in range(1, self.board_size):
-                    if tie:
-                        w, b = 0, 0
-                        for c in range(self.board_size):
-                            if self.robots[r][c] and self.robots[r][c].team == Team.BLACK: b += 1
-                            if self.robots[self.board_size - r - 1][c] and self.robots[self.board_size - r - 1][c].team == Team.WHITE: w += 1
-                        if w == b: continue
-                        self.winner = Team.WHITE if w > b else Team.BLACK
-                        tie = False
-                if tie:
-                    self.winner = random.choice([Team.WHITE, Team.BLACK])
-            else:
-                self.winner = Team.WHITE if white > black else Team.BLACK
-            self.running = False
-
-        if not self.running:
-            self.board_states.append([row[:] for row in self.robots])
-            self.process_over()
+        if (self.round_number == self.max_rounds and not self.winner):
+            # if game over...
+            if self.setWinnerIfMoreArea(): return
+            if self.setWinnerIfMoreAlliedTowers(): return
+            if self.setWinnerIfMoreMoney(): return
+            if self.setWinnerIfMorePaint(): return
+            if self.setWinnerIfMoreAliveUnits(): return
+            if self.setWinnerArbitrary(): return
+        self.setWinnerArbitrary()
 
     def process_over(self):
         """
@@ -143,7 +172,10 @@ class Game:
         for i in range(self.robot_count):
             if i in self.queue:
                 self.delete_robot(i)
-
+    
+    def set_winner(self, team, domination_factor):
+        self.winner = team
+        self.domination_factor = domination_factor
 
     def new_robot(self, row, col, team, robot_type):
         if robot_type == RobotType.OVERLORD:
