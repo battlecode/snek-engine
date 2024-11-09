@@ -270,6 +270,94 @@ def spawn(game, robot, robot_type, map_location):
     robot.paint -= robot_type.paint_cost
     robot.money -= robot_type.money_cost
 
+
+
+## Transferring
+def assert_can_transfer_paint(game, robot, target_location, amount):
+    if not robot.is_action_ready():
+        raise RobotError("Robot cannot attack yet; action cooldown in progress.")
+    
+    if not game.is_on_board(target_location.x, target_location.y):
+        raise RobotError("Target location is not on the map.")
+    
+    if robot.type != Robot.Type.MOPPER: 
+        raise RobotError(f"Robot type is not a Mopper, cannot transfer paint.")
+    
+    robot_location = MapLocation(robot.row, robot.col)
+    distance_squared = robot_location.distanceSquaredTo(target_location)
+    if distance_squared > robot.action_radius_squared:
+        raise RobotError(f"Target is out of range for {robot.type.name}.")
+   
+    target = game.get_robot(target_location)
+    if target == None: 
+        raise RobotError(f"There is no robot at {target_location}.")
+    if target.team != robot.team:
+        raise RobotError("Moppers can only transfer paint within their own team")
+    
+    if amount < 0 and target.paint < amount: 
+        raise RobotError(f"Target does not have enough paint. Tried to request {-amount}, but target only has {target.paint}")
+    if amount >= 0 and robot.paint < amount: 
+        raise RobotError(f"Mopper does not have enough paint to transfer.")
+
+def can_transfer_paint(game, robot, target_location, amount):
+    try:
+        assert_can_transfer_paint(game, robot, target_location, amount)
+        return True
+    except RobotError as e:
+        print(f"Transferring failed: {e}")
+        return False
+
+def transfer_paint(game, robot, target_location, amount):
+    assert_can_transfer_paint(game, robot, target_location, amount)
+    robot.add_paint(-amount)
+    target = game.get_robot(target_location)
+    target.add_paint(amount)
+
+
+## Withdrawing
+def assert_can_withdraw_paint(game, robot, target_location, amount): 
+    if not robot.is_action_ready():
+        raise RobotError("Robot cannot attack yet; action cooldown in progress.")
+    
+    if not game.is_on_board(target_location.x, target_location.y):
+        raise RobotError("Target location is not on the map.")
+        
+    if robot.type != RobotType.MOPPER: 
+        raise RobotError(f"Robot type is not a Mopper, cannot transfer paint.")
+    
+    robot_location = MapLocation(robot.row, robot.col)
+    distance_squared = robot_location.distanceSquaredTo(target_location)
+    if distance_squared > robot.action_radius_squared:
+        raise RobotError(f"Target is out of range for {robot.type.name}.")
+    
+    target = game.get_robot(target_location)
+    if target == None: 
+        raise RobotError(f"There is no robot at {target_location}.")
+    if target.team != robot.team:
+        raise RobotError("Moppers can only transfer paint within their own team")
+    if not target.type.isTower():
+        raise RobotError(f"The object at {target_location} is not a tower.")
+
+    if amount < 0 and target.paint < amount: 
+        raise RobotError(f"Target does not have enough paint. Tried to request {-amount}, but target only has {target.paint}")
+    if amount >= 0 and robot.paint < amount: 
+        raise RobotError(f"Mopper does not have enough paint to transfer.")
+
+
+def can_withdraw_paint(game, robot, target_location, amount):
+    try:
+        assert_can_withdraw_paint(game, robot, target_location, amount)
+        return True
+    except RobotError as e:
+        print(f"Transferring failed: {e}")
+        return False
+
+def withdraw_paint(game, robot, target_location, amount):
+    assert_can_withdraw_paint(game, robot, target_location, amount)
+    robot.add_paint(-amount)
+    target = game.get_robot(target_location)
+    target.add_paint(amount)
+
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
     pass
