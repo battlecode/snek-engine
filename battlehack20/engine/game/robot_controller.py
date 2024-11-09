@@ -357,16 +357,6 @@ def withdraw_paint(game, robot, target_location, amount):
     robot.add_paint(-amount)
     target = game.get_robot(target_location)
     target.add_paint(amount)
-    
-
-
-    
-
-
-    
-
-
-
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""

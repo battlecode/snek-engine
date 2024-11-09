@@ -19,20 +19,15 @@ class Robot:
 
         self.runner = None
         self.debug = False
+
+    def add_paint(self, amount): 
+        if amount < 0: 
+            if -amount > self.paint: 
+                raise RuntimeError("Not enough pain to perform this action")
+            self.paint += amount
+        else:
+            self.paint = min(self.paint + amount, self.paint_capacity)
     
-    def add_paint(self, amount):
-        """Increase paint, but not exceeding max_paint."""
-        if amount < 0:
-            raise ValueError("Cannot add a negative amount of paint.")
-        self.paint = min(self.paint + amount, self.max_paint)
-
-    def use_paint(self, amount):
-        """Use paint, ensuring enough paint is available."""
-        if amount > self.paint:
-            raise RuntimeError("Not enough paint to perform this action.")
-        self.paint -= amount
-
-
     def get_location(self):
         return self.loc
 
