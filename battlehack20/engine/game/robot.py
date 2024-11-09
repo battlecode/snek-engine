@@ -13,7 +13,8 @@ class Robot:
         self.id = id
         self.type = type
         
-        self.movement_cooldown = 0
+        self._movement_cooldown = 0
+        self._action_cooldown = 0
         self.paint = self.type.paint_capacity // 2
         self.health = self.type.health
 
