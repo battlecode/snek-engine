@@ -109,50 +109,50 @@ class Game:
 
     def setWinnerIfMoreArea(self):
         if self.teamInfo.get_tiles_painted(Team.BLACK) > self.teamInfo.get_tiles_painted(Team.BLACK):
-            self.winner = Team.WHITE
+            self.set_winner(Team.WHITE, DominationFactor.PAINTED_AREA)
         elif self.teamInfo.get_tiles_painted(Team.BLACK) < self.teamInfo.get_tiles_painted(Team.BLACK):
-            self.winner = Team.BLACK
+            self.set_winner(Team.BLACK, DominationFactor.PAINTED_AREA)
         else:
             return False
         return True
     def setWinnerIfMoreAlliedTowers(self):
         if self.teamInfo.get_num_allied_towers(Team.BLACK) > self.teamInfo.get_num_allied_towers(Team.BLACK):
-            self.winner = Team.WHITE
+            self.set_winner(Team.WHITE, DominationFactor.NUM_ALLIED_TOWERS)
         elif self.teamInfo.get_num_allied_towers(Team.BLACK) < self.teamInfo.get_num_allied_towers(Team.BLACK):
-            self.winner = Team.BLACK
+            self.set_winner(Team.BLACK, DominationFactor.NUM_ALLIED_TOWERS)
         else:
             return False
         return True
     def setWinnerIfMoreMoney(self):
         if self.teamInfo.get_num_allied_towers(Team.WHITE) > self.teamInfo.get_num_allied_towers(Team.BLACK):
-            self.winner = Team.WHITE
+            self.set_winner(Team.WHITE, DominationFactor.TOTAL_MONEY)
         elif self.teamInfo.get_num_allied_towers(Team.WHITE) < self.teamInfo.get_num_allied_towers(Team.BLACK):
-            self.winner = Team.BLACK
+            self.set_winner(Team.BLACK, DominationFactor.TOTAL_MONEY)
         else:
             return False
         return True
     def setWinnerIfMorePaint(self):
         if self.teamInfo.get_paint_counts(Team.WHITE) > self.teamInfo.get_paint_counts(Team.BLACK):
-            self.winner = Team.WHITE
+            self.set_winner(Team.WHITE, DominationFactor.TOTAL_PAINT)
         elif self.teamInfo.get_paint_counts(Team.WHITE) < self.teamInfo.get_paint_counts(Team.BLACK):
-            self.winner = Team.BLACK
+            self.set_winner(Team.BLACK, DominationFactor.TOTAL_PAINT)
         else:
             return False
         return True
     def setWinnerIfMoreAliveUnits(self):
         if self.teamInfo.get_num_allied_units(Team.WHITE) > self.teamInfo.get_num_allied_units(Team.BLACK):
-            self.winner = Team.WHITE
+            self.set_winner(Team.WHITE, DominationFactor.NUM_ALIVE_UNITS)
         elif self.teamInfo.get_num_allied_units(Team.WHITE) < self.teamInfo.get_num_allied_units(Team.BLACK):
-            self.winner = Team.BLACK
+            self.set_winner(Team.BLACK, DominationFactor.NUM_ALIVE_UNITS)
         else:
             return False
         return True
     def setWinnerArbitrary(self):
         rand_num = random.random()
         if rand_num < 0.5:
-            self.winner = Team.WHITE
+            self.set_winner(Team.WHITE, DominationFactor.RANDOM)
         else:
-            self.winner = Team.BLACK
+           self.set_winner(Team.BLACK, DominationFactor.RANDOM)
 
     def check_over(self):
         if (self.round_number == self.max_rounds and not self.winner):
