@@ -1,12 +1,32 @@
 import random
 from .robot import Robot
 from .team import Team
-from .robottype import RobotType
+from .robot_type import RobotType
 from .constants import GameConstants
 from .map_location import MapLocation
 from .game import Game, Color
 
 #### SHARED METHODS ####
+
+def get_location(robot, game):
+    return robot.loc
+
+def get_map_width(game, robot):
+    return game.board_width
+
+def get_map_height(game, robot):
+    return game.board_height
+
+def get_team(game, robot):
+    """
+    Return the current robot's team (Team.WHITE or Team.BLACK)
+    """
+    # TODO change teams to A and B
+    return robot.team
+
+def get_type(game, robot):
+    return robot.type
+
 def mark(game, robot, loc, color):
     """ 
     loc: MapLocation we want to mark
@@ -15,195 +35,8 @@ def mark(game, robot, loc, color):
     """
     game.mark_location(robot.team, loc, color)
 
-def get_location(robot, game):
-    pass
-
-def get_board_size(game):
-    """
-    @HQ_METHOD, @PAWN_METHOD
-
-    Return the size of the board (int)
-    """
-    return game.board_size
-
-def get_team(game, robot):
-    """
-    @HQ_METHOD, @PAWN_METHOD
-
-    Return the current robot's team (Team.WHITE or Team.BLACK)
-    """
-    return robot.team
-
-def get_type(game, robot):
-    """
-    @HQ_METHOD, @PAWN_METHOD
-
-    Return the type of the unit - either RobotType.PAWN or RobotType.OVERLORD
-    """
-    return robot.type
-
-#### HQ METHODS ####
-
-def get_board(game):
-    """
-    @HQ_METHOD
-
-    Return the current state of the board as an array of Team.WHITE, Team.BLACK, and None, representing white-occupied,
-    black-occupied, and empty squares, respectively.
-    """
-    board = [[None] * game.board_size for _ in range(game.board_size)]
-
-    for i in range(game.board_size):
-        for j in range(game.board_size):
-            if game.robots[i][j]:
-                board[i][j] = game.robots[i][j].team
-
-    return board
-
-def hq_check_space(game, row, col):
-    """
-    @HQ_METHOD
-
-    Checks whether a specific board space is occupied and if yes returns the team of the robot occupying the space;
-    otherwise returns False. Pawns have a similar method but can only see within their sensory radius
-    """
-    if not game.robots[row][col]:
-        return False
-    return game.robots[row][col].team
-
-def spawn(game, robot, row, col):
-    """
-    @HQ_METHOD
-
-    Spawns a pawn at the given location. Pawns can only be spawned at the edge of the board on your side of the board.
-    Only the HQ can spawn units, and it can only spawn one unit per turn.
-    :loc should be given as a tuple (row, col), the space to spawn on
-    """
-    if robot.has_moved:
-        raise RobotError('you have already spawned a unit this turn')
-
-    if (robot.team == Team.WHITE and row != 0) or (robot.team == Team.BLACK and row != game.board_size - 1):
-        raise RobotError('you can only spawn in the end row of your side of the board')
-
-    if not game.is_on_board(row, col):
-        raise RobotError('you cannot spawn a unit on a space that is not on the board')
-
-    if game.robots[row][col]:
-        raise RobotError('you cannot spawn a unit on a space that is already occupied')
-
-    game.new_robot(row, col, robot.team, RobotType.PAWN)
-    robot.has_moved = True
-
-
-#### PAWN METHODS ####
-
-def capture(game, robot, new_row, new_col):
-    """
-    @PAWN_METHOD
-
-    Diagonally capture an enemy piece.
-    :new_row, new_col the position of the enemy to capture.
-    Units can only capture enemy pieces that are located diagonally left or right in front of them on the board.
-    """
-    if robot.has_moved:
-        raise RobotError('this unit has already moved this turn; robots can only move once per turn')
-
-    row, col = robot.row, robot.col
-
-    if game.robots[row][col] != robot:
-        raise RobotError
-
-    if not game.is_on_board(new_row, new_col):
-        raise RobotError('you cannot capture a space that is not on the board')
-
-    if not game.robots[new_row][new_col]:
-        raise RobotError('you cannot capture an empty space')
-
-    if game.robots[new_row][new_col].team == robot.team:
-        raise RobotError('you cannot capture your own piece')
-
-    if abs(col - new_col) != 1:
-        raise RobotError('you must capture diagonally')
-
-    if (robot.team == Team.WHITE and row - new_row != -1) or (robot.team == Team.BLACK and row - new_row != 1):
-        raise RobotError('you must capture diagonally forwards')
-
-    captured_robot = game.robots[new_row][new_col]
-
-    game.delete_robot(captured_robot.id)
-    game.robots[row][col] = None
-
-    robot.row = new_row
-    robot.col = new_col
-
-    game.robots[new_row][new_col] = robot
-    robot.has_moved = True
-
-def get_location(game, robot):
-    """
-    @PAWN_METHOD
-
-    Return the current location of the robot
-    """
-    row, col = robot.row, robot.col
-    if game.robots[row][col] != robot:
-        raise RobotError('something went wrong; please contact the devs')
-    return row, col
-
-def move_forward(game, robot):
-    """
-    @PAWN_METHOD
-
-    Move the current unit forward. A unit can only be moved if there is no unit already occupying the space.
-    """
-    if robot.has_moved:
-        raise RobotError('this unit has already moved this turn; robots can only move once per turn')
-
-    row, col = robot.row, robot.col
-    if game.robots[row][col] != robot:
-        raise RobotError('something went wrong; please contact the devs')
-
-    if robot.team == Team.WHITE:
-        new_row, new_col = row + 1, col
-    else:
-        new_row, new_col = row - 1, col
-
-    if not game.is_on_board(new_row, new_col):
-        raise RobotError('you cannot move to a space that is not on the board')
-
-    if game.robots[new_row][new_col]:
-        raise RobotError('you cannot move to a space that is already occupied')
-
-    game.robots[row][col] = None
-
-    robot.row = new_row
-    robot.col = new_col
-    game.robots[new_row][new_col] = robot
-    robot.has_moved = True
-
-def pawn_check_space(game, robot, row, col):
-    """
-    @PAWN_METHOD
-
-    Checks whether a specific board space is occupied and if yes returns the team of the robot occupying the space;
-    otherwise returns False.
-
-    Raises a RobotError if the space is not within the sensory radius
-
-    HQs have a similar method but can see the full board
-    """
-    if game.robots[robot.row][robot.col] != robot:
-        raise RobotError('something went wrong; please contact the devs')
-
-    drow, dcol = abs(robot.row - row), abs(robot.col - col)
-    if max(drow, dcol) > 2:
-        raise RobotError('that space is not within sensory radius of this robot')
-
-    if not game.robots[row][col]:
-        return False
-    return game.robots[row][col].team
-
 def sense(game, robot):
+    #TODO adapt this method for new sensing methods
     """
     @PAWN_METHOD
 
@@ -228,40 +61,40 @@ def sense(game, robot):
 
     return robots
 
-def on_the_map(loc):
-    assert loc != None, "Not a valid location"
-    checkx = (0 <= loc.x <= GameConstants.BOARD_WIDTH)
-    checky = (0 <= loc.y <= GameConstants.BOARD_HEIGHT)
-    return checkx and checky
-
+def on_the_map(game, robot, loc):
+    assert(loc != None, "Not a valid location")
+    return game.on_the_map(loc)
+    
 def assert_can_move(game, robot, dir):
-    assert dir != None, "Not a valid direction"
-    assert robot.spawned == True, "Robot is not spawned"
-    assert robot.movement_cooldown < GameConstants.COOLDOWN_LIMIT, "Robot movement cooldown not yet expired"
+    if dir == None:
+        raise RobotError("Not a valid direction")
+    if not robot.spawned:
+        raise RobotError("Robot is not spawned")
+    if robot.movement_cooldown >= GameConstants.COOLDOWN_LIMIT:
+        raise RobotError("Robot movement cooldown not yet expired")
 
-    robot_location = MapLocation(robot.row, robot.col)
-    new_location = robot_location.add(dir)
-    assert on_the_map(new_location), "Robot moved off the map"
-    assert game.robots[new_location.x][new_location.y] == None, "Location is already occupied"
-    assert game.is_passable(new_location), "Trying to move to an impassable location"
+    new_location = robot.loc.add(dir)
+    if not game.on_the_map(new_location):
+        raise RobotError("Robot moved off the map")
+    if game.robots[new_location.x][new_location.y] != None:
+        raise RobotError("Location is already occupied")
+    if not game.is_passable(new_location):
+        raise RobotError("Trying to move to an impassable location")
 
 def can_move(game, robot, dir):
     try:
         assert_can_move(game, robot, dir)
         return True
-    except:
-        print("Not a valid move for robot")
+    except RobotError:
         return False
 
 def move(game, robot, dir):
     assert_can_move(game, robot, dir)
-    robot_location = MapLocation(robot.row, robot.col)
     robot.movement_cooldown += GameConstants.COOLDOWN_LIMIT
-    new_location = robot_location.add(dir)
-    robot.row, robot.col = new_location.x, new_location.y
+    robot.loc = robot.loc.add(dir)
 
 #### ATTACK METHODS ####
-def assertAttack(game, robot, target_location):
+def assert_can_attack(game, robot, target_location):
     """
     Assert that the robot can attack. This function checks all conditions necessary
     for the robot to perform an attack and raises an error if any are not met.
@@ -286,37 +119,34 @@ def assertAttack(game, robot, target_location):
         if target and target.team != robot.team and target.type != RobotType.TOWER:
             raise RobotError("Soldiers can only attack towers.")
 
-def canAttack(game, robot, target_location):
+def can_attack(game, robot, target_location):
     """
     Check if the robot can attack. This function calls `assertAttack`
     and returns a boolean value: True if the attack can proceed, False otherwise.
     """
     try:
-        assertAttack(game, robot, target_location)
+        assert_can_attack(game, robot, target_location)
         return True
     except RobotError:
         return False
 
-
 def attack(game, robot, target_location, attack_type='single'):
-    assertAttack(game, robot, target_location)
+    assert_can_attack(game, robot, target_location)
     target = game.robots[target_location.x][target_location.y]
     
-    robot_location = MapLocation(robot.row, robot.col)
-    distance_squared = robot_location.distanceSquaredTo(target_location)
-
     if robot.type == RobotType.SOLDIER:
+        robot.use_paint(robot.type.attack_cost)
+        robot.add_action_cooldown(robot.type.action_cooldown)
+        
         if target is None:
             game.paint_tile(target_location, robot.team)
         elif target.team != robot.team:
-            target.health -= 20 if target.type == RobotType.TOWER else 0
-        robot.use_paint(5)
-        robot.set_action_cooldown(10) # not implemented
+            if target.type.isTower():
+                target.addHealth(-robot.attack_strength_1)
 
     elif robot.type == RobotType.SPLASHER:
-        radius = 2
-        robot.use_paint(50)
-        robot.set_action_cooldown(50) # not implemented
+        robot.use_paint(robot.type.attack_cost)
+        robot.add_action_cooldown(robot.type.action_cooldown)
         for dx in range(-radius, radius + 1):
             for dy in range(-radius, radius + 1):
                 splash_location = target_location.translate(dx, dy)
@@ -396,6 +226,49 @@ def attack(game, robot, target_location, attack_type='single'):
                         target_robot.health -= 10
                         if target_robot.health <= 0:
                             game.delete_robot(target_robot.id)
+
+# SPAWN METHODS
+def assert_spawn(game, robot, robot_type, map_location):
+    """
+    Assert that the specified robot can spawn a new unit. Raises RobotError if it can't.
+    """
+    if not game.is_on_board(map_location.x, map_location.y):
+        raise RobotError("Build location is out of bounds.")
+    
+    if game.robots[map_location.x][map_location.y]:
+        raise RobotError("Build location is already occupied.")
+    
+    if robot.type != RobotType.TOWER or not robot.is_action_ready():
+        raise RobotError("Robot cannot spawn: it must be a tower and its action cooldown must be ready.")
+    
+    if robot.paint < robot_type.paint_cost or robot.money < robot_type.money_cost:
+        raise RobotError("Insufficient resources: Not enough paint or money to spawn this robot.")
+
+
+    if not robot.loc.isWithinDistanceSquared(map_location, 3):
+        raise RobotError("Target location is out of the tower's spawn radius.")
+
+def can_spawn(game, robot, robot_type, map_location):
+    """
+    Checks if the specified robot can spawn a new unit.
+    Returns True if spawning conditions are met, otherwise False.
+    """
+    try:
+        assert_spawn(robot, robot_type, map_location)
+        return True
+    except RobotError as e:
+        print(f"Build failed: {e}")
+        return False
+
+def spawn(game, robot, robot_type, map_location):
+    """
+    Spawns a new robot of the given type at a specific map location if conditions are met.
+    """
+    assert_spawn(game, robot, robot_type, map_location)
+    game.buildRobot(robot_type, map_location, robot.team)
+    robot.set_action_cooldown(10)  # not implemented
+    robot.paint -= robot_type.paint_cost
+    robot.money -= robot_type.money_cost
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""

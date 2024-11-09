@@ -2,7 +2,7 @@ import random
 from enum import Enum
 from .robot import Robot
 from .team import Team
-from .robottype import RobotType
+from .robot_type import RobotType
 from .constants import GameConstants
 from .robot_controller import *
 from .map_location import MapLocation
@@ -84,6 +84,19 @@ class Game:
         self.robots[robot.row][robot.col] = None
         robot.kill()
         del self.queue[i]
+    
+    def add_robot(self, robot):
+        """Adds the new robot to the game board and increments the robot count."""
+        self.robots[robot.row][robot.col] = robot
+        self.queue[self.robot_count] = robot
+        self.robot_count += 1
+    
+    def buildRobot(self, robot_type, map_location, team):
+        """
+        Creates and places a new robot of the specified type at the given map location.
+        """
+        new_robot = Robot(map_location.x, map_location.y, team, self.robot_count, robot_type)
+        self.add_robot(new_robot)
 
     def serialize(self):
         def serialize_robot(robot):
@@ -190,7 +203,7 @@ class Game:
 
         self.robot_count += 1
 
-    def is_on_board(self, row, col):
+    def on_the_map(self, row, col):
         if 0 <= row < self.board_size and 0 <= col < self.board_size:
             return True
         return False

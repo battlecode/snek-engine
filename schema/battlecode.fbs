@@ -1,0 +1,350 @@
+namespace battlecode.schema;
+
+struct Vec {
+    x: int = 0;
+    y: int = 0;
+}
+
+table VecTable {
+    xs: [int];
+    ys: [int];
+}
+
+table TeamData {
+    name: string;
+    packageName: string;
+    teamId: byte;
+}
+
+table GameplayConstants {
+    setupPhaseLength: int;
+    flagMinDistance: int;
+    globalUpgradeRoundDelay: int;
+    passiveResourceRate: int;
+    robotBaseHealth: int;
+    jailedRounds: int;
+    visionRadius: int;
+    actionRadius: int;
+}
+
+enum RobotType: byte {
+    PAINT_TOWER,
+    MONEY_TOWER,
+    DEFENSE_TOWER,
+    SOLDIER,
+    SPLASHER,
+    MOPPER
+}
+
+enum WinType: byte {
+    AREA_PAINTED,
+    MORE_TOWERS,
+    MORE_MONEY,
+    MORE_STORED_PAINT,
+    MORE_ROBOTS,
+    RANDOM
+}
+
+// A list of initial bodies to be placed on the map.
+table InitialBodyTable {
+    robotIds: [int];
+    spawnActions: [SpawnAction];
+}
+
+table GameMap {
+    name: string;
+    size: Vec;
+    symmetry: int; // The map symmetry: 0 for rotation, 1 for horizontal, 2 for vertical.
+    initialBodies: InitialBodyTable;
+    randomSeed: int;
+    walls: [bool];
+    water: [bool];
+    divider: [bool];
+    spawnLocations: VecTable; //alternates teams, starting with team 0
+    resourcePiles: VecTable;
+    resourcePileAmounts: [int];
+}
+
+/*
+enum Action : byte {
+    // Target: ID of hit robot
+    ATTACK,
+    // Target: ID of healed robot
+    HEAL,
+    // Target: x + y * width of dig location
+    DIG,
+    // Target: x + y * width of fill location
+    FILL,
+    // Target: x + y * width of trap location
+    EXPLOSIVE_TRAP,
+    // Target: x + y * width of trap location
+    WATER_TRAP,
+    // Target: x + y * width of trap location
+    STUN_TRAP,
+    // Target: flag id
+    PICKUP_FLAG,
+    // Id: Flag id, Target: x + y * width of placed location
+    PLACE_FLAG,
+    // Target: flag id
+    CAPTURE_FLAG,
+    // Target: GlobalUpgradeType id
+    GLOBAL_UPGRADE,
+    /// Dies due to an uncaught exception
+    /// Target: none
+    DIE_EXCEPTION,
+}
+*/
+
+/// Generic action representing damage to a robot
+struct DamageAction {
+    id: ushort;
+    damage: ushort; 
+}
+
+/// Visually indicate a tile has been painted
+struct PaintAction {
+    loc: ushort;
+}
+
+/// Visually indicate a tile's paint has been removed
+struct UnpaintAction {
+    loc: ushort;
+}
+
+/// Visually indicate an attack
+struct AttackAction {
+    id: ushort;
+}
+
+/// Visually indicate a mop attack
+struct MopAction {
+    loc: ushort;
+}
+
+/// Visually indicate a tower being built
+struct BuildAction {
+    id: ushort;
+}
+
+/// Visually indicate trasnferring paint from one robot to another
+struct TransferAction {
+    id: ushort;
+}
+
+/// Visually indicate messaging from one robot to another
+struct MessageAction {
+    id: ushort;
+    data: int;
+}
+
+/// Indicate that this robot was spawned on this turn
+struct SpawnAction {
+    x: ushort;
+    y: ushort;
+    team: byte;
+    robotType: RobotType;
+}
+
+/// Visually indicate that a tower was upgraded
+struct UpgradeAction {
+    id: ushort;
+}
+
+/// Update the indicator string for this robot
+table IndicatorStringAction {
+    value: string;
+}
+
+/// Update the indicator dot for this robot
+struct IndicatorDotAction {
+    loc: ushort;
+    colorHex: int;
+}
+
+/// Update the indicator line for this robot
+struct IndicatorLineAction {
+    startLoc: ushort;
+    endLoc: ushort;
+    colorHex: int;
+}
+
+union Action {
+    DamageAction,
+    PaintAction,
+    UnpaintAction,
+    AttackAction,
+    MopAction,
+    BuildAction,
+    TransferAction, 
+    MessageAction,
+    SpawnAction,
+    UpgradeAction,
+    IndicatorStringAction,
+    IndicatorDotAction,
+    IndicatorLineAction
+}
+
+table ActionWrapper {
+    a: Action;
+}
+
+//========================================================================================
+// Profiler tables
+
+/// These tables are set-up so that they match closely with speedscope's file format documented at
+/// https://github.com/jlfwong/speedscope/wiki/Importing-from-custom-sources.
+/// The client uses speedscope to show the recorded data in an interactive interface.
+
+/// A single event in a profile. Represents either an open event (meaning a
+/// method has been entered) or a close event (meaning the method was exited).
+table ProfilerEvent {
+    /// Whether this is an open event (true) or a close event (false).
+    isOpen: bool;
+    /// The bytecode counter at the time the event occurred.
+    at: int;
+    /// The index of the method name in the ProfilerFile.frames array.
+    frame: int;
+}
+
+/// A profile contains all events and is labeled with a name.
+table ProfilerProfile {
+    /// The display-friendly name of the profile.
+    name: string;
+    /// The events that occurred in the profile.
+    events: [ProfilerEvent];
+}
+
+/// A profiler file is a collection of profiles.
+/// When profiling is enabled there is one of these per team per match.
+table ProfilerFile {
+    /// The method names that are referred to in the events.
+    frames: [string];
+    /// The recorded profiles, one per robot.
+    profiles: [ProfilerProfile];
+}
+//========================================================================================
+
+
+/// Events
+
+/// An Event is a single step that needs to be processed.
+/// A saved game simply consists of a long list of Events.
+/// Events can be divided by either being sent separately (e.g. as separate
+/// websocket messages), or by being wrapped with a GameWrapper.
+/// A game consists of a series of matches; a match consists of a series of
+/// rounds, and is played on a single map. Each round is a single simulation
+/// step.
+union Event {
+    /// There should only be one GameHeader, at the start of the stream.
+    GameHeader,
+    /// There should be one MatchHeader at the start of each match.
+    MatchHeader,
+    /// A single simulation step. A round may be skipped if
+    /// nothing happens during its time.
+    Round,
+    /// There should be one MatchFooter at the end of each simulation step.
+    MatchFooter,
+    /// There should only be one GameFooter, at the end of the stream.
+    GameFooter
+}
+
+/// The first event sent in the game. Contains all metadata about the game.
+table GameHeader {
+    specVersion: string;
+    teams: [TeamData];
+
+    constants: GameplayConstants;
+}
+
+/// The final event sent in the game.
+table GameFooter {
+    /// The ID of the winning team of the game.
+    winner: byte;
+}
+
+/// Sent to start a match.
+table MatchHeader {
+    map: GameMap;
+    maxRounds: int;
+}
+
+/// Sent to end a match.
+table MatchFooter {
+    /// The ID of the winning team.
+    winner: byte;
+    /// The reason for winning
+    winType: WinType;
+    /// The number of rounds played.
+    totalRounds: int;
+    /// Profiler data for team A and B if profiling is enabled.
+    profilerFiles: [ProfilerFile];
+}
+
+table Turn {
+    robotId: int;
+    health: int;
+    paint: int;
+    moveCooldown: int;
+    actionCooldown: int;
+    x: ubyte;
+    y: ubyte;
+    actions: [ActionWrapper];
+}
+
+/// A single time-step in a Game, which contains a list of robot turns
+table Round {
+    /// The IDs of teams in the Game.
+    teamIds: [int];
+    /// The total amount of resource this round per team
+    teamResourceAmounts: [int];
+
+    /// Ordered turn data for each robot during the round
+    turns: [Turn];
+
+    /// The IDs of bodies that died.
+    diedIds: [int];
+
+    /*
+    trapAddedIds: [int];
+    trapAddedLocations: VecTable;
+    trapAddedTypes: [BuildActionType];
+    trapAddedTeams: [byte];
+
+    trapTriggeredIds: [int];
+
+    digLocations: VecTable;
+    fillLocations: VecTable;
+    */
+
+    // logs have been replaced with indicator strings
+
+    /// The first sent Round in a match should have index 1. (The starting state,
+    /// created by the MatchHeader, can be thought to have index 0.)
+    /// It should increase by one for each following round.
+    roundId: int;
+
+    /// The IDs of player bodies.
+    bytecodeIds: [int];
+    /// The bytecodes used by the player bodies.
+    bytecodesUsed: [int];
+}
+
+/// Necessary due to flatbuffers requiring unions to be wrapped in tables.
+table EventWrapper {
+    e: Event;
+}
+
+/// If events are not otherwise delimited, this wrapper structure
+/// allows a game to be stored in a single buffer.
+/// The first event will be a GameHeader; the last event will be a GameFooter.
+/// matchHeaders[0] is the index of the 0th match header in the event stream,
+/// corresponding to matchFooters[0]. These indices allow quick traversal of
+/// the file.
+table GameWrapper {
+    /// The series of events comprising the game.
+    events: [EventWrapper];
+    /// The indices of the headers of the matches, in order.
+    matchHeaders: [int];
+    /// The indices of the footers of the matches, in order.
+    matchFooters: [int];
+}

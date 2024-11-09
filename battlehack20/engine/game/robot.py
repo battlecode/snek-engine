@@ -1,5 +1,5 @@
 from ..container.runner import RobotRunner
-from .robottype import RobotType
+from .robot_type import RobotType
 from .map_location import MapLocation
 from .constants import GameConstants
 
@@ -7,42 +7,16 @@ class Robot:
     STARTING_HEALTH = 1
     STARTING_PAINT = 0
 
-    def __init__(self, x, y, team, id, type=RobotType.PAWN):
+    def __init__(self, x, y, team, id, type):
+        self.loc = MapLocation(x, y)
+        self.team = team
         self.id = id
         self.type = type
-        self.loc = MapLocation(x, y)
-        self.has_moved = False
-        self.spawned = True
-        self.movement_cooldown = GameConstants.COOLDOWN_LIMIT
-
-        if self.type == RobotType.SOLDIER:
-            self.health = 250
-            self.max_paint = 200
-            self.paint = 100 
-            self.attack_range_squared = 20
-        elif self.type == RobotType.SPLASHER:
-            self.health = 150
-            self.max_paint = 300
-            self.paint = 150
-            self.attack_range_squared = 9
-        elif self.type == RobotType.MOPPER:
-            self.health = 50
-            self.max_paint = 100
-            self.paint = 50
-            self.attack_range_squared = 4
-        elif self.type == RobotType.TOWER:
-            self.health = 500
-            self.max_paint = 0
-            self.paint = 0
-            self.single_attack_range_squared = 1
-            self.aoe_attack_range_squared = 4 
-        else:
-            self.healt = Robot.STARTING_HEALTH
-            self.paint = Robot.STARTING_PAINT
-            self.max_paint = Robot.STARTING_PAINT
         
-        self.logs = []
-        self.team = team
+        self._movement_cooldown = 0
+        self._action_cooldown = 0
+        self.paint = self.type.paint_capacity // 2
+        self.health = self.type.health
 
         self.runner = None
         self.debug = False
