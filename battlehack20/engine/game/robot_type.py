@@ -42,6 +42,23 @@ class RobotType(Enum):
 
     def isTower(self): 
         return not (self == RobotType.SOLDIER or self == RobotType.SPLASHER or self == RobotType.MOPPER)
+    
+    def upgradeTower(self, tower): 
+        if tower.type == RobotType.LEVEL_ONE_PAINT_TOWER:
+            tower.type = RobotType.LEVEL_TWO_PAINT_TOWER
+        elif tower.type == RobotType.LEVEL_TWO_PAINT_TOWER:
+            tower.type = RobotType.LEVEL_THREE_PAINT_TOWER
+        
+        elif tower.type == RobotType.LEVEL_ONE_MONEY_TOWER:
+            tower.type = RobotType.LEVEL_TWO_MONEY_TOWER
+        elif tower.type == RobotType.LEVEL_TWO_MONEY_TOWER:
+            tower.type = RobotType.LEVEL_THREE_MONEY_TOWER
+        
+        elif tower.type == RobotType.LEVEL_ONE_DEFENSE_TOWER:
+            tower.type = RobotType.LEVEL_TWO_DEFENSE_TOWER
+        elif tower.type == RobotType.LEVEL_TWO_DEFENSE_TOWER:
+            tower.type = RobotType.LEVEL_THREE_DEFENSE_TOWER
+        
 
     
 

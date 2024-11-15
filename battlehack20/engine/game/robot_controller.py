@@ -358,6 +358,43 @@ def withdraw_paint(game, robot, target_location, amount):
     target = game.get_robot(target_location)
     target.add_paint(amount)
 
+
+
+## Upgrading tower 
+def assert_can_upgrade_tower(game, team, tower_location): 
+    if not game.is_on_board(tower_location.x, tower_location.y):
+        raise RobotError("Target location is not on the map.")
+
+    tower = game.get_robot(tower_location)
+    if not tower.type.isTower(): 
+        raise RobotError("Cannot upgrade a robot that is not a tower,")
+    
+    if tower.team != team: 
+        raise RobotError("Cannot upgrade opposing team's towers.")
+    
+    if tower.type.level == 3: 
+        raise RobotError("Cannot upgrade anymore, tower is already at the maximum level.")
+    
+    if game.teamInfo.get_coins(team) < tower.type.money_cost: 
+        raise RobotError(f"Not enough coins to upgrade the tower")
+    
+
+def can_upgrade_tower(game, team, tower_location): 
+    try: 
+        assert_can_upgrade_tower(game, team, tower_location)
+        return True
+    except RobotError as e: 
+        print(f"Upgrading failed: {e}")
+        return False
+
+def upgrade_tower(game, team, tower_location): 
+    assert_can_upgrade_tower(game, team, tower_location)
+    tower = game.get_robot(tower_location)
+    game.teamInfo.add_coins(team, tower.type.money_cost)
+    tower.type.upgradeTower(tower)
+
+        
+
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
     pass
