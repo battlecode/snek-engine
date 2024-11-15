@@ -207,6 +207,38 @@ class Game:
         if 0 <= row < self.board_size and 0 <= col < self.board_size:
             return True
         return False
+    
+    def get_primary_paint(self, team):
+        """
+        Returns the primary paint value for a given team.
+        """
+        if team == Team.A:
+            return 1
+        elif team == Team.B:
+            return 3
+        return 0
+
+    def get_secondary_paint(self, team):
+        """
+        Returns the secondary paint value for a given team.
+        """
+        if team == Team.A:
+            return 2
+        elif team == Team.B:
+            return 4
+        return 0
+
+    def team_from_paint(self, paint):
+        """
+        Determines the team based on the paint value.
+        """
+        if paint == 1 or paint == 2:
+            return Team.A
+        elif paint == 3 or paint == 4:
+            return Team.B
+        else:
+            return 0
+
 
     #### DEBUG METHODS: NOT AVAILABLE DURING CONTEST ####
 

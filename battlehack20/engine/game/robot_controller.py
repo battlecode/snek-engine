@@ -5,6 +5,7 @@ from .robot_type import RobotType
 from .constants import GameConstants
 from .map_location import MapLocation
 from .game import Game, Color
+from .direction import Direction
 
 #### SHARED METHODS ####
 
@@ -94,138 +95,141 @@ def move(game, robot, dir):
     robot.loc = robot.loc.add(dir)
 
 #### ATTACK METHODS ####
-def assert_can_attack(game, robot, target_location):
+def assert_can_attack(game, robot, loc):
     """
     Assert that the robot can attack. This function checks all conditions necessary
     for the robot to perform an attack and raises an error if any are not met.
     """
+    if loc is None and not robot.type.is_tower():
+        raise ValueError("Location cannot be None unless the unit is a tower.")
     if not robot.is_action_ready():
-        raise RobotError("Robot cannot attack yet; action cooldown in progress.")
+        raise ValueError("Action cooldown is in progress.")
+    if game.is_setup_phase():
+        raise ValueError("Cannot attack during setup phase.")
 
-    if not game.is_on_board(target_location.x, target_location.y):
-        raise RobotError("Target location is not on the map.")
-
-    required_paint = robot.max_paint
-    if robot.paint < required_paint:
-        raise RobotError(f"Not enough paint. Requires {required_paint}, but only has {robot.paint}.")
-    
-    if robot.type in [RobotType.SOLDIER, RobotType.SPLASHER, RobotType.MOPPER]:
-        robot_location = MapLocation(robot.row, robot.col)
-        distance_squared = robot_location.distanceSquaredTo(target_location)
-        if distance_squared > robot.attack_range_squared:
-            raise RobotError(f"Target is out of range for {robot.type.name}.")
     if robot.type == RobotType.SOLDIER:
-        target = game.robots.get((target_location.x, target_location.y))
-        if target and target.team != robot.team and target.type != RobotType.TOWER:
-            raise RobotError("Soldiers can only attack towers.")
+        if loc is not None:
+            if not loc.is_within_distance_squared(robot.loc, robot.type.action_radius_squared):
+                raise ValueError("Target location is out of action range.")
+            if robot.paint < robot.type.attack_cost:
+                raise ValueError("Insufficient paint to perform attack.")
+    elif robot.type == RobotType.SPLASHER:
+        if loc is not None:
+            if not loc.is_within_distance_squared(robot.loc, robot.type.action_radius_squared):
+                raise ValueError("Target location is out of action range.")
+            if robot.paint < robot.type.attack_cost:
+                raise ValueError("Insufficient paint to perform attack.")
+    elif robot.type == RobotType.MOPPER:
+        if loc is not None:
+            if not loc.is_within_distance_squared(robot.loc, robot.type.action_radius_squared):
+                raise ValueError("Target location is out of action range.")
+            if robot.paint < robot.type.attack_cost:
+                raise ValueError("Insufficient paint to perform attack.")
+    else:  # Tower
+        if loc is None:
+            if robot.has_tower_area_attacked:
+                raise ValueError("Tower has already performed an area attack.")
+        else:
+            if robot.has_tower_single_attacked:
+                raise ValueError("Tower has already performed a single attack.")
+            if not loc.is_within_distance_squared(robot.loc, robot.type.action_radius_squared):
+                raise ValueError("Target location is out of action range.")
 
-def can_attack(game, robot, target_location):
+def can_attack(game, robot, loc):
     """
     Check if the robot can attack. This function calls `assertAttack`
     and returns a boolean value: True if the attack can proceed, False otherwise.
     """
     try:
-        assert_can_attack(game, robot, target_location)
+        assert_can_attack(game, robot, loc)
         return True
     except RobotError:
         return False
 
-def attack(game, robot, target_location, attack_type='single'):
-    assert_can_attack(game, robot, target_location)
-    target = game.robots[target_location.x][target_location.y]
-    
+def attack(robot, game, loc, use_secondary_color=False):
+    assert_can_attack(robot, game, loc)
+    robot.add_action_cooldown(robot.type.action_cooldown)
+
     if robot.type == RobotType.SOLDIER:
+        paint_type = game.get_secondary_paint(robot.team) if use_secondary_color else game.get_primary_paint(robot.team)
         robot.use_paint(robot.type.attack_cost)
-        robot.add_action_cooldown(robot.type.action_cooldown)
-        
-        if target is None:
-            game.paint_tile(target_location, robot.team)
-        elif target.team != robot.team:
-            if target.type.isTower():
-                target.addHealth(-robot.attack_strength_1)
+
+        target_robot = game.get_robot(loc)
+        if target_robot and target_robot.type.is_tower() and target_robot.team != robot.team:
+            target_robot.add_health(-robot.type.attack_strength)
+        else:
+            if game.get_paint(loc) == 0 or game.team_from_paint(paint_type) == game.team_from_paint(game.get_paint(loc)):
+                game.set_paint(loc, paint_type)
 
     elif robot.type == RobotType.SPLASHER:
+        paint_type = game.get_secondary_paint(robot.team) if use_secondary_color else game.get_primary_paint(robot.team)
         robot.use_paint(robot.type.attack_cost)
-        robot.add_action_cooldown(robot.type.action_cooldown)
-        for dx in range(-radius, radius + 1):
-            for dy in range(-radius, radius + 1):
-                splash_location = target_location.translate(dx, dy)
-                if game.is_on_board(splash_location.x, splash_location.y):
-                    splash_target = game.robots[splash_location.x][splash_location.y]
-                    if splash_target is None:
-                        game.paint_tile(splash_location, robot.team)
-                    elif splash_target.team != robot.team and splash_target.type == RobotType.TOWER:
-                        splash_target.health -= 50
+
+        all_locs = game.get_all_locations_within_radius_squared(loc, robot.type.action_radius_squared)
+        for new_loc in all_locs:
+            target_robot = game.get_robot(new_loc)
+            if target_robot and target_robot.type.is_tower() and target_robot.team != robot.team:
+                target_robot.add_health(-robot.type.attack_strength)
+            else:
+                if game.get_paint(new_loc) == 0 or game.team_from_paint(paint_type) == game.team_from_paint(game.get_paint(new_loc)):
+                    game.set_paint(new_loc, paint_type)
 
     elif robot.type == RobotType.MOPPER:
-        if attack_type == 'single':
-            if target and target.team != robot.team:
-                paint_siphoned = min(10, target.paint)
-                target.use_paint(paint_siphoned)
-                robot.add_paint(paint_siphoned // 2)
-            else:
-                game.remove_enemy_paint(target_location)
-            robot.set_action_cooldown(30) # not implemented
+        if loc is None:
+            mop_swing(robot, game, loc) 
+        else:
+            paint_type = game.get_secondary_paint(robot.team) if use_secondary_color else game.get_primary_paint(robot.team)
+            robot.use_paint(robot.type.attack_cost)
+            
+            target_robot = game.get_robot(loc)
+            if target_robot and target_robot.type.is_robot_type(target_robot.type) and target_robot.team != robot.team:
+                target_robot.add_paint(-GameConstants.MOPPER_ATTACK_PAINT_DEPLETION) # add game constant
+                robot.add_paint(GameConstants.MOPPER_ATTACK_PAINT_ADDITION) # add game constant
 
-        elif attack_type == 'aoe':
-            robot.set_action_cooldown(40) # not implemented
-            best_direction = None
-            max_enemy_count = 0
-            direction_vectors = [(1, 0), (0, 1), (-1, 0), (0, -1)] 
+            if game.team_from_paint(paint_type) != game.team_from_paint(game.get_paint(loc)):
+                game.set_paint(loc, 0)
 
-            for dx, dy in direction_vectors:
-                enemy_count = 0
-                for i in range(1, 4): 
-                    swing_location = target_location.translate(i * dx, i * dy)
-                    if game.is_on_board(swing_location.x, swing_location.y):
-                        swing_target = game.robots[swing_location.x][swing_location.y]
-                        if swing_target and swing_target.team != robot.team:
-                            enemy_count += 1
-                        else:
-                            break 
-                    else:
-                        break  
+    else:  # Tower
+        if loc is None:
+            robot.has_tower_area_attacked = True
+            all_locs = game.get_all_locations_within_radius_squared(robot.loc, robot.type.action_radius_squared)
+            for new_loc in all_locs:
+                target_robot = game.get_robot(new_loc)
+                if target_robot and target_robot.team != robot.team:
+                    target_robot.add_health(-robot.type.aoe_attack_strength)
+        else:
+            robot.has_tower_single_attacked = True
+            target_robot = game.get_robot(loc)
+            if target_robot and target_robot.team != robot.team:
+                target_robot.add_health(-robot.type.attack_strength)
 
-                if enemy_count > max_enemy_count:
-                    max_enemy_count = enemy_count
-                    best_direction = (dx, dy)
+def mop_swing(robot, game, direction):
+    assert robot.type == RobotType.MOPPER
+    assert direction in [Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST]
+    dx = [[-1, 0, 1], [-1, 0, 1], [1, 1, 1], [-1, -1, -1]]
+    dy = [[1, 1, 1], [-1, -1, -1], [-1, 0, 1], [-1, 0, 1]]
 
-            if best_direction is not None:
-                dx, dy = best_direction
-                for i in range(1, 4):
-                    swing_location = target_location.translate(i * dx, i * dy)
-                    if game.is_on_board(swing_location.x, swing_location.y):
-                        swing_target = game.robots[swing_location.x][swing_location.y]
-                        if swing_target and swing_target.team != robot.team:
-                            swing_target.use_paint(min(5, swing_target.paint))
+    dir_idx = 0
+    if dir == Direction.SOUTH:
+        dir_idx = 1
+    elif dir == Direction.EAST:
+        dir_idx = 2
+    elif dir == Direction.WEST:
+        dir_idx = 3
 
-    elif robot.type == RobotType.TOWER:
-        if attack_type == 'single':
-            for dx in range(-1, 2):
-                for dy in range(-1, 2):
-                    target_loc = MapLocation(robot.row + dx, robot.col + dy)
-                    if game.is_on_board(target_loc.x, target_loc.y):
-                        target_robot = game.robots[target_loc.x][target_loc.y]
-                        if target_robot and target_robot.team != robot.team:
-                            target_robot.health -= 20
-                            if target_robot.health <= 0:
-                                game.delete_robot(target_robot.id)
-                        break
-                else:
-                    continue
-                break
-        elif attack_type == 'aoe':
-            aoe_radius_squared = robot.aoe_attack_range_squared
-            center = MapLocation(robot.row, robot.col)
-            nearby_locations = game.getAllLocationsWithinRadiusSquared(center, aoe_radius_squared)
-
-            for loc in nearby_locations:
-                if game.is_on_board(loc.x, loc.y):
-                    target_robot = game.robots[loc.x][loc.y]
-                    if target_robot and target_robot.team != robot.team:
-                        target_robot.health -= 10
-                        if target_robot.health <= 0:
-                            game.delete_robot(target_robot.id)
+    for i in range(3):
+        x = self.get_location().x + dx[dir_idx][i]
+        y = self.get_location().y + dy[dir_idx][i]
+        new_loc = MapLocation(x, y)
+    
+        if not game.on_the_map(new_loc):
+            continue
+    
+    
+        robot = game.get_robot(new_loc)
+        if robot and robot.team != robot.team:
+            if self.team != robot.get_team():
+                robot.add_paint(-GameConstants.MOPPER_SWING_PAINT_DEPLETION)
 
 # SPAWN METHODS
 def assert_spawn(game, robot, robot_type, map_location):
