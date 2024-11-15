@@ -15,28 +15,28 @@ class TeamInfo:
 
     def get_coins(self, team):
         """Return the total coins of the specified team."""
-        return self.coin_counts[team]
+        return self.coin_counts[team.value]
 
     def get_tiles_painted(self, team):
         """Return the total tiles painted by the specified team."""
-        return self.tiles_painted[team]
+        return self.tiles_painted[team.value]
     
     def get_shared_array(self, team):
         """Return the shared array of the specified team."""
-        return self.shared_arrays[team]
+        return self.shared_arrays[team.value]
 
     def get_round_coin_change(self, team):
         """Return the change in coins for the specified team during the current round."""
-        return self.coin_counts[team] - self.old_coin_counts[team]
+        return self.coin_counts[team.value] - self.old_coin_counts[team.value]
 
     def get_num_allied_towers(self, team):
-        return self.num_allied_towers[team]
+        return self.num_allied_towers[team.value]
     
     def get_paint_counts(self, team):
-        return self.paint_counts[team]
+        return self.paint_counts[team.value]
     
     def get_num_allied_units(self, team):
-        return self.num_allied_units[team]
+        return self.num_allied_units[team.value]
     
     # ***** UPDATE METHODS *****
 
