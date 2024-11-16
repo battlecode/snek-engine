@@ -14,7 +14,7 @@ class TeamInfo:
     # ***** GETTER METHODS *****
 
     def get_coins(self, team):
-        """Return the total coins of the specified team."""
+        """Return the total money of the specified team."""
         return self.coin_counts[team.value]
 
     def get_tiles_painted(self, team):
@@ -26,7 +26,7 @@ class TeamInfo:
         return self.shared_arrays[team.value]
 
     def get_round_coin_change(self, team):
-        """Return the change in coins for the specified team during the current round."""
+        """Return the change in money for the specified team during the current round."""
         return self.coin_counts[team.value] - self.old_coin_counts[team.value]
 
     def get_num_allied_towers(self, team):
@@ -41,7 +41,7 @@ class TeamInfo:
     # ***** UPDATE METHODS *****
 
     def add_coins(self, team, amount):
-        """Add or subtract coins for the specified team."""
+        """Add or subtract money for the specified team."""
         if self.coin_counts[team.value] + amount < 0:
             raise ValueError("Invalid coin change")
         self.coin_counts[team.value] += amount
@@ -51,5 +51,5 @@ class TeamInfo:
         self.tiles_painted[team.value] += 1
 
     def process_end_of_round(self):
-        """Save the current coin counts to track changes in the next round."""
+        """Save the current money to track changes in the next round."""
         self.old_coin_counts = self.coin_counts.copy()
