@@ -4,7 +4,7 @@ import faulthandler
 import sys
 import threading
 
-from battlehack20 import CodeContainer, Game, BasicViewer, GameConstants, MessageBuffer
+from battlehack20 import CodeContainer, BasicViewer, GameConstants, MessageBuffer, Team
 
 """
 This is a simple script for running bots and debugging them.
@@ -123,5 +123,14 @@ if __name__ == '__main__':
     buffer.add_message("Hello world")
     buffer.add_message("bleh")
     print(buffer.get_all_messages())
+
+    info = Team.WHITE
+    stuff = [0] * 2
+    print(info)
+    if info.value == 0:
+        print('here')
+    print(stuff[info.value])
+
+
     
 
