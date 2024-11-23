@@ -5,7 +5,6 @@ class MapInfo:
         self.ruins = ruins
         self.tower = tower
         self.paint_color = paint_color
-        self.territory = territory
         self.tower_type = tower_type
     
 
@@ -23,10 +22,6 @@ class MapInfo:
         return self.paint_color
     
 
-    def getTeamTerritory(self):
-        return self.territory
-    
-
     def getTowerType(self):
         return self.tower_type
     
@@ -39,8 +34,7 @@ class MapInfo:
             isPassable: {self.isPassable} \n \
             isRuins: {self.isRuins} \n \
             isTower: {self.isTower} \n  \
-            paintColor: {self.paint_color} \n \
-            teamTerritory: {self.territory}"
+            paintColor: {self.paint_color}"
 
 
     
