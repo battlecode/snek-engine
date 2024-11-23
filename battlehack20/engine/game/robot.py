@@ -29,6 +29,10 @@ class Robot:
         else:
             self.paint = min(self.paint + amount, self.paint_capacity)
     
+    def add_action_cooldown(self):
+        penalty = 100 - 2 * self.paint/self.type.paint_capacity
+        self._action_cooldown += self.type.action_cooldown * (1 + penalty)
+    
     def get_location(self):
         return self.loc
 
