@@ -57,7 +57,7 @@ def mark_pattern(game, robot, center, shape):
     for i in range(-2, +3):
         for j in range(-2, +3):
             loc = MapLocation(center.x + i, center.y + j)
-            mark(game, robot.team, loc, pattern_array[i][j])
+            mark(game, robot, loc, pattern_array[i+2][j+2])
 
 def sense(game, robot):
     #TODO adapt this method for new sensing methods
