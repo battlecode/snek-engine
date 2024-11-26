@@ -35,6 +35,30 @@ def mark(game, robot, loc, color):
     """
     game.mark_location(robot.team, loc, color)
 
+def get_pattern(shape):
+    """
+    shape: Shape enum specifying the shape pattern to retrieve
+    Returns a 5 x 5 array of the mark colors
+    """
+    #TODO: map shape enum to 5x5 array of colors
+    return 
+
+def mark_pattern(game, robot, center, shape):
+    """
+    center: MapLocation center of the 5x5 pattern
+    shape: Shape enum to be marked
+    Marks the specified pattern centered at the location specified
+    """
+    #check bounds
+    shape_out_of_bounds = (loc.x + 2 >= game.board_width or loc.x - 2 < 0 or loc.y + 2 >= game.board_height or loc.y < 0)
+    assert(shape_out_of_bounds, "Shape out of bounds")
+
+    pattern_array = get_pattern(shape)
+    for i in range(-2, +3):
+        for j in range(-2, +3):
+            loc = MapLocation(center.x + i, center.y + j)
+            mark(game, robot, loc, pattern_array[i+2][j+2])
+
 def sense(game, robot):
     #TODO adapt this method for new sensing methods
     """
