@@ -4,6 +4,7 @@ from .team import Team
 from .robottype import RobotType
 from .constants import GameConstants
 from .map_location import MapLocation
+from .robot_info import RobotInfo
 from .game import Game, Color
 
 #### SHARED METHODS ####
@@ -60,6 +61,94 @@ def sense(game, robot):
                 robots.append((new_row, new_col, game.robots[new_row][new_col].team))
 
     return robots
+
+def get_robot_by_id(game, robot, id):
+    for i in range(game.board_height):
+        for j in range(game.board_width):
+            res = game.robots[i][j]
+            if isinstance(res, Robot) and res.id == id:
+                return res
+    return None
+
+def assert_can_sense_location(game, robot, loc):
+    if loc == None:
+        raise RobotError("Not a valid location")
+    if not robot.spawned:
+        raise RobotError("Robot is not spawned")
+    if not game.on_the_map(loc):
+        raise RobotError("Target location is not on the map")
+
+def can_sense_location(game, robot, loc):
+    try:
+        assert_can_sense_location(game, robot, loc)
+        return True
+    except RobotError:
+        return False
+
+def is_location_occupied(game, robot, loc):
+    assert_can_sense_location(game, robot, loc)
+    if game.robots[loc.x][loc.y] is not None:
+        return False
+    if game.walls[loc.x][loc.y] is not None:
+        return False
+    if game.towers[loc.x][loc.y] is not None:
+        return False
+    return True
+
+def can_sense_robot_at_location(game, robot, loc):
+    try:
+        return is_location_occupied(game, robot, loc)
+    except RobotError:
+        return False
+
+def sense_robot_at_location(game, robot, loc):
+    assert_can_sense_location(game, robot, loc)
+    robot = game.robots[loc.x][loc.y]
+    return RobotInfo(robot.id, robot.team, robot.health, robot.location, robot.attack_level)
+
+def can_sense_robot(game, robot, id):
+    sensed_robot = get_robot_by_id(game, robot, id)
+
+    if sensed_robot == None or sensed_robot.spawn == False:
+        return False
+
+    return can_sense_location(sensed_robot.get_location())
+
+def sense_robot(game, robot, id):
+    if not can_sense_robot(game, robot, id):
+        raise RobotError("Cannot sense robot")
+    robot = get_robot_by_id(id)
+    return RobotInfo(robot.id, robot.team, robot.health, robot.location, robot.attack_level)
+
+def sense_nearby_robot(game, robot, center = -1, radius = -1, team = -1):
+    if center == -1:
+        center = robot.loc
+    if center == None:
+        raise RobotError("Not a valid location")
+    if not robot.spawned:
+        raise RobotError("Robot is not spawned")
+    if radius == -1:
+        radius = game.MAX_RADIUS
+    if radius < 0:
+        raise RobotError("Radius is negative")
+    all_robots_sensed = game.sense_get_all_locations_within_radius_squared(center, radius)
+
+    ans = []
+    for sensed_robot in all_robots_sensed:
+        if sensed_robot.equals(robot):
+            continue
+        if not can_sense_location(sensed_robot.loc):
+            continue
+        if team == -1:
+            info = RobotInfo(sensed_robot.id, sensed_robot.team, sensed_robot.health, sensed_robot.location, sensed_robot.attack_level)
+            ans.append(info)
+        elif robot.team == team:
+            info = RobotInfo(sensed_robot.id, sensed_robot.team, sensed_robot.health, sensed_robot.location, sensed_robot.attack_level)
+            ans.append(info)
+    return ans
+
+
+
 
 def on_the_map(game, robot, loc):
     assert(loc != None, "Not a valid location")
