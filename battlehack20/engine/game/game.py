@@ -7,6 +7,7 @@ from .constants import GameConstants
 from .robot_controller import *
 from .map_location import MapLocation
 from .team_info import TeamInfo
+from .direction import Direction
 
 import math
 class Color(Enum): #marker and paint colors
@@ -239,6 +240,30 @@ class Game:
         if 0 <= row < self.board_size and 0 <= col < self.board_size:
             return True
         return False
+    
+    def flood_fill(self, robot_loc, tower_loc):
+        queue = [robot_loc]
+        visited = set()
+
+
+        cardinal_directions = [Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST]
+        while queue:
+            loc = queue.pop(0)
+            if loc.equals(tower_loc):
+                return True
+
+            if loc in visited or self.paint[loc.x][loc.y] != robot_loc.team:
+                continue
+
+            visited.add(loc)
+            for dir in cardinal_directions:
+                new_loc = loc.add(dir)  
+
+                if on_the_map(new_loc.x, new_loc.y):  
+                    queue.append(new_loc)
+        return False
+        
+
 
     #### DEBUG METHODS: NOT AVAILABLE DURING CONTEST ####
 
