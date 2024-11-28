@@ -23,6 +23,13 @@ class DominationFactor(Enum):
     NUM_ALIVE_UNITS=4
     RANDOM=5
 
+class Shape(Enum): # marker shapes
+    STAR=0
+    SMILE=1
+    CIRCLE=2
+    SQUARE=3
+    DIAMOND=4
+
 class Game:
     def __init__(self, code, board_width, board_height, max_rounds=GameConstants.MAX_ROUNDS, 
                  seed=GameConstants.DEFAULT_SEED, debug=False):
@@ -49,7 +56,7 @@ class Game:
         self.round = 0
         self.max_rounds = max_rounds
 
-        self.teamInfo = TeamInfo(self)
+        self.team_info = TeamInfo(self)
         
         self.markers = {Team.WHITE: [[0]*self.board_width for i in range(self.board_height)], Team.BLACK: [[0]*self.board_width for i in range(self.board_height)]}
 
@@ -122,41 +129,41 @@ class Game:
         print(f'\u001b[32m[Game info] {msg}\u001b[0m')
 
     def setWinnerIfMoreArea(self):
-        if self.teamInfo.get_tiles_painted(Team.BLACK) > self.teamInfo.get_tiles_painted(Team.BLACK):
+        if self.team_info.get_tiles_painted(Team.BLACK) > self.teamInfo.get_tiles_painted(Team.BLACK):
             self.set_winner(Team.WHITE, DominationFactor.PAINTED_AREA)
-        elif self.teamInfo.get_tiles_painted(Team.BLACK) < self.teamInfo.get_tiles_painted(Team.BLACK):
+        elif self.team_info.get_tiles_painted(Team.BLACK) < self.teamInfo.get_tiles_painted(Team.BLACK):
             self.set_winner(Team.BLACK, DominationFactor.PAINTED_AREA)
         else:
             return False
         return True
     def setWinnerIfMoreAlliedTowers(self):
-        if self.teamInfo.get_num_allied_towers(Team.BLACK) > self.teamInfo.get_num_allied_towers(Team.BLACK):
+        if self.team_info.get_num_allied_towers(Team.BLACK) > self.team_info.get_num_allied_towers(Team.BLACK):
             self.set_winner(Team.WHITE, DominationFactor.NUM_ALLIED_TOWERS)
-        elif self.teamInfo.get_num_allied_towers(Team.BLACK) < self.teamInfo.get_num_allied_towers(Team.BLACK):
+        elif self.team_info.get_num_allied_towers(Team.BLACK) < self.team_info.get_num_allied_towers(Team.BLACK):
             self.set_winner(Team.BLACK, DominationFactor.NUM_ALLIED_TOWERS)
         else:
             return False
         return True
     def setWinnerIfMoreMoney(self):
-        if self.teamInfo.get_num_allied_towers(Team.WHITE) > self.teamInfo.get_num_allied_towers(Team.BLACK):
+        if self.team_info.get_num_allied_towers(Team.WHITE) > self.team_info.get_num_allied_towers(Team.BLACK):
             self.set_winner(Team.WHITE, DominationFactor.TOTAL_MONEY)
-        elif self.teamInfo.get_num_allied_towers(Team.WHITE) < self.teamInfo.get_num_allied_towers(Team.BLACK):
+        elif self.team_info.get_num_allied_towers(Team.WHITE) < self.team_info.get_num_allied_towers(Team.BLACK):
             self.set_winner(Team.BLACK, DominationFactor.TOTAL_MONEY)
         else:
             return False
         return True
     def setWinnerIfMorePaint(self):
-        if self.teamInfo.get_paint_counts(Team.WHITE) > self.teamInfo.get_paint_counts(Team.BLACK):
+        if self.team_info.get_paint_counts(Team.WHITE) > self.team_info.get_paint_counts(Team.BLACK):
             self.set_winner(Team.WHITE, DominationFactor.TOTAL_PAINT)
-        elif self.teamInfo.get_paint_counts(Team.WHITE) < self.teamInfo.get_paint_counts(Team.BLACK):
+        elif self.team_info.get_paint_counts(Team.WHITE) < self.team_info.get_paint_counts(Team.BLACK):
             self.set_winner(Team.BLACK, DominationFactor.TOTAL_PAINT)
         else:
             return False
         return True
     def setWinnerIfMoreAliveUnits(self):
-        if self.teamInfo.get_num_allied_units(Team.WHITE) > self.teamInfo.get_num_allied_units(Team.BLACK):
+        if self.team_info.get_num_allied_units(Team.WHITE) > self.team_info.get_num_allied_units(Team.BLACK):
             self.set_winner(Team.WHITE, DominationFactor.NUM_ALIVE_UNITS)
-        elif self.teamInfo.get_num_allied_units(Team.WHITE) < self.teamInfo.get_num_allied_units(Team.BLACK):
+        elif self.team_info.get_num_allied_units(Team.WHITE) < self.team_info.get_num_allied_units(Team.BLACK):
             self.set_winner(Team.BLACK, DominationFactor.NUM_ALIVE_UNITS)
         else:
             return False
@@ -264,6 +271,37 @@ class Game:
         return False
         
 
+    def get_primary_paint(self, team):
+        """
+        Returns the primary paint value for a given team.
+        """
+        if team == Team.A:
+            return 1
+        elif team == Team.B:
+            return 3
+        return 0
+
+    def get_secondary_paint(self, team):
+        """
+        Returns the secondary paint value for a given team.
+        """
+        if team == Team.A:
+            return 2
+        elif team == Team.B:
+            return 4
+        return 0
+
+    def team_from_paint(self, paint):
+        """
+        Determines the team based on the paint value.
+        """
+        if paint == 1 or paint == 2:
+            return Team.A
+        elif paint == 3 or paint == 4:
+            return Team.B
+        else:
+            return 0
+
 
     #### DEBUG METHODS: NOT AVAILABLE DURING CONTEST ####
 
@@ -318,7 +356,7 @@ class Game:
       
     def mark_location(self, team, loc, color):
         self.markers[team][loc.x][loc.y] = color
-        
+    
     def is_passable(self, loc):
         assert self.walls[loc.x][loc.y] is None
         assert self.towers[loc.x][loc.y] is None
