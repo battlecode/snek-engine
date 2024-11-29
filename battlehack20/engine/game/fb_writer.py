@@ -6,6 +6,7 @@ import fb_schema.GameHeader as GameHeader
 import fb_schema.EventWrapper as EventWrapper
 import fb_schema.Event as Event
 import fb_schema.GameFooter as GameFooter
+import fb_schema.Vec as Vec
 
 class FBWriter:
 
@@ -20,6 +21,12 @@ class FBWriter:
         self.state = self.State.GAME_HEADER
         self.game_info = game_info
         self.events = []
+
+    def create_offset_vector(self, create_func, data):
+        create_func(self.builder, len(data))
+        for d in reversed(data):
+            self.builder.PrependUOffsetTRelative(d)
+        return self.builder.EndVector()
 
     def make_game_header(self):
         self.state = self.State.IN_GAME
@@ -42,10 +49,7 @@ class FBWriter:
         TeamData.AddTeamId(self.builder, 1)
         team_b_offset = TeamData.End(self.builder)
 
-        GameHeader.StartTeamsVector(self.builder, 2)
-        self.builder.PrependUOffsetTRelative(team_a_offset)
-        self.builder.PrependUOffsetTRelative(team_b_offset)
-        teams_offset = self.builder.EndVector()
+        teams_offset = self.create_offset_vector(GameHeader.StartTeamsVector, [team_a_offset, team_b_offset])
 
         GameHeader.Start(self.builder)
         GameHeader.AddSpecVersion(self.builder, spec_version_offset)
@@ -71,13 +75,24 @@ class FBWriter:
         EventWrapper.AddE(self.builder, game_footer_offset)
         EventWrapper.AddE()
 
+    def make_game_constants(self):
+        pass
+
     def make_robot_type_metadata(self):
         pass
+
+    #Single match serialization methods
 
     def make_match_header(self):
         pass
 
     def make_match_footer(self):
+        pass
+
+    def start_round(self, round_num):
+        pass
+
+    def end_round(self):
         pass
 
     def start_round(self):
