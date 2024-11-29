@@ -4,7 +4,7 @@ import faulthandler
 import sys
 import threading
 
-from battlehack20 import CodeContainer, Game, BasicViewer, GameConstants
+from battlehack20 import CodeContainer, BasicViewer, GameConstants, MessageBuffer, Team
 
 """
 This is a simple script for running bots and debugging them.
@@ -77,41 +77,60 @@ def play_all(delay=0.8, keep_history=False, real_time=False):
 
 if __name__ == '__main__':
 
-    # This is just for parsing the input to the script. Not important.
-    parser = argparse.ArgumentParser()
-    parser.add_argument('player', nargs='+', help="Path to a folder containing a bot.py file.")
-    parser.add_argument('--raw-text', action='store_true', help="Makes playback text-only by disabling colors and cursor movements.")
-    parser.add_argument('--delay', default=0.8, help="Playback delay in seconds.")
-    parser.add_argument('--debug', default='true', choices=('true','false'), help="In debug mode (defaults to true), bot logs and additional information are displayed.")
-    parser.add_argument('--max-rounds', default=GameConstants.MAX_ROUNDS, type=int, help="Override the max number of rounds for faster games.")
-    parser.add_argument('--board-size', default=GameConstants.BOARD_SIZE, type=int, help="Override the board size for faster games.")
-    parser.add_argument('--seed', default=GameConstants.DEFAULT_SEED, type=int, help="Override the seed used for random.")
-    args = parser.parse_args()
-    args.debug = args.debug == 'true'
+    # # This is just for parsing the input to the script. Not important.
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('player', nargs='+', help="Path to a folder containing a bot.py file.")
+    # parser.add_argument('--raw-text', action='store_true', help="Makes playback text-only by disabling colors and cursor movements.")
+    # parser.add_argument('--delay', default=0.8, help="Playback delay in seconds.")
+    # parser.add_argument('--debug', default='true', choices=('true','false'), help="In debug mode (defaults to true), bot logs and additional information are displayed.")
+    # parser.add_argument('--max-rounds', default=GameConstants.MAX_ROUNDS, type=int, help="Override the max number of rounds for faster games.")
+    # parser.add_argument('--board-size', default=GameConstants.BOARD_SIZE, type=int, help="Override the board size for faster games.")
+    # parser.add_argument('--seed', default=GameConstants.DEFAULT_SEED, type=int, help="Override the seed used for random.")
+    # args = parser.parse_args()
+    # args.debug = args.debug == 'true'
 
-    # The faulthandler makes certain errors (segfaults) have nicer stacktraces.
-    faulthandler.enable() 
+    # # The faulthandler makes certain errors (segfaults) have nicer stacktraces.
+    # faulthandler.enable() 
 
-    # This is where the interesting things start!
+    # # This is where the interesting things start!
 
-    # Every game needs 2 code containers with each team's bot code.
-    code_container1 = CodeContainer.from_directory(args.player[0])
-    code_container2 = CodeContainer.from_directory(args.player[1] if len(args.player) > 1 else args.player[0])
+    # # Every game needs 2 code containers with each team's bot code.
+    # code_container1 = CodeContainer.from_directory(args.player[0])
+    # code_container2 = CodeContainer.from_directory(args.player[1] if len(args.player) > 1 else args.player[0])
 
-    # This is how you initialize a game,
-    game = Game([code_container1, code_container2], board_width=GameConstants.BOARD_WIDTH, board_height=GameConstants.BOARD_HEIGHT, 
-                max_rounds=args.max_rounds, seed=args.seed, debug=args.debug)
+    # # This is how you initialize a game,
+    # game = Game([code_container1, code_container2], board_width=GameConstants.BOARD_WIDTH, board_height=GameConstants.BOARD_HEIGHT, 
+    #             max_rounds=args.max_rounds, seed=args.seed, debug=args.debug)
     
-    # ... and the viewer.
-    viewer = BasicViewer(args.board_size, game.board_states, colors=not args.raw_text)
+    # # ... and the viewer.
+    # viewer = BasicViewer(args.board_size, game.board_states, colors=not args.raw_text)
 
-    # Here we check if the script is run using the -i flag.
-    # If it is not, then we simply play the entire game.
-    if not sys.flags.interactive:
-        play_all(delay = float(args.delay), keep_history = args.raw_text, real_time = not args.debug)
+    # # Here we check if the script is run using the -i flag.
+    # # If it is not, then we simply play the entire game.
+    # if not sys.flags.interactive:
+    #     play_all(delay = float(args.delay), keep_history = args.raw_text, real_time = not args.debug)
 
-    else:
-        # print out help message!
-        print("Run step() to step through the game.")
-        print("You also have access to the variables: game, viewer")
+    # else:
+    #     # print out help message!
+    #     print("Run step() to step through the game.")
+    #     print("You also have access to the variables: game, viewer")
+
+    buffer = MessageBuffer(10, 3)
+    buffer.add_message("It's me")
+    buffer.add_message("Hi")
+    buffer.add_message("I'm the problem")
+    buffer.next_round()
+    buffer.add_message("Hello world")
+    buffer.add_message("bleh")
+    print(buffer.get_all_messages())
+
+    info = Team.WHITE
+    stuff = [0] * 2
+    print(info)
+    if info.value == 0:
+        print('here')
+    print(stuff[info.value])
+
+
+    
 

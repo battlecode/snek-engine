@@ -87,7 +87,7 @@ def sense(game, robot):
     return robots
 
 def on_the_map(game, robot, loc):
-    assert(loc != None, "Not a valid location")
+    assert loc != None, "Not a valid location"
     return game.on_the_map(loc)
     
 def assert_can_move(game, robot, dir):
@@ -297,6 +297,18 @@ def spawn(game, robot, robot_type, map_location):
     robot.set_action_cooldown(10)  # not implemented
     robot.paint -= robot_type.paint_cost
     robot.money -= robot_type.money_cost
+
+def assert_can_send_message(game, robot, loc):
+    pass
+
+def can_send_message(game, robot, loc):
+    pass
+
+def get_messages(game, robot, round):
+    pass
+
+def get_messages(game, robot):
+    pass
 
 
 
