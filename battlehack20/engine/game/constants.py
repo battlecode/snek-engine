@@ -13,3 +13,5 @@ class GameConstants:
 
     # cooldowns
     COOLDOWN_LIMIT = 10
+
+    SPEC_VERSION = "lol"

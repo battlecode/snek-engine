@@ -53,19 +53,6 @@ class Robot:
     def kill(self):
         self.runner.kill()
 
-    def log(self, msg):
-        if not isinstance(msg, str):
-            raise RuntimeError('Can only log strings.')
-
-        self.logs.append({'type': 'log', 'msg': msg})
-
-        if self.debug:
-            if self.type == RobotType.OVERLORD:
-                print(f'[Robot {self.id} log]', msg)
-            else:
-                team = 'BLACK' if self.team.value else 'WHITE'
-                print(f'[Robot {self.id} {team} log]', msg)
-
     def error(self, msg):
         if not isinstance(msg, str):
             raise RuntimeError('Can only error strings.')

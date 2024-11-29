@@ -433,8 +433,6 @@ def upgrade_tower(game, team, tower_location):
     game.teamInfo.add_coins(team, tower.type.money_cost)
     tower.type.upgradeTower(tower)
 
-        
-
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
     pass

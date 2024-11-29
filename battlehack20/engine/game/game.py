@@ -43,12 +43,11 @@ class Game:
 
         self.robot_count = 0
         self.queue = {}
-        self.board_states = []
-        self.lords = []
+        self.board_states = [] #TODO remove
 
         self.board_width = board_width
         self.board_height = board_height
-        self.board_size = board_width #TODO remove board_size
+        self.board_size = board_width #TODO remove
         self.robots = [[None] * self.board_width for _ in range(self.board_height)]
         self.paint = [[None] * self.board_width for _ in range(self.board_height)]
         self.walls = [[None] * self.board_width for _ in range(self.board_height)]
@@ -60,7 +59,6 @@ class Game:
         
         self.markers = {Team.WHITE: [[0]*self.board_width for i in range(self.board_height)], Team.BLACK: [[0]*self.board_width for i in range(self.board_height)]}
 
-        self.lords = []
         self.new_robot(None, None, Team.WHITE, RobotType.OVERLORD)
         self.new_robot(None, None, Team.BLACK, RobotType.OVERLORD)
 
@@ -358,8 +356,7 @@ class Game:
         self.markers[team][loc.x][loc.y] = color
     
     def is_passable(self, loc):
-        assert self.walls[loc.x][loc.y] is None
-        assert self.towers[loc.x][loc.y] is None
+        return not self.walls[loc.x][loc.y] and self.robots[loc.x][loc.y] == None
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
