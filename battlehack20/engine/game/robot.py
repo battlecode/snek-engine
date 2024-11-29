@@ -7,11 +7,12 @@ class Robot:
     STARTING_HEALTH = 1
     STARTING_PAINT = 0
 
-    def __init__(self, x, y, team, id, type):
-        self.loc = MapLocation(x, y)
-        self.team = team
+    def __init__(self, game, id, team, type, loc):
+        self.game = game
         self.id = id
+        self.team = team
         self.type = type
+        self.loc = loc
         
         self._movement_cooldown = 0
         self._action_cooldown = 0

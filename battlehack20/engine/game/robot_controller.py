@@ -4,7 +4,6 @@ from .team import Team
 from .robot_type import RobotType
 from .constants import GameConstants
 from .map_location import MapLocation
-from .game import Game, Color
 from .direction import Direction
 
 #### SHARED METHODS ####

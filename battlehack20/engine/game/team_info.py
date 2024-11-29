@@ -46,9 +46,9 @@ class TeamInfo:
             raise ValueError("Invalid coin change")
         self.coin_counts[team.value] += amount
 
-    def paint_tile(self, team):
+    def add_painted_squares(self, amount, team):
         """Increment the count of tiles painted by the specified team."""
-        self.tiles_painted[team.value] += 1
+        self.tiles_painted[team.value] += amount
 
     def process_end_of_round(self):
         """Save the current money to track changes in the next round."""
