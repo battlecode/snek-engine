@@ -358,6 +358,14 @@ class Game:
         idx = self.loc_to_index(loc)
         return not self.walls[idx] and self.robots[idx] == None
   
+    def get_robot_by_id(self, id):
+        for i in range(self.board_height):
+            for j in range(self.board_width):
+                res = self.robots[i][j]
+                if isinstance(res, Robot) and res.id == id:
+                    return res
+        return None
+  
     def get_map_info(self, loc): 
         passable = self.is_passable(loc)
         is_ruins = self.ruins[loc.x][loc.y]
