@@ -39,7 +39,7 @@ class Game:
         self.round_number = 0
 
         self.robot_count = 0
-        self.queue = {}
+        self.queue = {} # map robot id to robot
         self.board_states = [] #TODO remove
 
         self.board_width = board_width
@@ -75,14 +75,11 @@ class Game:
                 self.log_info(f'Queue: {self.queue}')
                 self.log_info(f'Lords: {self.lords}')
 
-            for i in range(self.robot_count):
-                if i in self.queue:
-                    robot = self.queue[i]
-                    robot.turn()
-
-                    if not robot.runner.initialized:
-                        self.delete_robot(i)
-                    self.check_over()
+            for id, robot in self.board_statesqueue.items():
+                robot.turn()
+                if not robot.runner.initialized:
+                    self.delete_robot(id)
+                self.check_over()
 
             if self.running:
                 for robot in self.lords:
@@ -93,16 +90,16 @@ class Game:
         else:
             raise GameError('game is over')
 
-    def delete_robot(self, i):
-        robot = self.queue[i]
+    def delete_robot(self, id):
+        robot = self.queue[id]
         self.robots[self.loc_to_index(robot.loc)] = None
         robot.kill()
-        del self.queue[i]
+        del self.queue[id]
     
     def add_robot(self, robot):
         """Adds the new robot to the game board and increments the robot count."""
         self.robots[self.loc_to_index(robot.loc)] = robot
-        self.queue[self.robot_count] = robot
+        self.queue[robot.id] = robot
         self.robot_count += 1
     
     def buildRobot(self, robot_type, map_location, team):
@@ -182,9 +179,8 @@ class Game:
         """
         Helper method to process once a game is finished (e.g. deleting robots)
         """
-        for i in range(self.robot_count):
-            if i in self.queue:
-                self.delete_robot(i)
+        for id, robot in self.queue.items():
+            self.delete_robot(id)
     
     def set_winner(self, team, domination_factor):
         self.winner = team
@@ -360,6 +356,9 @@ class Game:
     
     def coord_to_index(self, x, y):
         return y * self.board_width + x
+    
+    def destroy_robot(self, id):
+        return 
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
