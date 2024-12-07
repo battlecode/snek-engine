@@ -1,5 +1,5 @@
 from ..container.runner import RobotRunner
-from .robottype import RobotType
+from .robot_type import RobotType
 from .map_location import MapLocation
 from .constants import GameConstants
 
@@ -7,66 +7,43 @@ class Robot:
     STARTING_HEALTH = 1
     STARTING_PAINT = 0
 
-    def __init__(self, x, y, team, id, type=RobotType.PAWN):
+    def __init__(self, game, id, team, type, loc):
+        self.game = game
         self.id = id
-        self.type = type
-        self.loc = MapLocation(x, y)
-        self.has_moved = False
-        self.spawned = True
-        self.movement_cooldown = 0
-        self.action_cooldown = 0
-
-        if self.type == RobotType.SOLDIER:
-            self.health = 250
-            self.max_paint = 200
-            self.paint = 100 
-            self.attack_range_squared = 20
-        elif self.type == RobotType.SPLASHER:
-            self.health = 150
-            self.max_paint = 300
-            self.paint = 150
-            self.attack_range_squared = 9
-        elif self.type == RobotType.MOPPER:
-            self.health = 50
-            self.max_paint = 100
-            self.paint = 50
-            self.attack_range_squared = 4
-        elif self.type == RobotType.TOWER:
-            self.health = 500
-            self.max_paint = 0
-            self.paint = 0
-            self.single_attack_range_squared = 1
-            self.aoe_attack_range_squared = 4 
-        else:
-            self.healt = Robot.STARTING_HEALTH
-            self.paint = Robot.STARTING_PAINT
-            self.max_paint = Robot.STARTING_PAINT
-        
-        self.logs = []
         self.team = team
+        self.type = type
+        self.loc = loc
+        
+        self._movement_cooldown = 0
+        self._action_cooldown = 0
+        self.paint = self.type.paint_capacity // 2
+        self.health = self.type.health
 
         self.runner = None
         self.debug = False
+
+    def add_paint(self, amount): 
+        if amount < 0: 
+            if -amount > self.paint: 
+                raise RuntimeError("Not enough pain to perform this action")
+            self.paint += amount
+        else:
+            self.paint = min(self.paint + amount, self.paint_capacity)
     
-    def add_paint(self, amount):
-        """Increase paint, but not exceeding max_paint."""
-        if amount < 0:
-            raise ValueError("Cannot add a negative amount of paint.")
-        self.paint = min(self.paint + amount, self.max_paint)
-
-    def use_paint(self, amount):
-        """Use paint, ensuring enough paint is available."""
-        if amount > self.paint:
-            raise RuntimeError("Not enough paint to perform this action.")
-        self.paint -= amount
-
-    def add_health(self, amount):
-        self.health += amount
-        health = max(health, self.type.health)
-        if health < 0:
-            pass
-            #TODO kill robot
-
+    def add_action_cooldown(self):
+        if self.paint/self.type.paint_capacity < 0.5:
+            penalty = 1 - 2 * self.paint/self.type.paint_capacity
+        else:
+            penalty = 0
+        self._action_cooldown += self.type.action_cooldown * (1 + penalty)
+    
+    def add_movement_cooldown(self):
+        if self.paint/self.type.paint_capacity < 0.5:
+            penalty = 1 - 2 * self.paint/self.type.paint_capacity
+        else:
+            penalty = 0
+        self._movement_cooldown += GameConstants.MOVEMENT_COOLDOWN * (1 + penalty)
+    
     def get_location(self):
         return self.loc
 
@@ -76,19 +53,6 @@ class Robot:
 
     def kill(self):
         self.runner.kill()
-
-    def log(self, msg):
-        if not isinstance(msg, str):
-            raise RuntimeError('Can only log strings.')
-
-        self.logs.append({'type': 'log', 'msg': msg})
-
-        if self.debug:
-            if self.type == RobotType.OVERLORD:
-                print(f'[Robot {self.id} log]', msg)
-            else:
-                team = 'BLACK' if self.team.value else 'WHITE'
-                print(f'[Robot {self.id} {team} log]', msg)
 
     def error(self, msg):
         if not isinstance(msg, str):

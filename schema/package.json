@@ -1,0 +1,34 @@
+{
+  "name": "battlecode-schema",
+  "version": "2022.0.0",
+  "private": "true",
+  "description": "flatbuffers parser for battlecode match files",
+  "main": "js/index.js",
+  "types": "ts/index.ts",
+  "scripts": {
+    "test": "true",
+    "build-and-distribute": "npm run build && npm run copy-to-engine && cd ../client && npm run fix-schema",
+    "copy-to-engine": "rm -R ../engine/src/main/battlecode/schema/ && mkdir ../engine/src/main/battlecode/schema && cp java/battlecode/schema/* ../engine/src/main/battlecode/schema/",
+    "build": "./flatc --ts --ts-no-import-ext -o ts battlecode.fbs && ./flatc --java -o java battlecode.fbs && ./flatc --python -o python battlecode.fbs && tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/battlecode/battlecode-schema.git"
+  },
+  "keywords": [
+    "battlecode"
+  ],
+  "author": "Teh Devs",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/battlecode/battlecode-schema/issues"
+  },
+  "homepage": "https://github.com/battlecode/battlecode-schema#readme",
+  "dependencies": {
+    "@types/flatbuffers": "^1.10.2",
+    "flatbuffers": "24.3.25"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
