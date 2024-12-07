@@ -1,12 +1,13 @@
 from enum import Enum
 
-
 class Team(Enum):
-    WHITE = 0
-    BLACK = 1
+    A = 0
+    B = 1
+    NEUTRAL = 2
 
     def opponent(self):
-        if self == Team.WHITE:
-            return Team.BLACK
-        else:
-            return Team.WHITE
+        if self == Team.A:
+            return Team.B
+        elif self == Team.B:
+            return Team.A
+        return Team.NEUTRAL
