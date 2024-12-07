@@ -1,4 +1,6 @@
 import random
+
+from .map_info import MapInfo
 from .robot import Robot
 from .team import Team
 from .robot_type import RobotType
@@ -393,7 +395,32 @@ def upgrade_tower(game, team, tower_location):
     game.teamInfo.add_coins(team, tower.type.money_cost)
     tower.type.upgradeTower(tower)
 
-        
+
+## Sensing other objects
+
+def assert_can_sense_location(loc):
+    pass
+
+def can_sense_location(loc):
+    pass
+
+
+
+def sense_map_info(game, robot_loc, center, radius_squared, vision_radius_squared = GameConstants.VISION_RADIUS_SQUARED):
+    assert_can_sense_location(center)
+
+    map_info = []
+    for loc in game.get_all_locations_within_radius_squared(center, radius_squared):
+        if loc.is_within_distance_squared(robot_loc, vision_radius_squared):
+            map_info.append(game.get_map_info(loc))
+    return sorted(map_info)
+
+
+
+
+    
+
+
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""

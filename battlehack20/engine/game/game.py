@@ -45,6 +45,7 @@ class Game:
         self.paint = [[None] * self.board_width for _ in range(self.board_height)]
         self.walls = [[None] * self.board_width for _ in range(self.board_height)]
         self.towers = [[None] * self.board_width for _ in range(self.board_height)]
+        self.ruins = [[None] * self.board_width for _ in range(self.board_height)]
         self.round = 0
         self.max_rounds = max_rounds
 
@@ -297,6 +298,15 @@ class Game:
     def is_passable(self, loc):
         assert self.walls[loc.x][loc.y] is None
         assert self.towers[loc.x][loc.y] is None
+    
+    def get_map_info(self, loc): 
+        passable = self.is_passable(loc)
+        is_ruins = self.ruins[loc.x][loc.y]
+        paint_color = self.paint[loc.x][loc.y]
+        robot_type = self.robots[loc.x][loc.y]
+        return MapInfo(loc, passable, is_ruins, paint_color, robot_type)
+
+
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
