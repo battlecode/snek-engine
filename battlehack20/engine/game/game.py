@@ -44,11 +44,14 @@ class Game:
 
         self.board_width = board_width
         self.board_height = board_height
+        
         self.board_size = board_width #TODO remove
         self.robots = [None] * (self.board_width * self.board_height)
         self._paint = [None] * (self.board_width * self.board_height)
         self.walls = [False] * (self.board_width * self.board_height)
         self.markers = [0] * (self.board_width * self.board_height)
+        self.ruins = [None] * (self.board_width * self.board_height)
+
         self.round = 0
         self.max_rounds = max_rounds
 
@@ -354,6 +357,13 @@ class Game:
     def is_passable(self, loc):
         idx = self.loc_to_index(loc)
         return not self.walls[idx] and self.robots[idx] == None
+  
+    def get_map_info(self, loc): 
+        passable = self.is_passable(loc)
+        is_ruins = self.ruins[loc.x][loc.y]
+        paint_color = self.paint[loc.x][loc.y]
+        robot_type = self.robots[loc.x][loc.y]
+        return MapInfo(loc, passable, is_ruins, paint_color, robot_type)
     
     def loc_to_index(self, loc):
         return loc.y * self.board_width + loc.x

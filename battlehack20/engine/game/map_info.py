@@ -1,11 +1,10 @@
 class MapInfo:
-    def __init__(self, loc, passable, ruins, tower, paint_color, territory, tower_type):
+    def __init__(self, loc, passable, ruins, paint_color, robot_type):
         self.loc = loc
         self.passable = passable
         self.ruins = ruins
-        self.tower = tower
         self.paint_color = paint_color
-        self.tower_type = tower_type
+        self.robot_type = robot_type
     
 
     def isPassable(self): 
@@ -14,16 +13,12 @@ class MapInfo:
     def isRuins(self): 
         return self.ruins
     
-
-    def isTower(self): 
-        return self.tower
-    
     def getPaintColor(self):
         return self.paint_color
     
 
-    def getTowerType(self):
-        return self.tower_type
+    def getRobotType(self):
+        return self.robot_type
     
     def getLocation(self):
         return self.loc
