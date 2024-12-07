@@ -252,6 +252,15 @@ class Game:
     def is_passable(self, loc):
         assert self.walls[loc.x][loc.y] is None
         assert self.towers[loc.x][loc.y] is None
+    
+
+    def get_robot_by_id(self, id):
+        for i in range(self.board_height):
+            for j in range(self.board_width):
+                res = self.robots[i][j]
+                if isinstance(res, Robot) and res.id == id:
+                    return res
+        return None
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""

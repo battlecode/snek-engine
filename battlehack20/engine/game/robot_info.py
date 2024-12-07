@@ -1,10 +1,10 @@
 class RobotInfo:
-    def __init__(self, id, team, health, location, attack_level):
+    def __init__(self, id, team, health, location, robot_type):
         self.id = id
         self.team = team
         self.health = health
         self.location = location
-        self.attack_level = attack_level
+        self.robot_type = robot_type
     
     def get_id(self):
         return self.id
@@ -18,8 +18,9 @@ class RobotInfo:
     def get_location(self):
         return self.location
     
-    def get_attack_level(self):
-        return self.attack_level
+    def get_robot_type(self):
+        return self.robot_type
+    
     
     def get_robot_info(self, robot):
         return RobotInfo(robot.id, robot.team, robot.health, robot.location, robot.attack_level)

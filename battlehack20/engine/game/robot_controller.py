@@ -62,19 +62,9 @@ def sense(game, robot):
 
     return robots
 
-def get_robot_by_id(game, robot, id):
-    for i in range(game.board_height):
-        for j in range(game.board_width):
-            res = game.robots[i][j]
-            if isinstance(res, Robot) and res.id == id:
-                return res
-    return None
-
 def assert_can_sense_location(game, robot, loc):
     if loc == None:
         raise RobotError("Not a valid location")
-    if not robot.spawned:
-        raise RobotError("Robot is not spawned")
     if not game.on_the_map(loc):
         raise RobotError("Target location is not on the map")
 
@@ -88,8 +78,6 @@ def can_sense_location(game, robot, loc):
 def is_location_occupied(game, robot, loc):
     assert_can_sense_location(game, robot, loc)
     if game.robots[loc.x][loc.y] is not None:
-        return False
-    if game.walls[loc.x][loc.y] is not None:
         return False
     if game.towers[loc.x][loc.y] is not None:
         return False
@@ -107,7 +95,7 @@ def sense_robot_at_location(game, robot, loc):
     return RobotInfo(robot.id, robot.team, robot.health, robot.location, robot.attack_level)
 
 def can_sense_robot(game, robot, id):
-    sensed_robot = get_robot_by_id(game, robot, id)
+    sensed_robot = game.get_robot_by_id(game, robot, id)
 
     if sensed_robot == None or sensed_robot.spawn == False:
         return False
@@ -117,7 +105,7 @@ def can_sense_robot(game, robot, id):
 def sense_robot(game, robot, id):
     if not can_sense_robot(game, robot, id):
         raise RobotError("Cannot sense robot")
-    robot = get_robot_by_id(id)
+    robot = game.get_robot_by_id(id)
     return RobotInfo(robot.id, robot.team, robot.health, robot.location, robot.attack_level)
 
 def sense_nearby_robot(game, robot, center = -1, radius = -1, team = -1):
@@ -128,10 +116,10 @@ def sense_nearby_robot(game, robot, center = -1, radius = -1, team = -1):
     if not robot.spawned:
         raise RobotError("Robot is not spawned")
     if radius == -1:
-        radius = game.MAX_RADIUS
+        radius = game.VISION_RADIUS_SQUARED
     if radius < 0:
         raise RobotError("Radius is negative")
-    all_robots_sensed = game.sense_get_all_locations_within_radius_squared(center, radius)
+    all_robots_sensed = game.get_all_locations_within_radius_squared(center, radius)
 
     ans = []
     for sensed_robot in all_robots_sensed:
