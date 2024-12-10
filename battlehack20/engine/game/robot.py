@@ -2,6 +2,7 @@ from ..container.runner import RobotRunner
 from .robot_type import RobotType
 from .map_location import MapLocation
 from .constants import GameConstants
+from .fb_writer import FBWriter
 
 class Robot:
     STARTING_HEALTH = 1
@@ -21,6 +22,9 @@ class Robot:
 
         self.runner = None
         self.debug = False
+        
+        self.rounds_alive = 0  
+        self.match_maker = FBWriter(game)
 
     def add_paint(self, amount): 
         if amount < 0: 
@@ -72,6 +76,32 @@ class Robot:
         self.has_moved = False
 
         self.runner.run()
+    
+    def process_end_of_turn(self):
+        current_location_index = self.game.loc_to_index(self.loc)
+        paint_status = self.game._paint[current_location_index]
+
+        if self.game.team_from_paint(paint_status) == self.team:
+            paint_penalty = 0
+        elif self.game.team_from_paint(paint_status) is None:
+            paint_penalty = GameConstants.PENALTY_NEUTRAL_TERRITORY
+        else:
+            paint_penalty = GameConstants.PENALTY_ENEMY_TERRITORY
+            adjacent_allies = [
+                loc for loc in self.game.get_all_locations_within_radius_squared(self.loc, 1)
+                if self.game.robots[self.game.loc_to_index(loc)] 
+                and self.game.robots[self.game.loc_to_index(loc)].team == self.team
+            ]
+            paint_penalty += 2 * len(adjacent_allies)
+
+        self.add_paint(-paint_penalty)
+
+        if self.type.name == "TOWER":
+            self.add_paint(self.type.paint_per_turn)
+            self.game.team_info.add_coins(self.type.money_per_turn )
+
+        self.match_maker.end_turn(self.id)
+        self.rounds_alive += 1
 
     def __str__(self):
         team = 'B' if self.team.value else 'W'
