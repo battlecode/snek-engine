@@ -21,6 +21,5 @@ class RobotInfo:
     def get_robot_type(self):
         return self.robot_type
     
-    
     def get_robot_info(self, robot):
         return RobotInfo(robot.id, robot.team, robot.health, robot.location, robot.attack_level)

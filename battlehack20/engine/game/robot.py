@@ -2,7 +2,7 @@ from ..container.runner import RobotRunner
 from .robot_type import RobotType
 from .map_location import MapLocation
 from .constants import GameConstants
-from .fb_writer import FBWriter
+from .game_fb import FBWriter
 
 class Robot:
     STARTING_HEALTH = 1
