@@ -11,7 +11,7 @@ from .constants import GameConstants
 
 MAP_EXTENSION = ".map25"
 
-def serialize(builder, initial_map):
+def serialize_map(builder, initial_map):
     robot_ids_offset = create_vector(builder, InitialBodyTable.StartRobotIdsVector, [robot.id for robot in initial_map.initial_bodies])
     spawn_actions_offset = create_spawn_actions(builder, initial_map.initial_bodies)
     InitialBodyTable.Start(builder)
@@ -38,7 +38,7 @@ def serialize(builder, initial_map):
     GameMap.AddPaintPatterns(pattern_offset)
     return GameMap.End(builder)
 
-def deserialize(raw: GameMap.GameMap):
+def deserialize_map(raw: GameMap.GameMap):
     width = raw.Size().X()
     height = raw.Size().Y()
     origin = MapLocation(0, 0)
@@ -62,7 +62,7 @@ def create_spawn_actions(builder, initial_bodies):
     offsets = []
     for robot in initial_bodies:
         offsets.append(SpawnAction.CreateSpawnAction(builder, 
-                robot.location.x, robot.location.y, team_to_fb_id(robot.team), fb_from_robot_type(robot.robot_type)))
+                robot.location.x, robot.location.y, fb_from_team(robot.team), fb_from_robot_type(robot.robot_type)))
     return create_vector(builder, InitialBodyTable.StartSpawnActionsVector, offsets)
 
 def load_spawn_actions(body_table: InitialBodyTable.InitialBodyTable):
@@ -78,6 +78,6 @@ def load_map(name, path):
     full_path = path + name + MAP_EXTENSION
     try:
         with open(full_path, "rb") as file:
-            return deserialize(GameMap.GameMap.GetRootAs(bytearray(file.read()), 0))
+            return deserialize_map(GameMap.GameMap.GetRootAs(bytearray(file.read()), 0))
     except Exception as e:
         raise IOError(f"Error reading file {full_path}: {e}")

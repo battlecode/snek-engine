@@ -1,7 +1,10 @@
 from .robot_type import RobotType
 import fb_schema.VecTable as VecTable
 import fb_schema.Vec as Vec
+import fb_schema.EventWrapper as EventWrapper
+import fb_schema.WinType as WinType
 from .team import Team
+from .game import DominationFactor
 
 def robot_type_from_fb(b: int) -> RobotType:
     unit_type_mapping = {
@@ -45,6 +48,38 @@ def fb_from_robot_type(unit_type: RobotType) -> int:
     else:
         raise RuntimeError(f"Cannot find byte encoding for {unit_type}")
     
+def fb_from_domination_factor(factor):
+    match factor:
+        case DominationFactor.PAINTED_AREA:
+            return WinType.WinType().MAJORITY_PAINTED
+        case DominationFactor.MORE_SQUARES_PAINTED:
+            return WinType.WinType().AREA_PAINTED
+        case DominationFactor.NUM_ALLIED_TOWERS:
+            return WinType.WinType().MORE_TOWERS
+        case DominationFactor.TOTAL_MONEY:
+            return WinType.WinType().MORE_MONEY
+        case DominationFactor.TOTAL_PAINT:
+            return WinType.WinType().MORE_STORED_PAINT
+        case DominationFactor.NUM_ALIVE_UNITS:
+            return WinType.WinType().MORE_ROBOTS
+        case DominationFactor.RANDOM:
+            return WinType.WinType().COIN_FLIP
+        case DominationFactor.RESIGNATION:
+            return WinType.WinType().RESIGNATION
+        case _:
+            return None  # Default case
+    
+def fb_from_team(team):
+    if team == Team.A: return 1
+    elif team == Team.B: return 2
+    return 0
+
+def fb_from_paint_type(is_secondary):
+    return 1 if is_secondary else 0
+
+def int_rgb(red, green, blue):
+    return (red << 16) + (green << 8) + blue
+    
 def create_vector(builder, create_func, data):
     create_func(builder, len(data))
     for d in reversed(data):
@@ -60,7 +95,8 @@ def create_vec_table(builder, xs, ys):
     VecTable.AddYs(ys_offset)
     return VecTable.End(builder)
 
-def team_to_fb_id(builder, team):
-    if team == Team.A: return 1
-    elif team == Team.B: return 2
-    return 0
+def create_event_wrapper(builder, type, event_offset):
+    EventWrapper.Start(builder)
+    EventWrapper.AddEType(builder, type)
+    EventWrapper.AddE(event_offset)
+    return EventWrapper.End(builder)

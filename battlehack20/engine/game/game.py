@@ -18,7 +18,8 @@ class DominationFactor(Enum):
     TOTAL_MONEY=2
     TOTAL_PAINT=3
     NUM_ALIVE_UNITS=4
-    RANDOM=5
+    RESIGNATION=5
+    RANDOM=6
 
 class Shape(Enum): # marker shapes
     STAR=0
@@ -115,6 +116,15 @@ class Game:
     def log_info(self, msg):
         print(f'\u001b[32m[Game info] {msg}\u001b[0m')
 
+    # def setWinnerIfPaintPercentReached(self, team):
+
+
+    #     # this.totalPaintedSquares[team.ordinal()] += num;
+    #     # int areaWithoutWalls = this.gameWorld.getAreaWithoutWalls();
+    #     # if (this.totalPaintedSquares[team.ordinal()] / (double) areaWithoutWalls * 100 >= GameConstants.PAINT_PERCENT_TO_WIN) {
+    #     #     checkWin(team);
+    #     # }
+
     def setWinnerIfMoreArea(self):
         if self.team_info.get_tiles_painted(Team.BLACK) > self.teamInfo.get_tiles_painted(Team.BLACK):
             self.set_winner(Team.WHITE, DominationFactor.PAINTED_AREA)
@@ -169,7 +179,6 @@ class Game:
 
     def check_over(self):
         if (self.round_number == self.max_rounds and not self.winner):
-            # if game over...
             if self.setWinnerIfMoreArea(): return
             if self.setWinnerIfMoreAlliedTowers(): return
             if self.setWinnerIfMoreMoney(): return

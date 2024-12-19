@@ -6,26 +6,26 @@ import flatbuffers
 from flatbuffers.compat import import_numpy
 np = import_numpy()
 
-# Visually indicate a tile has been painted
-class PaintAction(object):
+# Update the indicator dot for this robot
+class IndicatorDotAction(object):
     __slots__ = ['_tab']
 
     @classmethod
     def SizeOf(cls):
-        return 4
+        return 8
 
-    # PaintAction
+    # IndicatorDotAction
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
 
-    # PaintAction
+    # IndicatorDotAction
     def Loc(self): return self._tab.Get(flatbuffers.number_types.Uint16Flags, self._tab.Pos + flatbuffers.number_types.UOffsetTFlags.py_type(0))
-    # PaintAction
-    def IsSecondary(self): return self._tab.Get(flatbuffers.number_types.Int8Flags, self._tab.Pos + flatbuffers.number_types.UOffsetTFlags.py_type(2))
+    # IndicatorDotAction
+    def ColorHex(self): return self._tab.Get(flatbuffers.number_types.Int32Flags, self._tab.Pos + flatbuffers.number_types.UOffsetTFlags.py_type(4))
 
-def CreatePaintAction(builder, loc, isSecondary):
-    builder.Prep(2, 4)
-    builder.Pad(1)
-    builder.PrependInt8(isSecondary)
+def CreateIndicatorDotAction(builder, loc, colorHex):
+    builder.Prep(4, 8)
+    builder.PrependInt32(colorHex)
+    builder.Pad(2)
     builder.PrependUint16(loc)
     return builder.Offset()

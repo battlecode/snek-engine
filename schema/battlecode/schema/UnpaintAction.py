@@ -6,26 +6,22 @@ import flatbuffers
 from flatbuffers.compat import import_numpy
 np = import_numpy()
 
-# Visually indicate a tile has been painted
-class PaintAction(object):
+# Visually indicate a tile's paint has been removed
+class UnpaintAction(object):
     __slots__ = ['_tab']
 
     @classmethod
     def SizeOf(cls):
-        return 4
+        return 2
 
-    # PaintAction
+    # UnpaintAction
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
 
-    # PaintAction
+    # UnpaintAction
     def Loc(self): return self._tab.Get(flatbuffers.number_types.Uint16Flags, self._tab.Pos + flatbuffers.number_types.UOffsetTFlags.py_type(0))
-    # PaintAction
-    def IsSecondary(self): return self._tab.Get(flatbuffers.number_types.Int8Flags, self._tab.Pos + flatbuffers.number_types.UOffsetTFlags.py_type(2))
 
-def CreatePaintAction(builder, loc, isSecondary):
-    builder.Prep(2, 4)
-    builder.Pad(1)
-    builder.PrependInt8(isSecondary)
+def CreateUnpaintAction(builder, loc):
+    builder.Prep(2, 2)
     builder.PrependUint16(loc)
     return builder.Offset()
