@@ -9,6 +9,8 @@ from .map_location import MapLocation
 from .team_info import TeamInfo
 from .direction import Direction
 from .id_generator import IDGenerator
+from .initial_map import InitialMap
+from .game_fb import GameFB
 
 import math
 
@@ -29,43 +31,37 @@ class Shape(Enum): # marker shapes
     DIAMOND=4
 
 class Game:
-    def __init__(self, code, board_width, board_height, max_rounds=GameConstants.MAX_ROUNDS, 
-                 seed=GameConstants.DEFAULT_SEED, debug=False):
-        random.seed(seed)
+
+    def __init__(self, code, initial_map: InitialMap, match_maker: GameFB, debug=False):
+        random.seed(GameConstants.GAME_DEFAULT_SEED)
+        self.width = initial_map.width
+        self.height = initial_map.height
+        total_area = self.width * self.height
+        self.area_without_walls = total_area - sum(initial_map.walls)
+        self.walls = initial_map.walls
+        self.markers = [0] * total_area
+        self.current_round = 0
+        self.id_generator = IDGenerator()
+        self.winner = None
+        self.domination_factor = None
+        self.initial_map = initial_map
+        self.paint = [0] * total_area
+        self.team_info = TeamInfo(self)
+        self.team_info.add_coins(Team.A, GameConstants.INITIAL_TEAM_MONEY)
+        self.team_info.add_coins(Team.B, GameConstants.INITIAL_TEAM_MONEY)
+        self.match_maker = match_maker
+        self.pattern = initial_map.pattern
+        self.resource_pattern_centers = []
+        self.resource_pattern_teams = []
+        self.ruins = initial_map.ruins
         self.code = code
         self.debug = debug
         self.running = True
-        self.winner = None
-        self.domination_factor = None
-        self.round_number = 0
-
-        self.robot_count = 0
-        self.queue = {} # map robot id to robot
-        self.board_states = [] #TODO remove
-
-        self.board_width = board_width
-        self.board_height = board_height
-        
-        self.board_size = board_width #TODO remove
-        self.robots = [None] * (self.board_width * self.board_height)
-        self._paint = [None] * (self.board_width * self.board_height)
-        self.walls = [False] * (self.board_width * self.board_height)
-        self.markers = [0] * (self.board_width * self.board_height)
-        self.ruins = [None] * (self.board_width * self.board_height)
-
-        self.round = 0
-        self.max_rounds = max_rounds
-
-        self.team_info = TeamInfo(self)
-        self.id_generator = IDGenerator()
-        
-        self.markers = {Team.WHITE: [[0]*self.board_width for i in range(self.board_height)], Team.BLACK: [[0]*self.board_width for i in range(self.board_height)]}
-
-        self.new_robot(None, None, Team.WHITE, RobotType.OVERLORD)
-        self.new_robot(None, None, Team.BLACK, RobotType.OVERLORD)
-
-        if self.debug:
-            self.log_info(f'Seed: {seed}')
+        self.robots = [None] * total_area
+        self.id_to_robot = {}
+        self.robot_exec_order = []
+        for robot_info in initial_map.initial_bodies:
+            self.spawn_robot(robot_info.robot_type, robot_info.location, robot_info.team)
 
     def turn(self):
         if self.running:
@@ -90,35 +86,56 @@ class Game:
                     robot.turn()
 
                 self.lords.reverse()  # the HQ's will alternate spawn order
-                self.board_states.append(self.robots[:])
         else:
-            raise GameError('game is over')
+            raise GameError('')
 
-    def delete_robot(self, id):
-        robot = self.queue[id]
-        self.robots[self.loc_to_index(robot.loc)] = None
+    def move_robot(self, start_loc, end_loc):
+        self.add_robot_to_loc(end_loc, self.get_robot(start_loc))
+        self.remove_robot_from_loc(start_loc)
+
+    def add_robot_to_loc(self, loc, robot):
+        self.robots[self.loc_to_index(loc)] = robot
+
+    def remove_robot_from_loc(self, loc):
+        self.robots[self.loc_to_index(loc)] = None
+
+    def get_robot(self, loc: MapLocation):
+        return self.robots[self.loc_to_index(loc)]
+
+    def spawn_robot(self, type: RobotType, loc: MapLocation, team: Team):
+        id = self.id_generator.next_id()
+        robot = Robot(self, id, team, type, loc)
+
+        #TODO totally broken :/
+        methods = {
+            'GameError': GameError,
+            'RobotType': RobotType,
+            'RobotError': RobotError,
+            'Team': Team,
+            'get_board_size': lambda : get_board_size(self),
+            'get_bytecode' : lambda : robot.runner.bytecode,
+            'get_team': lambda : get_team(self, robot),
+            'get_type': lambda: get_type(self, robot),
+            'capture': lambda row, col: capture(self, robot, row, col),
+            'check_space': lambda row, col: pawn_check_space(self, robot, row, col),
+            'get_location': lambda : get_location(self, robot),
+            'move_forward': lambda: move_forward(self, robot),
+            'sense': lambda : sense(self, robot)
+        }
+
+        robot.animate(self.code[team.value], methods, debug=self.debug)
+        self.robot_exec_order.append(id)
+        self.id_to_robot[id] = robot
+        self.add_robot_to_loc(loc, robot)
+
+    def destroy_robot(self, id):
+        robot: Robot = self.id_to_robot[id]
+        self.robot_exec_order.remove(id)
+        del self.id_to_robot[id]
+        self.remove_robot_from_loc(robot.loc)
         robot.kill()
-        del self.queue[id]
-    
-    def add_robot(self, robot):
-        """Adds the new robot to the game board and increments the robot count."""
-        self.robots[self.loc_to_index(robot.loc)] = robot
-        self.queue[robot.id] = robot
-        self.robot_count += 1
-    
-    def buildRobot(self, robot_type, map_location, team):
-        """
-        Creates and places a new robot of the specified type at the given map location.
-        """
-        new_robot = Robot(map_location.x, map_location.y, team, self.robot_count, robot_type)
-        self.add_robot(new_robot)
-
-    def log_info(self, msg):
-        print(f'\u001b[32m[Game info] {msg}\u001b[0m')
 
     # def setWinnerIfPaintPercentReached(self, team):
-
-
     #     # this.totalPaintedSquares[team.ordinal()] += num;
     #     # int areaWithoutWalls = this.gameWorld.getAreaWithoutWalls();
     #     # if (this.totalPaintedSquares[team.ordinal()] / (double) areaWithoutWalls * 100 >= GameConstants.PAINT_PERCENT_TO_WIN) {
@@ -198,48 +215,8 @@ class Game:
         self.winner = team
         self.domination_factor = domination_factor
 
-    def new_robot(self, team, robot_type, loc):
-        id = self.id_generator.next_id()
-        robot = Robot(self, id, team, robot_type, loc)
-
-        shared_methods = {
-            'GameError': GameError,
-            'RobotType': RobotType,
-            'RobotError': RobotError,
-            'Team': Team,
-            'get_board_size': lambda : get_board_size(self),
-            'get_bytecode' : lambda : robot.runner.bytecode,
-            'get_team': lambda : get_team(self, robot),
-            'get_type': lambda: get_type(self, robot),
-        }
-
-        if robot_type == RobotType.OVERLORD:
-            methods = {
-                'check_space': lambda row, col: hq_check_space(self, row, col),
-                'get_board': lambda : get_board(self),
-                'spawn': lambda row, col: spawn(self, robot, row, col)
-            }
-        else:
-            methods = {
-                'capture': lambda row, col: capture(self, robot, row, col),
-                'check_space': lambda row, col: pawn_check_space(self, robot, row, col),
-                'get_location': lambda : get_location(self, robot),
-                'move_forward': lambda: move_forward(self, robot),
-                'sense': lambda : sense(self, robot)
-            }
-
-        methods.update(shared_methods)
-
-        robot.animate(self.code[team.value], methods, debug=self.debug)
-
-        self.queue[self.robot_count] = robot
-        self.robots[self.loc_to_index(loc)] = robot
-        self.robot_count += 1
-
-    def on_the_map(self, row, col):
-        if 0 <= row < self.board_size and 0 <= col < self.board_size:
-            return True
-        return False
+    def on_the_map(self, loc):
+        return 0 <= loc.x < self.width and 0 <= loc.y < self.height
     
     def flood_fill(self, robot_loc, tower_loc):
         queue = [robot_loc]
@@ -295,7 +272,7 @@ class Game:
         
     def set_paint(self, loc, paint):
         idx = self.loc_to_index(loc)
-        old_paint_team = self.team_from_paint(self._paint[idx])
+        old_paint_team = self.team_from_paint(self.paint[idx])
         new_paint_team = self.team_from_paint(paint)
 
         if old_paint_team != Team.NEUTRAL:
@@ -304,7 +281,7 @@ class Game:
         if new_paint_team != Team.NEUTRAL:
             self.team_info.add_painted_squares(1, new_paint_team)
     
-        self._paint[idx] = paint
+        self.paint[idx] = paint
 
     #### DEBUG METHODS: NOT AVAILABLE DURING CONTEST ####
 
@@ -316,8 +293,8 @@ class Game:
         Helper method that displays the full board as a human-readable string.
         """
         board = ''
-        for i in range(self.board_size):
-            for j in range(self.board_size):
+        for i in range(self.height):
+            for j in range(self.width):
                 if self.robots[i][j]:
                     board += '['
                     if colors:
@@ -341,8 +318,8 @@ class Game:
         Returns a list of MapLocations within radius squared of center
         """
         return_locations = []
-        width = self.board_width
-        height = self.board_height
+        width = self.width
+        height = self.height
         ceiled_radius = math.ceil(math.sqrt(radius_squared)) + 1 # add +1 just to be safe
         minX = max(center.x - ceiled_radius, 0)
         minY = max(center.y - ceiled_radius, 0)
@@ -364,8 +341,8 @@ class Game:
         return not self.walls[idx] and self.robots[idx] == None
   
     def get_robot_by_id(self, id):
-        for i in range(self.board_height):
-            for j in range(self.board_width):
+        for i in range(self.height):
+            for j in range(self.width):
                 res = self.robots[i][j]
                 if isinstance(res, Robot) and res.id == id:
                     return res
@@ -379,13 +356,13 @@ class Game:
         return MapInfo(loc, passable, is_ruins, paint_color, robot_type)
     
     def loc_to_index(self, loc):
-        return loc.y * self.board_width + loc.x
+        return loc.y * self.width + loc.x
     
     def coord_to_index(self, x, y):
-        return y * self.board_width + x
+        return y * self.width + x
     
-    def destroy_robot(self, id):
-        return 
+    def log_info(self, msg):
+        print(f'\u001b[32m[Game info] {msg}\u001b[0m')
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""

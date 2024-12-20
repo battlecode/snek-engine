@@ -162,9 +162,6 @@ def sense_nearby_robots(game, robot, center = -1, radius = -1, team = -1):
             ans.append(info)
     return ans
 
-
-
-
 def on_the_map(game, robot, loc):
     assert loc != None, "Not a valid location"
     return game.on_the_map(loc)

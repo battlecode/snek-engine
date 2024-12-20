@@ -1,9 +1,10 @@
 from .map_location import MapLocation
+from .robot_info import RobotInfo
 from enum import Enum
 
 class InitialMap:
 
-    def __init__(self, width, height, origin, seed, rounds, name, symmetry, walls, paint, ruins, pattern, initial_bodies):
+    def __init__(self, width, height, origin, seed, rounds, name, symmetry, walls, paint, ruins, pattern, initial_bodies: list[RobotInfo]):
         self.width = width
         self.height = height
         self.origin = origin
