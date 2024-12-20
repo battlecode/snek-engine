@@ -3,53 +3,51 @@ from .robot_type import RobotType
 from .map_location import MapLocation
 from .constants import GameConstants
 from .game_fb import FBWriter
+from .team import Team
+from .game import Game
+from .robot_info import RobotInfo
 
 class Robot:
-    STARTING_HEALTH = 1
-    STARTING_PAINT = 0
 
-    def __init__(self, game, id, team, type, loc):
+    def __init__(self, game: Game, id, team: Team, type: RobotType, loc: MapLocation):
         self.game = game
         self.id = id
         self.team = team
         self.type = type
         self.loc = loc
-        
-        self._movement_cooldown = 0
-        self._action_cooldown = 0
-        self.paint = self.type.paint_capacity // 2
+        self.died_loc = None
         self.health = self.type.health
-
+        self.paint = self.type.paint_capacity // 2
+        self.bytecode_limit = GameConstants.BYTECODE_LIMIT
+        self.bytecodes_used = 0
+        self.rounds_alive = 0
+        self.action_cooldown = type.action_cooldown
+        self.movement_cooldown = GameConstants.COOLDOWN_LIMIT
+        self.indicator_string = ""
         self.runner = None
         self.debug = False
-        
-        self.rounds_alive = 0  
-        self.match_maker = FBWriter(game)
 
     def add_paint(self, amount): 
-        if amount < 0: 
-            if -amount > self.paint: 
-                raise RuntimeError("Not enough pain to perform this action")
-            self.paint += amount
-        else:
-            self.paint = min(self.paint + amount, self.paint_capacity)
+        new_amount = self.paint + amount
+        self.paint = max(0, min(new_amount, self.type.paint_capacity))
+
+    def add_health(self, amount):
+        self.health += amount
+        self.health = min(self.health, self.type.health)
+        if self.health <= 0:
+            self.game.destroy_robot(self.id)
+
+    def calc_paint_cooldown_multiplier(self):
+        paint_percent = self.paint / self.type.paint_capacity
+        if paint_percent < 0.5:
+            return 2 - 2 * paint_percent
+        return 0
     
     def add_action_cooldown(self):
-        if self.paint/self.type.paint_capacity < 0.5:
-            penalty = 1 - 2 * self.paint/self.type.paint_capacity
-        else:
-            penalty = 0
-        self._action_cooldown += self.type.action_cooldown * (1 + penalty)
+        self.action_cooldown += self.type.action_cooldown * self.calc_paint_cooldown_multiplier()
     
     def add_movement_cooldown(self):
-        if self.paint/self.type.paint_capacity < 0.5:
-            penalty = 1 - 2 * self.paint/self.type.paint_capacity
-        else:
-            penalty = 0
-        self._movement_cooldown += GameConstants.MOVEMENT_COOLDOWN * (1 + penalty)
-    
-    def get_location(self):
-        return self.loc
+        self.movement_cooldown += GameConstants.MOVEMENT_COOLDOWN * self.calc_paint_cooldown_multiplier()
 
     def animate(self, code, methods, debug=False):
         self.runner = RobotRunner(code, methods, self.log, self.error, debug=debug)
@@ -58,34 +56,24 @@ class Robot:
     def kill(self):
         self.runner.kill()
 
-    def error(self, msg):
-        if not isinstance(msg, str):
-            raise RuntimeError('Can only error strings.')
-
-        self.logs.append({'type': 'error', 'msg': msg})
-
-        if self.debug:
-            if self.type == RobotType.OVERLORD:
-                print(f'\u001b[31m[Robot {self.id} error]\u001b[0m', msg)
-            else:
-                team = 'BLACK' if self.team.value else 'WHITE'
-                print(f'\u001b[31m[Robot {self.id} {team} error]\u001b[0m', msg)
-
     def turn(self):
-        self.logs.clear()
-        self.has_moved = False
-
         self.runner.run()
 
     def process_beginning_of_round(self):
-        pass
+        self.indicator_string = ""
+        self.died_loc = None
+        self.add_paint(self.type.paint_per_turn)
+        self.game.team_info.add_coins(self.team, self.type.money_per_turn)
 
     def process_beginning_of_turn(self):
-        pass
+        self.action_cooldown
+        self.action_cooldown = max(0, self.action_cooldown - GameConstants.COOLDOWNS_PER_TURN)
+        self.movement_cooldown = max(0, self.movement_cooldown - GameConstants.COOLDOWNS_PER_TURN)
+        self.game.match_maker.start_turn(self.id)
     
     def process_end_of_turn(self):
-        current_location_index = self.game.loc_to_index(self.loc)
-        paint_status = self.game._paint[current_location_index]
+        loc_idx = self.game.loc_to_index(self.loc)
+        paint_status = self.game.paint[loc_idx]
 
         if self.game.team_from_paint(paint_status) == self.team:
             paint_penalty = 0
@@ -106,13 +94,12 @@ class Robot:
             self.add_paint(self.type.paint_per_turn)
             self.game.team_info.add_coins(self.type.money_per_turn )
 
-        self.match_maker.end_turn(self.id)
+        self.game.match_maker.end_turn(self.id, self.health, self.paint, self.movement_cooldown, self.action_cooldown, self.bytecodes_used, self.loc)
         self.rounds_alive += 1
 
-    def __str__(self):
-        team = 'B' if self.team.value else 'W'
-        return '%s%3d' % (team, self.id)
+    def get_robot_info(self) -> RobotInfo:
+        return RobotInfo(self.id, self.team, self.type, self.health, self.loc, self.paint)
 
-    def __repr__(self):
-        team = 'BLACK' if self.team.value else 'WHITE'
-        return f'<ROBOT {self.id} {team}>'
+    def __str__(self):
+        team = 'A' if self.team == Team.A else "B"
+        return '%s%3d' % (team, self.id)

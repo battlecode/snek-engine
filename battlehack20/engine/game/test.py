@@ -1,5 +1,4 @@
 from enum import Enum
-from enum import Enum
 from dataclasses import dataclass
 
 @dataclass(frozen=True)
@@ -84,30 +83,7 @@ class RobotType(Enum):
     def money_per_turn(self):
         return self.value.money_per_turn
 
-    def can_attack(self): 
-        return self == RobotType.SOLDIER or self == RobotType.SPLASHER
-    
-    def is_robot_type(self):
-        return self == RobotType.SOLDIER or self == RobotType.SPLASHER or self == RobotType.MOPPER
-
-    def is_tower_type(self): 
-        return not self.is_robot_type()
-    
-    def can_upgrade_type(self):
-        return self.is_tower_type() and (self.level == 1 or self.level == 2)
-    
-    def get_next_level(self): 
-        if self == RobotType.LEVEL_ONE_PAINT_TOWER:
-            return RobotType.LEVEL_TWO_PAINT_TOWER
-        elif self == RobotType.LEVEL_TWO_PAINT_TOWER:
-            return RobotType.LEVEL_THREE_PAINT_TOWER
-        
-        elif self == RobotType.LEVEL_ONE_MONEY_TOWER:
-            return RobotType.LEVEL_TWO_MONEY_TOWER
-        elif self == RobotType.LEVEL_TWO_MONEY_TOWER:
-            return RobotType.LEVEL_THREE_MONEY_TOWER
-        
-        elif self == RobotType.LEVEL_ONE_DEFENSE_TOWER:
-            return RobotType.LEVEL_TWO_DEFENSE_TOWER
-        elif self ==  RobotType.LEVEL_TWO_DEFENSE_TOWER:
-            return RobotType.LEVEL_THREE_DEFENSE_TOWER
+first = RobotType.LEVEL_TWO_DEFENSE_TOWER
+# first.level = 304934987345
+second = RobotType.LEVEL_ONE_DEFENSE_TOWER
+print(first.level, second.level)
