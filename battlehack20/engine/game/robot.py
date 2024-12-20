@@ -76,6 +76,12 @@ class Robot:
         self.has_moved = False
 
         self.runner.run()
+
+    def process_beginning_of_round(self):
+        pass
+
+    def process_beginning_of_turn(self):
+        pass
     
     def process_end_of_turn(self):
         current_location_index = self.game.loc_to_index(self.loc)

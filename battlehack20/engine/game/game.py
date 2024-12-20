@@ -15,13 +15,14 @@ from .game_fb import GameFB
 import math
 
 class DominationFactor(Enum):
-    PAINTED_AREA=0
-    NUM_ALLIED_TOWERS=1
-    TOTAL_MONEY=2
-    TOTAL_PAINT=3
-    NUM_ALIVE_UNITS=4
-    RESIGNATION=5
-    RANDOM=6
+    PAINT_ENOUGH_AREA=0
+    MORE_SQUARES_PAINTED=1
+    MORE_TOWERS_ALIVE=2
+    MORE_MONEY=3
+    MORE_PAINT_IN_UNITS=4
+    MORE_ROBOTS_ALIVE=5
+    WON_BY_DUBIOUS_REASONS=6
+    RESIGNATION=7
 
 class Shape(Enum): # marker shapes
     STAR=0
@@ -40,7 +41,7 @@ class Game:
         self.area_without_walls = total_area - sum(initial_map.walls)
         self.walls = initial_map.walls
         self.markers = [0] * total_area
-        self.current_round = 0
+        self.round = 0
         self.id_generator = IDGenerator()
         self.winner = None
         self.domination_factor = None
@@ -63,31 +64,24 @@ class Game:
         for robot_info in initial_map.initial_bodies:
             self.spawn_robot(robot_info.robot_type, robot_info.location, robot_info.team)
 
-    def turn(self):
+    def run_round(self):
         if self.running:
             self.round += 1
-
-            if self.round > self.max_rounds:
-                self.check_over()
-
-            if self.debug:
-                self.log_info(f'Turn {self.round}')
-                self.log_info(f'Queue: {self.queue}')
-                self.log_info(f'Lords: {self.lords}')
-
-            for id, robot in self.board_statesqueue.items():
-                robot.turn()
-                if not robot.runner.initialized:
-                    self.delete_robot(id)
-                self.check_over()
-
-            if self.running:
-                for robot in self.lords:
-                    robot.turn()
-
-                self.lords.reverse()  # the HQ's will alternate spawn order
+            self.match_maker.start_round(self.round)
+            self.each_robot(lambda robot: robot.process_beginning_of_round())
+            self.update_resource_patterns()
+            self.each_robot_update(lambda robot: robot.turn())
+            self.match_maker.add_team_info(Team.A, self.team_info.get_coins(Team.A))
+            self.match_maker.add_team_info(Team.B, self.team_info.get_coins(Team.B))
+            self.team_info.process_end_of_round()
+            self.match_maker.end_round()
+            if self.winner == None and self.round >= self.initial_map.rounds:
+                self.run_tiebreakers()
+            if self.winner != None:
+                self.running = False
+                self.each_robot_update(lambda robot: self.destroy_robot(robot.id))
         else:
-            raise GameError('')
+            raise GameError('Game is not running!')
 
     def move_robot(self, start_loc, end_loc):
         self.add_robot_to_loc(end_loc, self.get_robot(start_loc))
@@ -135,81 +129,64 @@ class Game:
         self.remove_robot_from_loc(robot.loc)
         robot.kill()
 
-    # def setWinnerIfPaintPercentReached(self, team):
-    #     # this.totalPaintedSquares[team.ordinal()] += num;
-    #     # int areaWithoutWalls = this.gameWorld.getAreaWithoutWalls();
-    #     # if (this.totalPaintedSquares[team.ordinal()] / (double) areaWithoutWalls * 100 >= GameConstants.PAINT_PERCENT_TO_WIN) {
-    #     #     checkWin(team);
-    #     # }
+    def setWinnerIfPaintPercentReached(self, team):
+        if self.team_info.get_tiles_painted(team) / self.area_without_walls * 100 >= GameConstants.PAINT_PERCENT_TO_WIN:
+            self.set_winner(team, DominationFactor.PAINT_ENOUGH_AREA)
+            return True
+        return False
 
     def setWinnerIfMoreArea(self):
-        if self.team_info.get_tiles_painted(Team.BLACK) > self.teamInfo.get_tiles_painted(Team.BLACK):
-            self.set_winner(Team.WHITE, DominationFactor.PAINTED_AREA)
-        elif self.team_info.get_tiles_painted(Team.BLACK) < self.teamInfo.get_tiles_painted(Team.BLACK):
-            self.set_winner(Team.BLACK, DominationFactor.PAINTED_AREA)
-        else:
+        painted_a = self.team_info.get_tiles_painted(Team.A)
+        painted_b = self.team_info.get_tiles_painted(Team.B)
+        if painted_a == painted_b:
             return False
+        self.set_winner(Team.A if painted_a > painted_b else Team.B, DominationFactor.MORE_SQUARES_PAINTED)
         return True
     
     def setWinnerIfMoreAlliedTowers(self):
-        if self.team_info.get_num_allied_towers(Team.BLACK) > self.team_info.get_num_allied_towers(Team.BLACK):
-            self.set_winner(Team.WHITE, DominationFactor.NUM_ALLIED_TOWERS)
-        elif self.team_info.get_num_allied_towers(Team.BLACK) < self.team_info.get_num_allied_towers(Team.BLACK):
-            self.set_winner(Team.BLACK, DominationFactor.NUM_ALLIED_TOWERS)
-        else:
+        towers_a = self.team_info.get_num_allied_towers(Team.A)
+        towers_b = self.team_info.get_num_allied_towers(Team.B)
+        if towers_a == towers_b:
             return False
+        self.set_winner(Team.A if towers_a > towers_b else Team.B, DominationFactor.MORE_TOWERS_ALIVE)
         return True
     
     def setWinnerIfMoreMoney(self):
-        if self.team_info.get_num_allied_towers(Team.WHITE) > self.team_info.get_num_allied_towers(Team.BLACK):
-            self.set_winner(Team.WHITE, DominationFactor.TOTAL_MONEY)
-        elif self.team_info.get_num_allied_towers(Team.WHITE) < self.team_info.get_num_allied_towers(Team.BLACK):
-            self.set_winner(Team.BLACK, DominationFactor.TOTAL_MONEY)
-        else:
+        money_a = self.team_info.get_coins(Team.A)
+        money_b = self.team_info.get_coins(Team.B)
+        if money_a == money_b:
             return False
+        self.set_winner(Team.A if money_a > money_b else Team.B, DominationFactor.MORE_MONEY)
         return True
     
     def setWinnerIfMorePaint(self):
-        if self.team_info.get_paint_counts(Team.WHITE) > self.team_info.get_paint_counts(Team.BLACK):
-            self.set_winner(Team.WHITE, DominationFactor.TOTAL_PAINT)
-        elif self.team_info.get_paint_counts(Team.WHITE) < self.team_info.get_paint_counts(Team.BLACK):
-            self.set_winner(Team.BLACK, DominationFactor.TOTAL_PAINT)
-        else:
+        paint_a = self.team_info.get_paint_counts(Team.A)
+        paint_b = self.team_info.get_paint_counts(Team.B)
+        if paint_a == paint_b:
             return False
+        self.set_winner(Team.A if paint_a > paint_b else Team.B, DominationFactor.MORE_PAINT_IN_UNITS)
         return True
     
     def setWinnerIfMoreAliveUnits(self):
-        if self.team_info.get_num_allied_units(Team.WHITE) > self.team_info.get_num_allied_units(Team.BLACK):
-            self.set_winner(Team.WHITE, DominationFactor.NUM_ALIVE_UNITS)
-        elif self.team_info.get_num_allied_units(Team.WHITE) < self.team_info.get_num_allied_units(Team.BLACK):
-            self.set_winner(Team.BLACK, DominationFactor.NUM_ALIVE_UNITS)
-        else:
+        allied_a = self.team_info.get_num_allied_units(Team.A)
+        allied_b = self.team_info.get_num_allied_units(Team.B)
+        if allied_a == allied_b:
             return False
+        self.set_winner(Team.A if allied_a > allied_b else Team.B, DominationFactor.MORE_ROBOTS_ALIVE)
         return True
     
     def setWinnerArbitrary(self):
-        rand_num = random.random()
-        if rand_num < 0.5:
-            self.set_winner(Team.WHITE, DominationFactor.RANDOM)
-        else:
-           self.set_winner(Team.BLACK, DominationFactor.RANDOM)
+        self.set_winner(Team.A if random.random() < 0.5 else Team.B, DominationFactor.WON_BY_DUBIOUS_REASONS)
+        return True
 
-    def check_over(self):
-        if (self.round_number == self.max_rounds and not self.winner):
-            if self.setWinnerIfMoreArea(): return
-            if self.setWinnerIfMoreAlliedTowers(): return
-            if self.setWinnerIfMoreMoney(): return
-            if self.setWinnerIfMorePaint(): return
-            if self.setWinnerIfMoreAliveUnits(): return
-            if self.setWinnerArbitrary(): return
+    def run_tiebreakers(self):
+        if self.setWinnerIfMoreArea(): return
+        if self.setWinnerIfMoreAlliedTowers(): return
+        if self.setWinnerIfMoreMoney(): return
+        if self.setWinnerIfMorePaint(): return
+        if self.setWinnerIfMoreAliveUnits(): return
+        if self.setWinnerArbitrary(): return
         self.setWinnerArbitrary()
-
-    def process_over(self):
-        """
-        Helper method to process once a game is finished (e.g. deleting robots)
-        """
-        for id, robot in self.queue.items():
-            self.delete_robot(id)
     
     def set_winner(self, team, domination_factor):
         self.winner = team
@@ -238,6 +215,9 @@ class Game:
                 if on_the_map(new_loc.x, new_loc.y):  
                     queue.append(new_loc)
         return False
+    
+    def update_resource_patterns(self):
+        pass
         
     def get_primary_paint(self, team):
         """
@@ -280,10 +260,58 @@ class Game:
 
         if new_paint_team != Team.NEUTRAL:
             self.team_info.add_painted_squares(1, new_paint_team)
-    
+
         self.paint[idx] = paint
 
-    #### DEBUG METHODS: NOT AVAILABLE DURING CONTEST ####
+    def get_all_locations_within_radius_squared(self, center: MapLocation, radius_squared):
+        """
+        center: MapLocation object
+        radius_squared: square of radius around center that we want locations for
+
+        Returns a list of MapLocations within radius squared of center
+        """
+        return_locations = []
+        ceiled_radius = math.ceil(math.sqrt(radius_squared)) + 1 # add +1 just to be safe
+        min_x = max(center.x - ceiled_radius, 0)
+        min_y = max(center.y - ceiled_radius, 0)
+        max_x = min(center.x + ceiled_radius, self.width - 1)
+        max_y = min(center.y + ceiled_radius, self.height - 1)
+
+        for x in range(min_x, max_x + 1):
+            for y in range(min_y, max_y + 1):
+                new_location = MapLocation(x, y) 
+                if center.is_within_distance_squared(new_location, radius_squared):
+                    return_locations.append(new_location)
+        return return_locations
+      
+    def mark_location(self, loc, color):
+        self.markers[self.loc_to_index(loc)] = color
+    
+    def is_passable(self, loc):
+        idx = self.loc_to_index(loc)
+        return not self.walls[idx] and self.robots[idx] == None
+  
+    def get_map_info(self, loc): 
+        idx = self.loc_to_index(loc)
+        return MapInfo(loc, self.is_passable(loc), self.walls[idx], self.paint[idx], self.markers[idx], self.ruins[idx])
+    
+    def loc_to_index(self, loc):
+        return loc.y * self.width + loc.x
+    
+    def log_info(self, msg):
+        print(f'\u001b[32m[Game info] {msg}\u001b[0m')
+
+    def each_robot(self, func):
+        for robot in self.id_to_robot.values():
+            func(robot)
+
+    def each_robot_update(self, func):
+        exec_order = self.robot_exec_order[:]
+        for id in exec_order:
+            if id in self.id_to_robot:
+                func(self.id_to_robot[id])
+
+    #### DEBUG METHODS ####
 
     def view_board(self, colors=True):
         """
@@ -309,60 +337,6 @@ class Game:
                     board += '[    ] '
             board += '\n'
         return board
-
-    def get_all_locations_within_radius_squared(self, center, radius_squared):
-        """
-        center: MapLocation object
-        radius_squared: square of radius around center that we want locations for
-
-        Returns a list of MapLocations within radius squared of center
-        """
-        return_locations = []
-        width = self.width
-        height = self.height
-        ceiled_radius = math.ceil(math.sqrt(radius_squared)) + 1 # add +1 just to be safe
-        minX = max(center.x - ceiled_radius, 0)
-        minY = max(center.y - ceiled_radius, 0)
-        maxX = min(center.x + ceiled_radius, width - 1)
-        maxY = min(center.y + ceiled_radius, height - 1)
-
-        for x in range(minX, maxX + 1):
-            for y in range(minY, maxY + 1):
-                new_location = MapLocation(x, y) 
-                if center.is_within_distance_squared(new_location, radius_squared):
-                    return_locations.append(new_location)
-        return return_locations
-      
-    def mark_location(self, loc, color):
-        self.markers[self.loc_to_index(loc)] = color
-    
-    def is_passable(self, loc):
-        idx = self.loc_to_index(loc)
-        return not self.walls[idx] and self.robots[idx] == None
-  
-    def get_robot_by_id(self, id):
-        for i in range(self.height):
-            for j in range(self.width):
-                res = self.robots[i][j]
-                if isinstance(res, Robot) and res.id == id:
-                    return res
-        return None
-  
-    def get_map_info(self, loc): 
-        passable = self.is_passable(loc)
-        is_ruins = self.ruins[loc.x][loc.y]
-        paint_color = self.paint[loc.x][loc.y]
-        robot_type = self.robots[loc.x][loc.y]
-        return MapInfo(loc, passable, is_ruins, paint_color, robot_type)
-    
-    def loc_to_index(self, loc):
-        return loc.y * self.width + loc.x
-    
-    def coord_to_index(self, x, y):
-        return y * self.width + x
-    
-    def log_info(self, msg):
-        print(f'\u001b[32m[Game info] {msg}\u001b[0m')
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""

@@ -52,4 +52,4 @@ class TeamInfo:
 
     def process_end_of_round(self):
         """Save the current money to track changes in the next round."""
-        self.old_coin_counts = self.coin_counts.copy()
+        self.old_coin_counts = self.coin_counts[:]

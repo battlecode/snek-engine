@@ -50,19 +50,19 @@ def fb_from_robot_type(unit_type: RobotType) -> int:
     
 def fb_from_domination_factor(factor):
     match factor:
-        case DominationFactor.PAINTED_AREA:
+        case DominationFactor.PAINT_ENOUGH_AREA:
             return WinType.WinType().MAJORITY_PAINTED
         case DominationFactor.MORE_SQUARES_PAINTED:
             return WinType.WinType().AREA_PAINTED
-        case DominationFactor.NUM_ALLIED_TOWERS:
+        case DominationFactor.MORE_TOWERS_ALIVE:
             return WinType.WinType().MORE_TOWERS
-        case DominationFactor.TOTAL_MONEY:
+        case DominationFactor.MORE_MONEY:
             return WinType.WinType().MORE_MONEY
-        case DominationFactor.TOTAL_PAINT:
+        case DominationFactor.MORE_PAINT_IN_UNITS:
             return WinType.WinType().MORE_STORED_PAINT
-        case DominationFactor.NUM_ALIVE_UNITS:
+        case DominationFactor.MORE_ROBOTS_ALIVE:
             return WinType.WinType().MORE_ROBOTS
-        case DominationFactor.RANDOM:
+        case DominationFactor.WON_BY_DUBIOUS_REASONS:
             return WinType.WinType().COIN_FLIP
         case DominationFactor.RESIGNATION:
             return WinType.WinType().RESIGNATION
