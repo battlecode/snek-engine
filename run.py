@@ -2,6 +2,7 @@ import time
 import argparse
 import faulthandler
 import sys
+import os
 import threading
 from battlecode25.engine.game.game import Game
 import battlecode25.engine.game.map_fb as map_fb
@@ -90,6 +91,8 @@ def run_game(args):
         game.run_round()
     game_fb.make_match_footer(game.winner, game.domination_factor, game.round)
     game_fb.make_game_footer(game.winner)
+    if not os.path.exists("matches"):
+        os.mkdir("matches")
     game_fb.finish_and_save("./matches/output.bc25")
 
 if __name__ == '__main__':

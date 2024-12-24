@@ -1,12 +1,14 @@
 from setuptools import setup, find_packages
 from collections import OrderedDict
+import os
 
-long_description="""
+long_description = """
 Read more at the Battlecode website: https://play.battlecode.org.
 """
 
-setup(name='battlecode2025',
-      version="25.0.0",
+# set 'SETUPTOOLS_SCM_PRETEND_VERSION=' to manually set the version number when building
+
+setup(name='battlecode25',
       description='Battlecode 2025 game engine.',
       author='Battlecode',
       long_description=long_description,
@@ -22,6 +24,6 @@ setup(name='battlecode2025',
             'RestrictedPython==7.4',
             'flatbuffers==24.3.25'
       ],
-      python_requires='>=3.11',
-      zip_safe=False,
+      python_requires='>=3.10',
+      zip_safe=False
 )
