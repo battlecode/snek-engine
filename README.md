@@ -5,12 +5,14 @@ This repository contains all the code for the Battlecode Python engine.
 ## Installation and Usage
 
 ### Installation
+
 To install the engine as a local package, run
+
 ```
 $ pip install --user -e .
 ```
 
-(Note for mac people: you may need to replace `pip` with `pip3`.) 
+(Note for mac people: you may need to replace `pip` with `pip3`.)
 
 The `-e` flag allows you to change the source code and have the changes be automatically reflected without needing to reinstall.
 
@@ -28,8 +30,9 @@ $ python3 run.py examplefuncsplayer ~/yourcode/coolplayer
 ```
 
 If you would like to uninstall, simply run
+
 ```
-$ pip uninstall battlehack20
+$ pip uninstall battlecode25
 ```
 
 ### Running Interactively
@@ -48,20 +51,20 @@ This will open an interactive Python shell. There, you can run
 
 which advances the game 1 turn. This is very useful for debugging.
 
-
 ### Advanced Usage
 
-Interacting directly with the `battlehack20` API will give you more freedom and might make it easier to debug your code. The following is a minimal example of how to do that.
+Interacting directly with the `battlecode25` API will give you more freedom and might make it easier to debug your code. The following is a minimal example of how to do that.
 
 ```
 $ python3
->>> import battlehack20 as bh20
+>>> import battlecode25 as bh20
 >>> code = bh20.CodeContainer.from_directory('./examplefuncsplayer')
 >>> game = bh20.Game([code, code], debug=True)
 >>> game.turn()
 ```
 
 You should see the output:
+
 ```
 [Game info] Turn 1
 [Game info] Queue: {}
