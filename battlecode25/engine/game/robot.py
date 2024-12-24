@@ -29,6 +29,7 @@ class Robot:
         self.indicator_string = ""
         self.runner = None
         self.debug = False
+        self.logs = []
 
     def add_paint(self, amount): 
         new_amount = self.paint + amount
@@ -53,21 +54,21 @@ class Robot:
         self.movement_cooldown += GameConstants.MOVEMENT_COOLDOWN * self.calc_paint_cooldown_multiplier()
 
     def log(self, msg):
-        pass
-        
+        self.logs.append(msg)
+
     def error(self, msg):
-        pass
+        self.logs.append(msg)
 
     def animate(self, code, methods, debug=False):
         self.runner = RobotRunner(code, methods, self.log, self.error, debug=debug)
         self.debug = debug
 
-    def kill(self):
-        self.runner.kill()
-
     def turn(self):
         self.process_beginning_of_turn()
+        self.logs.clear()
         self.runner.run()
+        for log in self.logs:
+            print(log)
         self.process_end_of_turn()
 
     def process_beginning_of_round(self):

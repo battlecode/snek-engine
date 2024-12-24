@@ -116,7 +116,6 @@ class Game:
         self.robot_exec_order.remove(id)
         del self.id_to_robot[id]
         self.remove_robot_from_loc(robot.loc)
-        robot.kill()
 
     def setWinnerIfPaintPercentReached(self, team):
         if self.team_info.get_tiles_painted(team) / self.area_without_walls * 100 >= GameConstants.PAINT_PERCENT_TO_WIN:

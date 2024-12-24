@@ -2,57 +2,7 @@ import sys
 import traceback
 
 from RestrictedPython import safe_builtins, limited_builtins, utility_builtins, Guards
-from threading import Thread, Event
-from time import sleep
 from .instrument import Instrument
-
-
-class RobotThread(Thread):
-    def __init__(self, runner):
-        Thread.__init__(self)
-        self.pause_event = Event()
-        self.paused = False
-        self.stopped = False
-        self.runner = runner
-
-    def run(self):
-        if not self.runner.initialized:
-            self.runner.init_robot()
-
-        self.runner.do_turn()
-
-        self.stopped = True
-
-    def wait(self):
-        self.paused = True
-        self.pause_event.wait()
-        if self.stopped:
-            self.kill()
-
-        self.pause_event.clear()
-        self.paused = False
-
-    def stop(self):
-        self.stopped = True
-
-    def kill(self):
-        exit(0)
-
-
-class WrapperThread(Thread):
-    def __init__(self, thread):
-        Thread.__init__(self)
-        self.thread = thread
-
-    def run(self):
-        if self.thread.paused:
-            self.thread.pause_event.set()
-        else:
-            self.thread.start()
-        while True:
-            sleep(0.001)
-            if self.thread.paused or self.thread.stopped:
-                break
 
 
 class RobotRunner:
@@ -96,7 +46,6 @@ class RobotRunner:
 
         self.bytecode = self.STARTING_BYTECODE
 
-        self.thread = None
         self.initialized = False
 
         self.debug = debug
@@ -224,22 +173,7 @@ class RobotRunner:
     def run(self):
         self.bytecode = min(self.bytecode, 0) + self.EXTRA_BYTECODE
 
-        if not self.thread:
-            self.thread = RobotThread(self)
+        if not self.initialized:
+            self.init_robot()
 
-        self.wrapper = WrapperThread(self.thread)
-
-        self.wrapper.start()
-        self.wrapper.join()
-
-        if self.thread.stopped:
-            self.thread = None
-
-    def kill(self):
-        if self.thread:
-            self.thread.stop()
-            self.thread.pause_event.set()
-
-    def force_kill(self):
-        self.thread.wait()
-        self.kill()
+        self.do_turn()
