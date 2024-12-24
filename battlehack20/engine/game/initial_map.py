@@ -12,7 +12,7 @@ class InitialMap:
         self.rounds = rounds
         self.name = name
         self.symmetry = symmetry
-        self.initial_bodies = sorted(initial_bodies, key=lambda robot: robot.id)
+        self.initial_bodies = initial_bodies
         self.walls = walls
         self.paint = paint
         self.ruins = ruins

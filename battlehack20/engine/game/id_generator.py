@@ -8,8 +8,8 @@ class IDGenerator:
     def __init__(self):
         self.cursor = 0
         self.next_id_block = IDGenerator.MIN_ID
-        self.allocate_next_block()
         self.reserved_ids = [0] * IDGenerator.ID_BLOCK_SIZE
+        self.allocate_next_block()
 
     def next_id(self):
         id = self.reserved_ids[self.cursor]

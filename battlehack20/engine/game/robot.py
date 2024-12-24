@@ -1,11 +1,14 @@
+from __future__ import annotations
 from ..container.runner import RobotRunner
 from .robot_type import RobotType
 from .map_location import MapLocation
 from .constants import GameConstants
-from .game_fb import FBWriter
 from .team import Team
-from .game import Game
 from .robot_info import RobotInfo
+
+#Imported for type checking
+if 1 == 0:
+    from .game import Game
 
 class Robot:
 
@@ -49,6 +52,12 @@ class Robot:
     def add_movement_cooldown(self):
         self.movement_cooldown += GameConstants.MOVEMENT_COOLDOWN * self.calc_paint_cooldown_multiplier()
 
+    def log(self, msg):
+        pass
+        
+    def error(self, msg):
+        pass
+
     def animate(self, code, methods, debug=False):
         self.runner = RobotRunner(code, methods, self.log, self.error, debug=debug)
         self.debug = debug
@@ -57,7 +66,9 @@ class Robot:
         self.runner.kill()
 
     def turn(self):
+        self.process_beginning_of_turn()
         self.runner.run()
+        self.process_end_of_turn()
 
     def process_beginning_of_round(self):
         self.indicator_string = ""
@@ -69,7 +80,7 @@ class Robot:
         self.action_cooldown
         self.action_cooldown = max(0, self.action_cooldown - GameConstants.COOLDOWNS_PER_TURN)
         self.movement_cooldown = max(0, self.movement_cooldown - GameConstants.COOLDOWNS_PER_TURN)
-        self.game.match_maker.start_turn(self.id)
+        self.game.game_fb.start_turn(self.id)
     
     def process_end_of_turn(self):
         loc_idx = self.game.loc_to_index(self.loc)
@@ -94,7 +105,7 @@ class Robot:
             self.add_paint(self.type.paint_per_turn)
             self.game.team_info.add_coins(self.type.money_per_turn )
 
-        self.game.match_maker.end_turn(self.id, self.health, self.paint, self.movement_cooldown, self.action_cooldown, self.bytecodes_used, self.loc)
+        self.game.game_fb.end_turn(self.id, self.health, self.paint, self.movement_cooldown, self.action_cooldown, self.bytecodes_used, self.loc)
         self.rounds_alive += 1
 
     def get_robot_info(self) -> RobotInfo:

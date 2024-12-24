@@ -1,10 +1,10 @@
 from .robot_type import RobotType
-import fb_schema.VecTable as VecTable
-import fb_schema.Vec as Vec
-import fb_schema.EventWrapper as EventWrapper
-import fb_schema.WinType as WinType
+from ..fb_schema import VecTable
+from ..fb_schema import WinType
+from ..fb_schema import EventWrapper
 from .team import Team
-from .game import DominationFactor
+import flatbuffers
+from .domination_factor import DominationFactor
 
 def robot_type_from_fb(b: int) -> RobotType:
     unit_type_mapping = {
@@ -74,29 +74,36 @@ def fb_from_team(team):
     elif team == Team.B: return 2
     return 0
 
+def team_from_fb(team):
+    if team == 1: return Team.A
+    elif team == 2: return Team.B
+    return Team.NEUTRAL
+
 def fb_from_paint_type(is_secondary):
     return 1 if is_secondary else 0
 
 def int_rgb(red, green, blue):
     return (red << 16) + (green << 8) + blue
     
-def create_vector(builder, create_func, data):
+def create_vector(builder: flatbuffers.Builder, create_func, data, append_func=None):
+    if append_func == None:
+        append_func = builder.PrependUOffsetTRelative
     create_func(builder, len(data))
     for d in reversed(data):
-        builder.PrependUOffsetTRelative(d)
+        append_func(d)
     return builder.EndVector()
 
-def create_vec_table(builder, xs, ys):
+def create_vec_table(builder: flatbuffers.Builder, xs, ys):
     assert len(xs) == len(ys), "Vec table must have the same number of x and y values"
-    xs_offset = create_vector(builder, VecTable.StartXsVector, xs)
-    ys_offset = create_vector(builder, VecTable.StartYsVector, ys)
+    xs_offset = create_vector(builder, VecTable.StartXsVector, xs, builder.PrependInt32)
+    ys_offset = create_vector(builder, VecTable.StartYsVector, ys, builder.PrependInt32)
     VecTable.Start(builder)
-    VecTable.AddXs(xs_offset)
-    VecTable.AddYs(ys_offset)
+    VecTable.AddXs(builder, xs_offset)
+    VecTable.AddYs(builder, ys_offset)
     return VecTable.End(builder)
 
 def create_event_wrapper(builder, type, event_offset):
     EventWrapper.Start(builder)
     EventWrapper.AddEType(builder, type)
-    EventWrapper.AddE(event_offset)
+    EventWrapper.AddE(builder, event_offset)
     return EventWrapper.End(builder)

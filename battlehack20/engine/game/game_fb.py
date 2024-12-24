@@ -2,35 +2,37 @@ import flatbuffers
 from enum import Enum
 from .constants import GameConstants
 from .robot_type import RobotType
-import fb_schema.TeamData as TeamData
-import fb_schema.GameHeader as GameHeader
-import fb_schema.EventWrapper as EventWrapper
-import fb_schema.Event as Event
-import fb_schema.GameFooter as GameFooter
-import fb_schema.Vec as Vec
-import fb_schema.MatchHeader as MatchHeader
-import fb_schema.MatchFooter as MatchFooter
-import fb_schema.Round as Round
-import fb_schema.Turn as Turn
-import fb_schema.DamageAction as DamageAction
-import fb_schema.PaintAction as PaintAction
-import fb_schema.UnpaintAction as UnpaintAction
-import fb_schema.AttackAction as AttackAction
-import fb_schema.MopAction as MopAction
-import fb_schema.BuildAction as BuildAction
-import fb_schema.TransferAction as TransferAction
-import fb_schema.MessageAction as MessageAction
-import fb_schema.SpawnAction as SpawnAction
-import fb_schema.UpgradeAction as UpgradeAction
-import fb_schema.DieExceptionAction as DieExceptionAction
-import fb_schema.TimelineMarkerAction as TimelineMarkerAction
-import fb_schema.IndicatorStringAction as IndicatorStringAction
-import fb_schema.IndicatorDotAction as IndicatorDotAction
-import fb_schema.IndicatorLineAction as IndicatorLineAction
-import fb_schema.Action as Action
-import fb_schema.RobotTypeMetadata as RobotTypeMetadata
+from ..fb_schema import TeamData
+from ..fb_schema import GameHeader
+from ..fb_schema import Event
+from ..fb_schema import GameplayConstants
+from ..fb_schema import GameWrapper
+from ..fb_schema import GameFooter
+from ..fb_schema import MatchHeader
+from ..fb_schema import MatchFooter
+from ..fb_schema import Round
+from ..fb_schema import Turn
+from ..fb_schema import DamageAction
+from ..fb_schema import PaintAction
+from ..fb_schema import UnpaintAction
+from ..fb_schema import AttackAction
+from ..fb_schema import MopAction
+from ..fb_schema import BuildAction
+from ..fb_schema import TransferAction
+from ..fb_schema import MessageAction
+from ..fb_schema import SpawnAction
+from ..fb_schema import UpgradeAction
+from ..fb_schema import DieExceptionAction
+from ..fb_schema import TimelineMarkerAction
+from ..fb_schema import IndicatorStringAction
+from ..fb_schema import IndicatorDotAction
+from ..fb_schema import IndicatorLineAction
+from ..fb_schema import Action
+from ..fb_schema import RobotTypeMetadata
 from .fb_helpers import *
 from .map_fb import serialize_map
+import gzip
+import io
 
 class GameFB:
 
@@ -40,15 +42,15 @@ class GameFB:
         IN_MATCH = 2,
         DONE = 3
 
-    def __init__(self, game_info):
+    def __init__(self, game_args):
         self.builder = flatbuffers.Builder(1024)
         self.state = self.State.GAME_HEADER
-        self.game_info = game_info
-        self.show_indicators = game_info["show_indicators"]
+        self.game_args = game_args
+        self.show_indicators = game_args.show_indicators
         self.events = []
         self.match_headers = []
         self.match_footers = []
-    
+
         self.initial_map = []
         self.team_ids = []
         self.team_money = []
@@ -65,16 +67,16 @@ class GameFB:
 
         spec_version_offset = self.builder.CreateString(GameConstants.SPEC_VERSION)
 
-        name = self.builder.CreateString(self.game_info["team_a_name"])
-        package_name = self.builder.CreateString(self.game_info["team_a_package"])
+        name = self.builder.CreateString(self.game_args.player[0])
+        package_name = self.builder.CreateString(self.game_args.player[0])
         TeamData.Start(self.builder)
         TeamData.AddName(self.builder, name)
         TeamData.AddPackageName(self.builder, package_name)
         TeamData.AddTeamId(self.builder, fb_from_team(Team.A))
-        team_a_offset = TeamData.End()
+        team_a_offset = TeamData.End(self.builder)
 
-        name = self.builder.CreateString(self.game_info["team_b_name"])
-        package_name = self.builder.CreateString(self.game_info["team_b_package"])
+        name = self.builder.CreateString(self.game_args.player[1] if len(self.game_args.player) > 1 else self.game_args.player[0])
+        package_name = self.builder.CreateString(self.game_args.player[1] if len(self.game_args.player) > 1 else self.game_args.player[0])
         TeamData.Start(self.builder)
         TeamData.AddName(self.builder, name)
         TeamData.AddPackageName(self.builder, package_name)
@@ -84,13 +86,16 @@ class GameFB:
         teams_offset = create_vector(self.builder, GameHeader.StartTeamsVector, [team_a_offset, team_b_offset])
         robot_type_metadata_offset = self.make_robot_type_metadata()
 
+        GameplayConstants.Start(self.builder)
+        gameplay_constants_offset = GameplayConstants.End(self.builder)
+
         GameHeader.Start(self.builder)
         GameHeader.AddSpecVersion(self.builder, spec_version_offset)
         GameHeader.AddTeams(self.builder, teams_offset)
-        GameHeader.AddRobotTypeMetadata(robot_type_metadata_offset)
+        GameHeader.AddConstants(self.builder, gameplay_constants_offset)
+        GameHeader.AddRobotTypeMetadata(self.builder, robot_type_metadata_offset)
         game_header_offset = GameHeader.End(self.builder)
-
-        #TODO serialize GameConstants
+        
         self.events.append(create_event_wrapper(self.builder, Event.Event().GameHeader, game_header_offset))
 
     def make_game_footer(self, winner):
@@ -101,6 +106,21 @@ class GameFB:
         game_footer_offset = GameFooter.End(self.builder)
         
         self.events.append(create_event_wrapper(self.builder, Event.Event().GameFooter, game_footer_offset))
+
+    def finish_and_save(self, path):
+        assert self.state == self.State.DONE, "Can't write unfinished game"
+        events_offset = create_vector(self.builder, GameWrapper.StartEventsVector, self.events)
+        match_headers_offset = create_vector(self.builder, GameWrapper.StartMatchHeadersVector, self.match_headers)
+        match_footers_offset = create_vector(self.builder, GameWrapper.StartMatchFootersVector, self.match_footers)
+        GameWrapper.Start(self.builder)
+        GameWrapper.AddEvents(self.builder, events_offset)
+        GameWrapper.AddMatchHeaders(self.builder, match_headers_offset)
+        GameWrapper.AddMatchFooters(self.builder, match_footers_offset)
+        game_wrapper_offset = GameWrapper.End(self.builder)
+        self.builder.Finish(game_wrapper_offset)
+        buf = self.builder.Output()
+        with gzip.open(path, "wb") as file:
+            file.write(buf)
 
     def make_game_constants(self):
         pass
@@ -129,8 +149,8 @@ class GameFB:
         map_offset = serialize_map(self.builder, initial_map)
 
         MatchHeader.Start(self.builder)
-        MatchHeader.AddMap(map_offset)
-        MatchHeader.AddMaxRounds(initial_map.rounds)
+        MatchHeader.AddMap(self.builder, map_offset)
+        MatchHeader.AddMaxRounds(self.builder, initial_map.rounds)
         match_header_offset = MatchHeader.End(self.builder)
 
         self.events.append(create_event_wrapper(self.builder, Event.Event().MatchHeader, match_header_offset))
@@ -138,10 +158,10 @@ class GameFB:
 
     def make_match_footer(self, win_team, win_type, total_rounds):
         MatchFooter.Start(self.builder)
-        MatchFooter.AddWinner(fb_from_team(win_team))
-        MatchFooter.AddWinType(fb_from_domination_factor(win_type))
-        MatchFooter.AddTotalRounds(total_rounds)
-        match_footer_offset = MatchFooter.End()
+        MatchFooter.AddWinner(self.builder, fb_from_team(win_team))
+        MatchFooter.AddWinType(self.builder, fb_from_domination_factor(win_type))
+        MatchFooter.AddTotalRounds(self.builder, total_rounds)
+        match_footer_offset = MatchFooter.End(self.builder)
 
         self.events.append(create_event_wrapper(self.builder, Event.Event().MatchFooter, match_footer_offset))
         self.match_footers.append(len(self.events) - 1)
@@ -151,9 +171,9 @@ class GameFB:
         self.current_round = round_num
 
     def end_round(self):
-        team_ids_offset = create_vector(self.builder, Round.StartTeamIdsVector, self.team_ids)
-        team_money_offset = create_vector(self.builder, Round.StartTeamResourceAmountsVector, self.team_money)
-        died_ids_offset = create_vector(self.builder, Round.StartDiedIdsVector, self.died_ids)
+        team_ids_offset = create_vector(self.builder, Round.StartTeamIdsVector, self.team_ids, self.builder.PrependInt32)
+        team_money_offset = create_vector(self.builder, Round.StartTeamResourceAmountsVector, self.team_money, self.builder.PrependInt32)
+        died_ids_offset = create_vector(self.builder, Round.StartDiedIdsVector, self.died_ids, self.builder.PrependInt32)
         turns_offset = create_vector(self.builder, Round.StartTurnsVector, self.turns)
 
         Round.Start(self.builder)
@@ -171,7 +191,7 @@ class GameFB:
 
     def end_turn(self, robot_id, health, paint, movement_cooldown, action_cooldown, bytecodes_used, loc):
         actions_offset = create_vector(self.builder, Turn.StartActionsVector, self.current_actions)
-        action_types_offset = create_vector(self.builder, Turn.StartActionsTypeVector, self.current_action_types)
+        action_types_offset = create_vector(self.builder, Turn.StartActionsTypeVector, self.current_action_types, self.builder.PrependByte)
 
         Turn.Start(self.builder)
         Turn.AddRobotId(self.builder, robot_id)

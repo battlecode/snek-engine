@@ -1,4 +1,4 @@
-namespace battlecode.schema;
+namespace fb_schema;
 
 struct Vec {
     x: int = 0;

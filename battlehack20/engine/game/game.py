@@ -11,18 +11,10 @@ from .direction import Direction
 from .id_generator import IDGenerator
 from .initial_map import InitialMap
 from .game_fb import GameFB
+from .robot_controller import RobotController
+from .domination_factor import DominationFactor
 
 import math
-
-class DominationFactor(Enum):
-    PAINT_ENOUGH_AREA=0
-    MORE_SQUARES_PAINTED=1
-    MORE_TOWERS_ALIVE=2
-    MORE_MONEY=3
-    MORE_PAINT_IN_UNITS=4
-    MORE_ROBOTS_ALIVE=5
-    WON_BY_DUBIOUS_REASONS=6
-    RESIGNATION=7
 
 class Shape(Enum): # marker shapes
     STAR=0
@@ -33,7 +25,7 @@ class Shape(Enum): # marker shapes
 
 class Game:
 
-    def __init__(self, code, initial_map: InitialMap, match_maker: GameFB, debug=False):
+    def __init__(self, code, initial_map: InitialMap, game_fb: GameFB, game_args):
         random.seed(GameConstants.GAME_DEFAULT_SEED)
         self.width = initial_map.width
         self.height = initial_map.height
@@ -50,31 +42,31 @@ class Game:
         self.team_info = TeamInfo(self)
         self.team_info.add_coins(Team.A, GameConstants.INITIAL_TEAM_MONEY)
         self.team_info.add_coins(Team.B, GameConstants.INITIAL_TEAM_MONEY)
-        self.match_maker = match_maker
+        self.game_fb = game_fb
         self.pattern = initial_map.pattern
         self.resource_pattern_centers = []
         self.resource_pattern_teams = []
         self.ruins = initial_map.ruins
         self.code = code
-        self.debug = debug
+        self.debug = game_args.debug
         self.running = True
         self.robots = [None] * total_area
         self.id_to_robot = {}
         self.robot_exec_order = []
         for robot_info in initial_map.initial_bodies:
-            self.spawn_robot(robot_info.robot_type, robot_info.location, robot_info.team)
+            self.spawn_robot(robot_info.type, robot_info.location, robot_info.team, id=robot_info.id)
 
     def run_round(self):
         if self.running:
             self.round += 1
-            self.match_maker.start_round(self.round)
+            self.game_fb.start_round(self.round)
             self.each_robot(lambda robot: robot.process_beginning_of_round())
             self.update_resource_patterns()
             self.each_robot_update(lambda robot: robot.turn())
-            self.match_maker.add_team_info(Team.A, self.team_info.get_coins(Team.A))
-            self.match_maker.add_team_info(Team.B, self.team_info.get_coins(Team.B))
+            self.game_fb.add_team_info(Team.A, self.team_info.get_coins(Team.A))
+            self.game_fb.add_team_info(Team.B, self.team_info.get_coins(Team.B))
             self.team_info.process_end_of_round()
-            self.match_maker.end_round()
+            self.game_fb.end_round()
             if self.winner == None and self.round >= self.initial_map.rounds:
                 self.run_tiebreakers()
             if self.winner != None:
@@ -96,25 +88,22 @@ class Game:
     def get_robot(self, loc: MapLocation):
         return self.robots[self.loc_to_index(loc)]
 
-    def spawn_robot(self, type: RobotType, loc: MapLocation, team: Team):
-        id = self.id_generator.next_id()
+    def spawn_robot(self, type: RobotType, loc: MapLocation, team: Team, id=None):
+        if id is None:
+            id = self.id_generator.next_id()
         robot = Robot(self, id, team, type, loc)
+        rc = RobotController(self, robot)
 
-        #TODO totally broken :/
         methods = {
             'GameError': GameError,
             'RobotType': RobotType,
             'RobotError': RobotError,
             'Team': Team,
-            'get_board_size': lambda : get_board_size(self),
-            'get_bytecode' : lambda : robot.runner.bytecode,
-            'get_team': lambda : get_team(self, robot),
-            'get_type': lambda: get_type(self, robot),
-            'capture': lambda row, col: capture(self, robot, row, col),
-            'check_space': lambda row, col: pawn_check_space(self, robot, row, col),
-            'get_location': lambda : get_location(self, robot),
-            'move_forward': lambda: move_forward(self, robot),
-            'sense': lambda : sense(self, robot)
+            'get_location': rc.get_location,
+            'get_map_width': rc.get_map_width,
+            'get_map_height': rc.get_map_height,
+            'get_team': rc.get_team,
+            'move': rc.move
         }
 
         robot.animate(self.code[team.value], methods, debug=self.debug)
@@ -212,7 +201,7 @@ class Game:
             for dir in cardinal_directions:
                 new_loc = loc.add(dir)  
 
-                if on_the_map(new_loc.x, new_loc.y):  
+                if self.on_the_map(new_loc.x, new_loc.y):  
                     queue.append(new_loc)
         return False
     
