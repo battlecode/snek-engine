@@ -2,15 +2,13 @@ import time
 import argparse
 import faulthandler
 import sys
+import os
 import threading
-from battlehack20.engine.game.game import Game
-import battlehack20.engine.game.map_fb as map_fb
-from battlehack20.engine.game.game_fb import GameFB
-from battlehack20.engine.fb_schema import *
+from battlecode25.engine.game.game import Game
+import battlecode25.engine.game.map_fb as map_fb
+from battlecode25.engine.game.game_fb import GameFB
 
-from battlehack20 import CodeContainer, BasicViewer, GameConstants, MessageBuffer, Team
-
-sys.path.append('./battlehack20/engine/fb_schema')
+from battlecode25 import CodeContainer, BasicViewer, GameConstants, MessageBuffer, Team
 
 """
 This is a simple script for running bots and debugging them.
@@ -80,9 +78,9 @@ Usage:
 
 def run_game(args):
     faulthandler.enable() 
-    container_a = CodeContainer.from_directory(args.player[0])
-    container_b = CodeContainer.from_directory(args.player[1] if len(args.player) > 1 else args.player[0])
-    initial_map = map_fb.load_map("DefaultSmall", "./")
+    container_a = CodeContainer.from_directory(f"players/{args.player[0]}")
+    container_b = CodeContainer.from_directory(f"players/{args.player[1] if len(args.player) > 1 else args.player[0]}")
+    initial_map = map_fb.load_map("DefaultSmall", "maps/")
     game_fb = GameFB(args)
     game = Game([container_a, container_b], initial_map, game_fb, args)
 
@@ -93,7 +91,9 @@ def run_game(args):
         game.run_round()
     game_fb.make_match_footer(game.winner, game.domination_factor, game.round)
     game_fb.make_game_footer(game.winner)
-    game_fb.finish_and_save("./output.bc25")
+    if not os.path.exists("matches"):
+        os.mkdir("matches")
+    game_fb.finish_and_save("./matches/output.bc25")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

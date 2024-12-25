@@ -1,26 +1,29 @@
 from setuptools import setup, find_packages
 from collections import OrderedDict
+import os
 
-long_description="""
-Read more at the Battlehack website: https://bh2020.battlecode.org.
+long_description = """
+Read more at the Battlecode website: https://play.battlecode.org.
 """
 
-setup(name='battlehack20',
-      version="1.1.0",
-      description='Battlehack 2020 game engine.',
+# set 'SETUPTOOLS_SCM_PRETEND_VERSION=' to manually set the version number when building
+
+setup(name='battlecode25',
+      description='Battlecode 2025 game engine.',
       author='Battlecode',
       long_description=long_description,
       author_email='battlecode@mit.edu',
-      url="https://bh2020.battlecode.org",
-      license='GNU General Public License v3.0',
+      url="https://play.battlecode.org",
+      license='MIT',
       packages=find_packages(),
       project_urls=OrderedDict((
-          ('Code', 'https://github.com/battlecode/battlehack20/tree/master/engine'),
-          ('Documentation', 'https://github.com/battlecode/battlehack20/tree/master/engine')
+          #('Code', 'https://github.com/battlecode/battlecode25/tree/master/engine'),
+          #('Documentation', 'https://github.com/battlecode/battlecode25/tree/master/engine')
       )),
       install_requires=[
-            'RestrictedPython==4.0b4'
+            'RestrictedPython==7.4',
+            'flatbuffers==24.3.25'
       ],
-      python_requires='>=3, <3.8',
-      zip_safe=False,
+      python_requires='>=3.10',
+      zip_safe=False
 )
