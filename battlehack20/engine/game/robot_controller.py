@@ -62,14 +62,16 @@ class RobotController:
         Marks the specified pattern centered at the location specified
         """
         #check bounds
-        shape_out_of_bounds = (loc.x + 2 >= game.board_width or loc.x - 2 < 0 or loc.y + 2 >= game.board_height or loc.y < 0)
+        shape_out_of_bounds = (loc.x + GameConstants.PATTERN_SIZE//2 >= game.board_width or loc.x - GameConstants.PATTERN_SIZE//2 < 0 or loc.y + GameConstants.PATTERN_SIZE//2 >= game.board_height or loc.y < 0)
         assert(shape_out_of_bounds, "Shape out of bounds")
 
         pattern_array = get_pattern(shape)
-        for i in range(-2, +3):
-            for j in range(-2, +3):
-                loc = MapLocation(center.x + i, center.y + j)
-                mark(game, robot, loc, pattern_array[i+2][j+2])
+
+        offset = GameConstants.PATTERN_SIZE//2
+        for dx in range(-offset, offset + 1):
+            for dy in range(-offset, offset + 1):
+                loc = MapLocation(center.x + dx, center.y + dy)
+                mark(game, robot, loc, pattern_array[dx+offset][dy+offset])
 
     def sense(game, robot):
         #TODO adapt this method for new sensing methods

@@ -275,6 +275,83 @@ class Game:
       
     def mark_location(self, loc, color):
         self.markers[self.loc_to_index(loc)] = color
+
+    def detect_pattern(self, center, team):
+        '''
+        Check if there is any transformation of a 5x5 pattern centered at "center" for a particular team
+        Returns detected pattern type (as Shape Enum), or None if there is no pattern
+        '''
+        class Transformation(Enum):
+            ORIGINAL = 0
+            FLIP_X = 1
+            FLIP_Y = 2
+            FLIP_D1 = 3
+            FLIP_D2 = 4
+            ROTATE_90 = 6
+            ROTATE_180 = 7
+            ROTATE_270 = 8
+        
+        shape_out_of_bounds = (center.x + GameConstants.PATTERN_SIZE//2 >= self.width or center.x - GameConstants.PATTERN_SIZE//2 < 0 or center.y + GameConstants.PATTERN_SIZE//2 >= self.height or center.y < 0)
+        if shape_out_of_bounds:
+            return None
+        
+        patterns_list = list(Shape.__members__.values()) # list of Shape enum members
+        
+        def check_pattern(shape): 
+            '''
+            Check presence of a particular pattern type up to 8 symmetries
+            Returns True/False, whether pattern is present
+            '''
+            pattern_array = get_pattern(shape) #TODO: get_pattern method in RobotController
+            valid_transformations = [True] * len(Transformation) # T/F for whether a transformation is valid
+
+            offset = GameConstants.PATTERN_SIZE//2
+
+            for dx in range(-offset, offset + 1):
+                for dy in range(-offset, offset + 1):
+                    for variant in list(Transformation.__members__.values()):
+                        if(variant == Transformation.ORIGINAL):
+                            dx_ = dx
+                            dy_ = dy
+                        elif(variant == Transformation.FLIP_X):
+                            dx_ = -dx
+                            dy_ = dy
+                        elif(variant == Transformation.FLIP_Y):
+                            dx_ = dx
+                            dy_ = -dy
+                        elif(variant == Transformation.FLIP_D1): 
+                            dx_ = dy
+                            dy_ = dx
+                        elif(variant == Transformation.FLIP_D2): 
+                            dx_ = -dy
+                            dy_ = -dx
+                        elif(variant == Transformation.ROTATE_90):
+                            dx_ = -dy
+                            dy_ = dx
+                        elif(variant == Transformation.ROTATE_180):
+                            dx_ = -dx
+                            dy_ = -dy
+                        elif(variant == Transformation.ROTATE_270):
+                            dx_ = dy
+                            dy_ = -dx
+
+                        map_loc = MapLocation(center.x + dx_, center.y + dy_) # location on map after transforming pattern
+                        map_loc_idx = self.loc_to_index(map_loc)
+                        
+                        if(self.team_from_paint(pattern_array[dx + offset][dy + offset]) != team): # wrong team
+                            valid_transformations[shape] = False
+                        
+                        #assumes pattern arrays have 1 as secondary, 0 as primary
+                        match_primary = (pattern_array[dx + offset][dy + offset] == 0) and (self.paint[map_loc_idx] == self.get_primary_paint(team))
+                        match_secondary = (pattern_array[dx + offset][dy + offset] == 1) and (self.paint[map_loc_idx] == self.get_secondary_paint(team))
+                        if(not (match_primary or match_secondary)): 
+                            valid_transformations[variant] = False
+            return (any(valid_transformations))
+        
+        for shape in patterns_list: 
+            if(check_pattern(shape)):
+                return shape
+        return None
     
     def is_passable(self, loc):
         idx = self.loc_to_index(loc)
