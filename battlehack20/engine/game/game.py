@@ -17,11 +17,10 @@ from .domination_factor import DominationFactor
 import math
 
 class Shape(Enum): # marker shapes
-    STAR=0
-    SMILE=1
-    CIRCLE=2
-    SQUARE=3
-    DIAMOND=4
+    RESOURCE=0
+    DEFENSE_TOWER=1
+    MONEY_TOWER=2
+    PAINT_TOWER=3
 
 class Game:
 
@@ -275,6 +274,14 @@ class Game:
       
     def mark_location(self, loc, color):
         self.markers[self.loc_to_index(loc)] = color
+    
+    def is_valid_pattern_center(self, center):
+        '''
+        Checks if pattern centered at this location would be in the bounds of the map
+        '''
+        
+        shape_out_of_bounds = (center.x + GameConstants.PATTERN_SIZE//2 >= self.width or center.x - GameConstants.PATTERN_SIZE//2 < 0 or center.y + GameConstants.PATTERN_SIZE//2 >= self.height or center.y < 0)
+        return shape_out_of_bounds
 
     def detect_pattern(self, center, team):
         '''
@@ -291,8 +298,7 @@ class Game:
             ROTATE_180 = 7
             ROTATE_270 = 8
         
-        shape_out_of_bounds = (center.x + GameConstants.PATTERN_SIZE//2 >= self.width or center.x - GameConstants.PATTERN_SIZE//2 < 0 or center.y + GameConstants.PATTERN_SIZE//2 >= self.height or center.y < 0)
-        if shape_out_of_bounds:
+        if not self.is_valid_pattern_center(center):
             return None
         
         patterns_list = list(Shape.__members__.values()) # list of Shape enum members
@@ -302,7 +308,7 @@ class Game:
             Check presence of a particular pattern type up to 8 symmetries
             Returns True/False, whether pattern is present
             '''
-            pattern_array = get_pattern(shape) #TODO: get_pattern method in RobotController
+            pattern_array = self.pattern[shape]
             valid_transformations = [True] * len(Transformation) # T/F for whether a transformation is valid
 
             offset = GameConstants.PATTERN_SIZE//2
@@ -356,7 +362,7 @@ class Game:
     def is_passable(self, loc):
         idx = self.loc_to_index(loc)
         return not self.walls[idx] and self.robots[idx] == None
-  
+
     def get_map_info(self, loc): 
         idx = self.loc_to_index(loc)
         return MapInfo(loc, self.is_passable(loc), self.walls[idx], self.paint[idx], self.markers[idx], self.ruins[idx])
