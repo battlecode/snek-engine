@@ -58,13 +58,16 @@ class Robot:
 
     def log(self, msg):
         self.logs.append(msg)
-
+        
     def error(self, msg):
         self.logs.append(msg)
 
     def animate(self, code, methods, debug=False):
         self.runner = RobotRunner(code, methods, self.log, self.error, debug=debug)
         self.debug = debug
+
+    def kill(self):
+        self.runner.kill()
 
     def turn(self):
         self.process_beginning_of_turn()
