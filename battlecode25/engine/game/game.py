@@ -103,7 +103,9 @@ class Game:
             'get_map_width': rc.get_map_width,
             'get_map_height': rc.get_map_height,
             'get_team': rc.get_team,
-            'move': rc.move
+            'can_move': rc.can_move,
+            'move': rc.move,
+            'Direction': Direction
         }
 
         robot.animate(self.code[team.value], methods, debug=self.debug)

@@ -51,7 +51,7 @@ class Robot:
         self.action_cooldown += self.type.action_cooldown * self.calc_paint_cooldown_multiplier()
     
     def add_movement_cooldown(self):
-        self.movement_cooldown += GameConstants.MOVEMENT_COOLDOWN * self.calc_paint_cooldown_multiplier()
+        self.movement_cooldown += round(GameConstants.MOVEMENT_COOLDOWN * self.calc_paint_cooldown_multiplier())
 
     def log(self, msg):
         self.logs.append(msg)

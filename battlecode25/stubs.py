@@ -9,6 +9,20 @@ from battlecode25.engine.game.game import Team, RobotType
 # The dummy implementations in this file exist so that editors won't give warnings like
 # "Assigning result of a function call, where the function has no return"
 
+from enum import Enum
+
+class Direction(Enum):
+
+    NORTH = (0, 1)
+    NORTHEAST = (1, 1)
+    EAST = (1, 0)
+    SOUTHEAST = (1, -1)
+    SOUTH = (0, -1)
+    SOUTHWEST = (-1, -1)
+    WEST = (-1, 0)
+    NORTHWEST = (-1, 1)
+    CENTER = (0, 0)
+
 
 def log(msg: str) -> None:
     """

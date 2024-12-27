@@ -183,21 +183,21 @@ class RobotController:
         new_location = self.robot.loc.add(dir)
         if not self.game.on_the_map(new_location):
             raise RobotError("Robot moved off the map")
-        if self.game.robots[new_location.x][new_location.y] != None:
+        if self.game.robots[self.game.loc_to_index(new_location)] != None:
             raise RobotError("Location is already occupied")
         if not self.game.is_passable(new_location):
             raise RobotError("Trying to move to an impassable location")
 
     def can_move(self, dir):
         try:
-            self.assert_can_move(self.game, self.robot, dir)
+            self.assert_can_move(dir)
             return True
         except RobotError:
             return False
 
     def move(self, dir):
         self.assert_can_move(dir)
-        self.robot.add_movement_cooldown(GameConstants.MOVEMENT_COOLDOWN)
+        self.robot.add_movement_cooldown()
         new_loc = self.robot.loc.add(dir)
         self.game.move_robot(self.robot.loc, new_loc)
         self.robot.loc = new_loc
@@ -541,6 +541,6 @@ class RobotController:
         return sorted(map_info)
 
     
-    class RobotError(Exception):
-        """Raised for illegal robot inputs"""
-        pass
+class RobotError(Exception):
+    """Raised for illegal robot inputs"""
+    pass
