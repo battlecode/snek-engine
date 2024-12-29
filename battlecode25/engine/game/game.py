@@ -246,7 +246,7 @@ class Game:
         elif paint == 3 or paint == 4:
             return Team.B
         else:
-            return 0
+            return Team.NEUTRAL
         
     def set_paint(self, loc, paint):
         idx = self.loc_to_index(loc)

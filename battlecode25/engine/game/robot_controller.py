@@ -228,6 +228,8 @@ class RobotController:
         Assert that the robot can attack. This function checks all conditions necessary
         for the robot to perform an attack and raises an error if any are not met.
         """
+        if not self.game.on_the_map(loc):
+            raise RobotError("Outside of Map")
         if self.robot.action_cooldown > self.robot.type.action_cooldown:
             raise RobotError("Action cooldown is in progress.")
 
@@ -267,7 +269,7 @@ class RobotController:
             target_robot = self.game.get_robot(loc)
             if target_robot and target_robot.type.is_tower_type() and target_robot.team != self.robot.team:
                 target_robot.add_health(-self.robot.type.attack_strength)
-            elif self.game.on_the_map(new_loc):
+            elif self.game.on_the_map(loc):
     
                 self.game.set_paint(loc, paint_type)
 
@@ -281,6 +283,8 @@ class RobotController:
 
             all_locs = self.game.get_all_locations_within_radius_squared(loc, self.robot.type.action_radius_squared)
             for new_loc in all_locs:
+                if not self.game.on_the_map(new_loc):
+                    continue
                 target_robot = self.game.get_robot(new_loc)
                 if target_robot and target_robot.type.is_tower_type() and target_robot.team != self.robot.team:
                     target_robot.add_health(-self.robot.type.attack_strength)
@@ -353,7 +357,8 @@ class RobotController:
         """
         if not self.on_the_map(map_location):
             raise RobotError("Build location is out of bounds.")
-        if not self.robot.type.is_tower_type() or self.robot.action_cooldown > self.robot.type.action_cooldown:
+        if not self.robot.type.is_tower_type() and self.robot.action_cooldown > self.robot.type.action_cooldown:
+            print(self.robot.action_cooldown, "GREATER ", self.robot.type.action_cooldown)
             raise RobotError("Robot cannot spawn: it must be a tower and its action cooldown must be ready.")
         
         if self.robot.paint < robot_type.paint_cost or self.game.team_info.get_coins(self.robot.team) < robot_type.money_cost:
@@ -373,6 +378,7 @@ class RobotController:
         """
         try:
             self.assert_spawn(robot_type, map_location)
+            print("WEE MADE IT OUT")
             return True
         except RobotError as e:
             print(f"Build failed: {e}")
@@ -387,6 +393,7 @@ class RobotController:
         self.robot.add_action_cooldown()  # Adjust cooldown as needed
         self.robot.add_paint(-robot_type.paint_cost)
         self.game.team_info.add_coins(self.robot.team, -robot_type.money_cost)
+        print("----------------------SPAWNED")
 
     #### MESSAGE METHODS ####
     def assert_can_send_message(self, loc):
