@@ -54,7 +54,7 @@ class Game:
         self.id_to_robot = {}
         self.robot_exec_order = []
         for robot_info in initial_map.initial_bodies:
-            self.spawn_robot(robot_info.type, robot_info.location, robot_info.team, id=robot_info.id)
+            self.spawn_robot(robot_info.type, robot_info.location, robot_info.team, id=robot_info.id, send_spawn_action=False)
 
     def run_round(self):
         if self.running:
@@ -88,10 +88,10 @@ class Game:
     def get_robot(self, loc: MapLocation):
         return self.robots[self.loc_to_index(loc)]
 
-    def spawn_robot(self, type: RobotType, loc: MapLocation, team: Team, id=None):
+    def spawn_robot(self, type: RobotType, loc: MapLocation, team: Team, id=None, send_spawn_action=True):
         if id is None:
             id = self.id_generator.next_id()
-        robot = Robot(self, id, team, type, loc)
+        robot = Robot(self, id, team, type, loc, send_spawn_action)
         rc = RobotController(self, robot)
 
         methods = {
@@ -119,6 +119,7 @@ class Game:
         robot.animate(self.code[team.value], methods, debug=self.debug)
         self.robot_exec_order.append(id)
         self.id_to_robot[id] = robot
+        print("spwaning robot with id", id)
         self.add_robot_to_loc(loc, robot)
 
     def destroy_robot(self, id):
