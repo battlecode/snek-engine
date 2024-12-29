@@ -99,13 +99,21 @@ class Game:
             'RobotType': RobotType,
             'RobotError': RobotError,
             'Team': Team,
+            'can_spawn': rc.can_spawn,
+            'spawn': rc.spawn,
             'get_location': rc.get_location,
             'get_map_width': rc.get_map_width,
             'get_map_height': rc.get_map_height,
             'get_team': rc.get_team,
             'can_move': rc.can_move,
             'move': rc.move,
-            'Direction': Direction
+            'attack': rc.attack,
+            'can_attack': rc.can_attack,
+            'mop_swing': rc.mop_swing,
+            'sense': rc.sense,
+            'sense_robot_at_location': rc.sense_robot_at_location,
+            'Direction': Direction,
+            'MapLocation': MapLocation
         }
 
         robot.animate(self.code[team.value], methods, debug=self.debug)

@@ -48,7 +48,7 @@ class TeamInfo:
 
     def add_painted_squares(self, amount, team):
         """Increment the count of tiles painted by the specified team."""
-        self.tiles_painted[team.value] += amount
+        self.tiles_painted[team] += amount
 
     def process_end_of_round(self):
         """Save the current money to track changes in the next round."""

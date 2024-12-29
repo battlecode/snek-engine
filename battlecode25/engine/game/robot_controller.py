@@ -39,505 +39,511 @@ class RobotController:
     def get_type(self):
         return self.robot.type
 
-    def mark(game, robot, loc, color):
+    def mark(self, loc, color):
         """ 
         loc: MapLocation we want to mark
         color: Color enum specifying the color of the mark
         Marks the specified map location
         """
-        game.mark_location(robot.team, loc, color)
-
-    def get_pattern(shape):
+        self.game.mark_location(self.robot.team, loc, color)
+    
+    def get_pattern(self, shape):
         """
         shape: Shape enum specifying the shape pattern to retrieve
         Returns a 5 x 5 array of the mark colors
         """
-        #TODO: map shape enum to 5x5 array of colors
+        # TODO: map shape enum to 5x5 array of colors
         return 
 
-    def mark_pattern(game, robot, center, shape):
+    def mark_pattern(self, center, shape):
         """
         center: MapLocation center of the 5x5 pattern
         shape: Shape enum to be marked
         Marks the specified pattern centered at the location specified
         """
-        #check bounds
-        shape_out_of_bounds = (loc.x + 2 >= game.board_width or loc.x - 2 < 0 or loc.y + 2 >= game.board_height or loc.y < 0)
-        assert(shape_out_of_bounds, "Shape out of bounds")
+        # Check bounds
+        shape_out_of_bounds = (
+            center.x + 2 >= self.game.board_width or 
+            center.x - 2 < 0 or 
+            center.y + 2 >= self.game.board_height or 
+            center.y - 2 < 0
+        )
+        assert not shape_out_of_bounds, "Shape out of bounds"
 
-        pattern_array = get_pattern(shape)
+        pattern_array = self.get_pattern(shape)
         for i in range(-2, +3):
             for j in range(-2, +3):
                 loc = MapLocation(center.x + i, center.y + j)
-                mark(game, robot, loc, pattern_array[i+2][j+2])
+                self.mark(loc, pattern_array[i+2][j+2])
 
-    def sense(game, robot):
-        #TODO adapt this method for new sensing methods
+    #### SENSING METHODS ####
+    def sense(self):
         """
-        @PAWN_METHOD
-
-        Sense nearby units; returns a list of tuples of the form (row, col, robot.team) within sensor radius of this robot (excluding yourself)
-        You can sense another unit other if it is within sensory radius of you; e.g. max(|robot.x - other.x|, |robot.y - other.y|) <= sensory_radius
+        Sense nearby units; returns a list of tuples of the form (row, col, robot.team) 
+        within sensor radius of this robot (excluding yourself)
         """
-        row, col = robot.row, robot.col
-
+        row, col = self.robot.row, self.robot.col
         robots = []
 
-        for i in range(-game.sensor_radius, game.sensor_radius + 1):
-            for j in range(-game.sensor_radius, game.sensor_radius + 1):
+        for i in range(-self.game.sensor_radius, self.game.sensor_radius + 1):
+            for j in range(-self.game.sensor_radius, self.game.sensor_radius + 1):
                 if i == 0 and j == 0:
                     continue
 
                 new_row, new_col = row + i, col + j
-                if not game.is_on_board(new_row, new_col):
+                if not self.game.on_the_map(new_row, new_col):
                     continue
 
-                if game.robots[new_row][new_col]:
-                    robots.append((new_row, new_col, game.robots[new_row][new_col].team))
+                other_robot = self.game.robots[new_row][new_col]
+                if other_robot:
+                    robots.append((new_row, new_col, other_robot.team))
 
         return robots
 
-    def assert_can_sense_location(game, robot, loc):
-        if loc == None:
+    def assert_can_sense_location(self, loc):
+        if loc is None:
             raise RobotError("Not a valid location")
-        if not game.on_the_map(loc):
+        if not self.game.on_the_map(loc):
             raise RobotError("Target location is not on the map")
 
-    def can_sense_location(game, robot, loc):
+    def can_sense_location(self, loc):
         try:
-            assert_can_sense_location(game, robot, loc)
+            self.assert_can_sense_location(loc)
             return True
         except RobotError:
             return False
 
-    def is_location_occupied(game, robot, loc):
-        assert_can_sense_location(game, robot, loc)
-        if game.robots[loc.x][loc.y] is not None:
-            return False
-        if game.towers[loc.x][loc.y] is not None:
-            return False
-        return True
+    def is_location_occupied(self, loc):
+        self.assert_can_sense_location(loc)
+        if self.game.robots[loc.x][loc.y] is not None:
+            return True
+        if self.game.towers[loc.x][loc.y] is not None:
+            return True
+        return False
 
-    def can_sense_robot_at_location(game, robot, loc):
+    def can_sense_robot_at_location(self, loc):
         try:
-            return is_location_occupied(game, robot, loc)
+            return self.is_location_occupied(loc)
         except RobotError:
             return False
 
-    def sense_robot_at_location(game, robot, loc):
-        assert_can_sense_location(game, robot, loc)
-        robot = game.robots[loc.x][loc.y]
-        return RobotInfo(robot.id, robot.team, robot.health, robot.location, robot.attack_level)
+    def sense_robot_at_location(self, loc):
+        self.assert_can_sense_location(loc)
+        target_robot = self.game.robots[loc.x][loc.y]
+        if target_robot:
+            return RobotInfo(
+                target_robot.id, 
+                target_robot.team, 
+                target_robot.health, 
+                target_robot.location, 
+                target_robot.attack_level
+            )
+        return None
 
-    def can_sense_robot(game, robot, id):
-        sensed_robot = game.get_robot_by_id(game, robot, id)
+    def can_sense_robot(self, robot_id):
+        sensed_robot = self.game.get_robot_by_id(robot_id)
 
-        if sensed_robot == None or sensed_robot.spawn == False:
+        if sensed_robot is None or not sensed_robot.spawn:
             return False
 
-        return can_sense_location(sensed_robot.get_location())
+        return self.can_sense_location(sensed_robot.location)
 
-    def sense_robot(game, robot, id):
-        if not can_sense_robot(game, robot, id):
+    def sense_robot(self, robot_id):
+        if not self.can_sense_robot(robot_id):
             raise RobotError("Cannot sense robot")
-        robot = game.get_robot_by_id(id)
-        return RobotInfo(robot.id, robot.team, robot.health, robot.location, robot.attack_level)
+        target_robot = self.game.get_robot_by_id(robot_id)
+        return RobotInfo(
+            target_robot.id, 
+            target_robot.team, 
+            target_robot.health, 
+            target_robot.location, 
+            target_robot.attack_level
+        )
 
-    def sense_nearby_robots(game, robot, center = -1, radius = -1, team = -1):
-        if center == -1:
-            center = robot.loc
-        if center == None:
-            raise RobotError("Not a valid location")
-        if not robot.spawned:
+    def sense_nearby_robots(self, center=None, radius=-1, team=-1):
+        if center is None:
+            center = self.robot.loc
+        if not self.robot.spawned:
             raise RobotError("Robot is not spawned")
         if radius == -1:
-            radius = game.VISION_RADIUS_SQUARED
+            radius = self.game.VISION_RADIUS_SQUARED
         if radius < 0:
             raise RobotError("Radius is negative")
-        all_robots_sensed = game.get_all_locations_within_radius_squared(center, radius)
 
+        all_robots_sensed = self.game.get_all_locations_within_radius_squared(center, radius)
         ans = []
+
         for sensed_robot in all_robots_sensed:
-            if sensed_robot.equals(robot):
+            if sensed_robot.equals(self.robot):
                 continue
-            if not can_sense_location(sensed_robot.loc):
+            if not self.can_sense_location(sensed_robot.loc):
                 continue
-            if team == -1:
-                info = RobotInfo(sensed_robot.id, sensed_robot.team, sensed_robot.health, sensed_robot.location, sensed_robot.attack_level)
-                ans.append(info)
-            elif robot.team == team:
-                info = RobotInfo(sensed_robot.id, sensed_robot.team, sensed_robot.health, sensed_robot.location, sensed_robot.attack_level)
+            if team == -1 or self.robot.team == team:
+                info = RobotInfo(
+                    sensed_robot.id, 
+                    sensed_robot.team, 
+                    sensed_robot.health, 
+                    sensed_robot.location, 
+                    sensed_robot.attack_level
+                )
                 ans.append(info)
         return ans
 
-    def on_the_map(game, robot, loc):
-        assert loc != None, "Not a valid location"
-        return game.on_the_map(loc)
-        
-    def assert_can_move(self, dir):
-        if dir == None:
+    def on_the_map(self, loc):
+        assert loc is not None, "Not a valid location"
+        return self.game.on_the_map(loc)
+    
+    #### MOVEMENT METHODS ####
+    def assert_can_move(self, direction):
+        if direction is None:
             raise RobotError("Not a valid direction")
         if self.robot.movement_cooldown >= GameConstants.COOLDOWN_LIMIT:
             raise RobotError("Robot movement cooldown not yet expired")
 
-        new_location = self.robot.loc.add(dir)
+        new_location = self.robot.loc.add(direction)
         if not self.game.on_the_map(new_location):
             raise RobotError("Robot moved off the map")
-        if self.game.robots[self.game.loc_to_index(new_location)] != None:
+        if self.game.robots[self.game.loc_to_index(new_location)] is not None:
             raise RobotError("Location is already occupied")
         if not self.game.is_passable(new_location):
             raise RobotError("Trying to move to an impassable location")
 
-    def can_move(self, dir):
+    def can_move(self, direction):
         try:
-            self.assert_can_move(dir)
+            self.assert_can_move(direction)
             return True
         except RobotError:
             return False
 
-    def move(self, dir):
-        self.assert_can_move(dir)
+    def move(self, direction):
+        self.assert_can_move(direction)
         self.robot.add_movement_cooldown()
-        new_loc = self.robot.loc.add(dir)
+        new_loc = self.robot.loc.add(direction)
         self.game.move_robot(self.robot.loc, new_loc)
         self.robot.loc = new_loc
 
     #### ATTACK METHODS ####
-    def assert_can_attack(game, robot, loc):
+    def assert_can_attack(self, loc):
         """
         Assert that the robot can attack. This function checks all conditions necessary
         for the robot to perform an attack and raises an error if any are not met.
         """
-        if loc is None and not robot.type.is_tower():
-            raise ValueError("Location cannot be None unless the unit is a tower.")
-        if not robot.is_action_ready():
-            raise ValueError("Action cooldown is in progress.")
-        if game.is_setup_phase():
-            raise ValueError("Cannot attack during setup phase.")
+        if self.robot.action_cooldown > self.robot.type.action_cooldown:
+            raise RobotError("Action cooldown is in progress.")
 
-        if robot.type == RobotType.SOLDIER:
-            if loc is not None:
-                if not loc.is_within_distance_squared(robot.loc, robot.type.action_radius_squared):
-                    raise ValueError("Target location is out of action range.")
-                if robot.paint < robot.type.attack_cost:
-                    raise ValueError("Insufficient paint to perform attack.")
-        elif robot.type == RobotType.SPLASHER:
-            if loc is not None:
-                if not loc.is_within_distance_squared(robot.loc, robot.type.action_radius_squared):
-                    raise ValueError("Target location is out of action range.")
-                if robot.paint < robot.type.attack_cost:
-                    raise ValueError("Insufficient paint to perform attack.")
-        elif robot.type == RobotType.MOPPER:
-            if loc is not None:
-                if not loc.is_within_distance_squared(robot.loc, robot.type.action_radius_squared):
-                    raise ValueError("Target location is out of action range.")
-                if robot.paint < robot.type.attack_cost:
-                    raise ValueError("Insufficient paint to perform attack.")
-        else:  # Tower
-            if loc is None:
-                if robot.has_tower_area_attacked:
-                    raise ValueError("Tower has already performed an area attack.")
-            else:
-                if robot.has_tower_single_attacked:
-                    raise ValueError("Tower has already performed a single attack.")
-                if not loc.is_within_distance_squared(robot.loc, robot.type.action_radius_squared):
-                    raise ValueError("Target location is out of action range.")
+        if self.robot.type in {RobotType.SOLDIER, RobotType.SPLASHER, RobotType.MOPPER}:
+            if not loc.is_within_distance_squared(self.robot.loc, self.robot.type.action_radius_squared):
+                raise RobotError("Target location is out of action range.")
+            if self.robot.paint < self.robot.type.attack_cost:
+                raise RobotError("Insufficient paint to perform attack.")
+                
+        elif self.robot.type.is_tower_type():
+                if not loc.is_within_distance_squared(self.robot.loc, self.robot.type.action_radius_squared):
+                    raise RobotError("Target location is out of action range.")
 
-    def can_attack(game, robot, loc):
+    def can_attack(self, loc):
         """
-        Check if the robot can attack. This function calls `assertAttack`
+        Check if the robot can attack. This function calls `assert_can_attack`
         and returns a boolean value: True if the attack can proceed, False otherwise.
         """
         try:
-            assert_can_attack(game, robot, loc)
+            self.assert_can_attack(loc)
             return True
         except RobotError:
             return False
 
-    def attack(robot, game, loc, use_secondary_color=False):
-        assert_can_attack(robot, game, loc)
-        robot.add_action_cooldown(robot.type.action_cooldown)
+    def attack(self, loc, use_secondary_color=False):
+        self.assert_can_attack(loc)
+        self.robot.add_action_cooldown()
 
-        if robot.type == RobotType.SOLDIER:
-            paint_type = game.get_secondary_paint(robot.team) if use_secondary_color else game.get_primary_paint(robot.team)
-            robot.use_paint(robot.type.attack_cost)
+        if self.robot.type == RobotType.SOLDIER:
+            paint_type = (
+                self.game.get_secondary_paint(self.robot.team) 
+                if use_secondary_color 
+                else self.game.get_primary_paint(self.robot.team)
+            )
+            self.robot.add_paint(-self.robot.type.attack_cost)
 
-            target_robot = game.get_robot(loc)
-            if target_robot and target_robot.type.is_tower() and target_robot.team != robot.team:
-                target_robot.add_health(-robot.type.attack_strength)
-            else:
-                if game.get_paint(loc) == 0 or game.team_from_paint(paint_type) == game.team_from_paint(game.get_paint(loc)):
-                    game.set_paint(loc, paint_type)
+            target_robot = self.game.get_robot(loc)
+            if target_robot and target_robot.type.is_tower_type() and target_robot.team != self.robot.team:
+                target_robot.add_health(-self.robot.type.attack_strength)
+            elif self.game.on_the_map(new_loc):
+    
+                self.game.set_paint(loc, paint_type)
 
-        elif robot.type == RobotType.SPLASHER:
-            paint_type = game.get_secondary_paint(robot.team) if use_secondary_color else game.get_primary_paint(robot.team)
-            robot.use_paint(robot.type.attack_cost)
+        elif self.robot.type == RobotType.SPLASHER:
+            paint_type = (
+                self.game.get_secondary_paint(self.robot.team) 
+                if use_secondary_color 
+                else self.game.get_primary_paint(self.robot.team)
+            )
+            self.robot.add_paint(-self.robot.type.attack_cost)
 
-            all_locs = game.get_all_locations_within_radius_squared(loc, robot.type.action_radius_squared)
+            all_locs = self.game.get_all_locations_within_radius_squared(loc, self.robot.type.action_radius_squared)
             for new_loc in all_locs:
-                target_robot = game.get_robot(new_loc)
-                if target_robot and target_robot.type.is_tower() and target_robot.team != robot.team:
-                    target_robot.add_health(-robot.type.attack_strength)
-                else:
-                    if game.get_paint(new_loc) == 0 or game.team_from_paint(paint_type) == game.team_from_paint(game.get_paint(new_loc)):
-                        game.set_paint(new_loc, paint_type)
+                target_robot = self.game.get_robot(new_loc)
+                if target_robot and target_robot.type.is_tower_type() and target_robot.team != self.robot.team:
+                    target_robot.add_health(-self.robot.type.attack_strength)
+                elif self.game.on_the_map(new_loc):
+                    self.game.set_paint(new_loc, paint_type)
 
-        elif robot.type == RobotType.MOPPER:
+        elif self.robot.type == RobotType.MOPPER:
             if loc is None:
-                mop_swing(robot, game, loc) 
+                self.mop_swing() 
             else:
-                paint_type = game.get_secondary_paint(robot.team) if use_secondary_color else game.get_primary_paint(robot.team)
-                robot.use_paint(robot.type.attack_cost)
+                paint_type = (
+                    self.game.get_secondary_paint(self.robot.team) 
+                    if use_secondary_color 
+                    else self.game.get_primary_paint(self.robot.team)
+                )
+                self.robot.add_paint(-self.robot.type.attack_cost)
                 
-                target_robot = game.get_robot(loc)
-                if target_robot and target_robot.type.is_robot_type(target_robot.type) and target_robot.team != robot.team:
-                    target_robot.add_paint(-GameConstants.MOPPER_ATTACK_PAINT_DEPLETION) # add game constant
-                    robot.add_paint(GameConstants.MOPPER_ATTACK_PAINT_ADDITION) # add game constant
+                target_robot = self.game.get_robot(loc)
+                if target_robot and target_robot.type.is_robot_type() and target_robot.team != self.robot.team:
+                    target_robot.add_paint(-GameConstants.MOPPER_ATTACK_PAINT_DEPLETION)
+                    self.robot.add_paint(GameConstants.MOPPER_ATTACK_PAINT_ADDITION)
 
-                if game.team_from_paint(paint_type) != game.team_from_paint(game.get_paint(loc)):
-                    game.set_paint(loc, 0)
+                elif self.game.on_the_map(loc):
+                    self.game.set_paint(loc, 0)
 
         else:  # Tower
             if loc is None:
-                robot.has_tower_area_attacked = True
-                all_locs = game.get_all_locations_within_radius_squared(robot.loc, robot.type.action_radius_squared)
+                self.robot.has_tower_area_attacked = True
+                all_locs = self.game.get_all_locations_within_radius_squared(self.robot.loc, self.robot.type.action_radius_squared)
                 for new_loc in all_locs:
-                    target_robot = game.get_robot(new_loc)
-                    if target_robot and target_robot.team != robot.team:
-                        target_robot.add_health(-robot.type.aoe_attack_strength)
+                    target_robot = self.game.get_robot(new_loc)
+                    if target_robot and target_robot.team != self.robot.team:
+                        target_robot.add_health(-self.robot.type.aoe_attack_strength)
             else:
-                robot.has_tower_single_attacked = True
-                target_robot = game.get_robot(loc)
-                if target_robot and target_robot.team != robot.team:
-                    target_robot.add_health(-robot.type.attack_strength)
+                self.robot.has_tower_single_attacked = True
+                target_robot = self.game.get_robot(loc)
+                if target_robot and target_robot.team != self.robot.team:
+                    target_robot.add_health(-self.robot.type.attack_strength)
 
-    def mop_swing(robot, game, direction):
-        assert robot.type == RobotType.MOPPER
-        assert direction in [Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST]
-        dx = [[-1, 0, 1], [-1, 0, 1], [1, 1, 1], [-1, -1, -1]]
-        dy = [[1, 1, 1], [-1, -1, -1], [-1, 0, 1], [-1, 0, 1]]
+    def mop_swing(self):
+        assert self.robot.type == RobotType.MOPPER, "mop_swing called on non-MOPPER robot"
+        # Example direction; you might want to pass direction as a parameter
+        directions = [Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST]
+        for direction in directions:
+            dx = dy = 0  # Define based on direction
+            if direction == Direction.SOUTH:
+                dx, dy = 1, 0
+            elif direction == Direction.EAST:
+                dx, dy = 0, 1
+            elif direction == Direction.WEST:
+                dx, dy = 0, -1
+            elif direction == Direction.NORTH:
+                dx, dy = -1, 0
 
-        dir_idx = 0
-        if dir == Direction.SOUTH:
-            dir_idx = 1
-        elif dir == Direction.EAST:
-            dir_idx = 2
-        elif dir == Direction.WEST:
-            dir_idx = 3
-
-        for i in range(3):
-            x = self.get_location().x + dx[dir_idx][i]
-            y = self.get_location().y + dy[dir_idx][i]
+            x = self.robot.loc.x + dx
+            y = self.robot.loc.y + dy
             new_loc = MapLocation(x, y)
         
-            if not game.on_the_map(new_loc):
+            if not self.game.on_the_map(new_loc):
                 continue
         
-        
-            robot = game.get_robot(new_loc)
-            if robot and robot.team != robot.team:
-                if self.team != robot.get_team():
-                    robot.add_paint(-GameConstants.MOPPER_SWING_PAINT_DEPLETION)
+            target_robot = self.game.get_robot(new_loc)
+            if target_robot and target_robot.team != self.robot.team:
+                target_robot.add_paint(-GameConstants.MOPPER_SWING_PAINT_DEPLETION)
 
-    # SPAWN METHODS
-    def assert_spawn(game, robot, robot_type, map_location):
+    #### SPAWN METHODS ####
+    def assert_spawn(self, robot_type, map_location):
         """
         Assert that the specified robot can spawn a new unit. Raises RobotError if it can't.
         """
-        if not game.is_on_board(map_location.x, map_location.y):
+        if not self.on_the_map(map_location):
             raise RobotError("Build location is out of bounds.")
-        
-        if game.robots[map_location.x][map_location.y]:
-            raise RobotError("Build location is already occupied.")
-        
-        if robot.type != RobotType.TOWER or not robot.is_action_ready():
+        if not self.robot.type.is_tower_type() or self.robot.action_cooldown > self.robot.type.action_cooldown:
             raise RobotError("Robot cannot spawn: it must be a tower and its action cooldown must be ready.")
         
-        if robot.paint < robot_type.paint_cost or robot.money < robot_type.money_cost:
+        if self.robot.paint < robot_type.paint_cost or self.game.team_info.get_coins(self.robot.team) < robot_type.money_cost:
             raise RobotError("Insufficient resources: Not enough paint or money to spawn this robot.")
-
-
-        if not robot.loc.isWithinDistanceSquared(map_location, 3):
+        
+        if not self.robot.loc.is_within_distance_squared(map_location, 3):
             raise RobotError("Target location is out of the tower's spawn radius.")
+        if self.game.robots:
+            if self.game.get_robot(map_location):
+                raise RobotError("Build location is already occupied.")
+        
 
-    def can_spawn(game, robot, robot_type, map_location):
+    def can_spawn(self, robot_type, map_location):
         """
         Checks if the specified robot can spawn a new unit.
         Returns True if spawning conditions are met, otherwise False.
         """
         try:
-            assert_spawn(robot, robot_type, map_location)
+            self.assert_spawn(robot_type, map_location)
             return True
         except RobotError as e:
             print(f"Build failed: {e}")
             return False
 
-    def spawn(game, robot, robot_type, map_location):
+    def spawn(self, robot_type, map_location):
         """
         Spawns a new robot of the given type at a specific map location if conditions are met.
         """
-        assert_spawn(game, robot, robot_type, map_location)
-        game.buildRobot(robot_type, map_location, robot.team)
-        robot.set_action_cooldown(10)  # not implemented
-        robot.paint -= robot_type.paint_cost
-        robot.money -= robot_type.money_cost
+        self.assert_spawn(robot_type, map_location)
+        self.game.spawn_robot(robot_type, map_location, self.robot.team)
+        self.robot.add_action_cooldown()  # Adjust cooldown as needed
+        self.robot.add_paint(-robot_type.paint_cost)
+        self.game.team_info.add_coins(self.robot.team, -robot_type.money_cost)
 
-    def assert_can_send_message(game, robot, loc):
+    #### MESSAGE METHODS ####
+    def assert_can_send_message(self, loc):
+        # Implement the necessary checks
         pass
 
-    def can_send_message(game, robot, loc):
+    def can_send_message(self, loc):
+        # Implement the necessary checks
         pass
 
-    def get_messages(game, robot, round):
-        pass
+    def get_messages(self, round=None):
+        if round is not None:
+            return self.game.get_messages(self.robot, round)
+        return self.game.get_messages(self.robot)
 
-    def get_messages(game, robot):
-        pass
-
-
-
-    ## Transferring
-    def assert_can_transfer_paint(game, robot, target_location, amount):
-        if not robot.is_action_ready():
-            raise RobotError("Robot cannot attack yet; action cooldown in progress.")
+    #### TRANSFERRING METHODS ####
+    def assert_can_transfer_paint(self, target_location, amount):
+        if not self.robot.is_action_ready():
+            raise RobotError("Robot cannot transfer paint yet; action cooldown in progress.")
         
-        if not game.is_on_board(target_location.x, target_location.y):
+        if not self.game.is_on_board(target_location.x, target_location.y):
             raise RobotError("Target location is not on the map.")
         
-        if robot.type != Robot.Type.MOPPER: 
-            raise RobotError(f"Robot type is not a Mopper, cannot transfer paint.")
+        if self.robot.type != RobotType.MOPPER: 
+            raise RobotError("Robot type is not a Mopper, cannot transfer paint.")
         
-        robot_location = MapLocation(robot.row, robot.col)
-        distance_squared = robot_location.distanceSquaredTo(target_location)
-        if distance_squared > robot.action_radius_squared:
-            raise RobotError(f"Target is out of range for {robot.type.name}.")
+        distance_squared = self.robot.loc.distanceSquaredTo(target_location)
+        if distance_squared > self.robot.type.action_radius_squared:
+            raise RobotError(f"Target is out of range for {self.robot.type.name}.")
     
-        target = game.get_robot(target_location)
-        if target == None: 
+        target = self.game.get_robot(target_location)
+        if target is None: 
             raise RobotError(f"There is no robot at {target_location}.")
-        if target.team != robot.team:
+        if target.team != self.robot.team:
             raise RobotError("Moppers can only transfer paint within their own team")
         
-        if amount < 0 and target.paint < amount: 
+        if amount < 0 and target.paint < -amount: 
             raise RobotError(f"Target does not have enough paint. Tried to request {-amount}, but target only has {target.paint}")
-        if amount >= 0 and robot.paint < amount: 
-            raise RobotError(f"Mopper does not have enough paint to transfer.")
+        if amount > 0 and self.robot.paint < amount: 
+            raise RobotError("Mopper does not have enough paint to transfer.")
 
-    def can_transfer_paint(game, robot, target_location, amount):
+    def can_transfer_paint(self, target_location, amount):
         try:
-            assert_can_transfer_paint(game, robot, target_location, amount)
+            self.assert_can_transfer_paint(target_location, amount)
             return True
         except RobotError as e:
             print(f"Transferring failed: {e}")
             return False
 
-    def transfer_paint(game, robot, target_location, amount):
-        assert_can_transfer_paint(game, robot, target_location, amount)
-        robot.add_paint(-amount)
-        target = game.get_robot(target_location)
+    def transfer_paint(self, target_location, amount):
+        self.assert_can_transfer_paint(target_location, amount)
+        self.robot.add_paint(-amount)
+        target = self.game.get_robot(target_location)
         target.add_paint(amount)
 
-
-    ## Withdrawing
-    def assert_can_withdraw_paint(game, robot, target_location, amount): 
-        if not robot.is_action_ready():
-            raise RobotError("Robot cannot attack yet; action cooldown in progress.")
+    #### WITHDRAWING METHODS ####
+    def assert_can_withdraw_paint(self, target_location, amount): 
+        if not self.robot.is_action_ready():
+            raise RobotError("Robot cannot withdraw paint yet; action cooldown in progress.")
         
-        if not game.is_on_board(target_location.x, target_location.y):
+        if not self.game.is_on_board(target_location.x, target_location.y):
             raise RobotError("Target location is not on the map.")
             
-        if robot.type != RobotType.MOPPER: 
-            raise RobotError(f"Robot type is not a Mopper, cannot transfer paint.")
+        if self.robot.type != RobotType.MOPPER: 
+            raise RobotError("Robot type is not a Mopper, cannot withdraw paint.")
         
-        robot_location = MapLocation(robot.row, robot.col)
-        distance_squared = robot_location.distanceSquaredTo(target_location)
-        if distance_squared > robot.action_radius_squared:
-            raise RobotError(f"Target is out of range for {robot.type.name}.")
+        distance_squared = self.robot.loc.distanceSquaredTo(target_location)
+        if distance_squared > self.robot.type.action_radius_squared:
+            raise RobotError(f"Target is out of range for {self.robot.type.name}.")
         
-        target = game.get_robot(target_location)
-        if target == None: 
+        target = self.game.get_robot(target_location)
+        if target is None: 
             raise RobotError(f"There is no robot at {target_location}.")
-        if target.team != robot.team:
-            raise RobotError("Moppers can only transfer paint within their own team")
+        if target.team != self.robot.team:
+            raise RobotError("Moppers can only withdraw paint within their own team")
         if not target.type.isTower():
-            raise RobotError(f"The object at {target_location} is not a tower.")
+            raise RobotError("The object at the target location is not a tower.")
 
-        if amount < 0 and target.paint < amount: 
+        if amount < 0 and target.paint < -amount: 
             raise RobotError(f"Target does not have enough paint. Tried to request {-amount}, but target only has {target.paint}")
-        if amount >= 0 and robot.paint < amount: 
-            raise RobotError(f"Mopper does not have enough paint to transfer.")
+        if amount > 0 and self.robot.paint < amount: 
+            raise RobotError("Mopper does not have enough paint to withdraw.")
 
-
-    def can_withdraw_paint(game, robot, target_location, amount):
+    def can_withdraw_paint(self, target_location, amount):
         try:
-            assert_can_withdraw_paint(game, robot, target_location, amount)
+            self.assert_can_withdraw_paint(target_location, amount)
             return True
         except RobotError as e:
-            print(f"Transferring failed: {e}")
+            print(f"Withdrawing failed: {e}")
             return False
 
-    def withdraw_paint(game, robot, target_location, amount):
-        assert_can_withdraw_paint(game, robot, target_location, amount)
-        robot.add_paint(-amount)
-        target = game.get_robot(target_location)
-        target.add_paint(amount)
+    def withdraw_paint(self, target_location, amount):
+        self.assert_can_withdraw_paint(target_location, amount)
+        self.robot.add_paint(amount)
+        target = self.game.get_robot(target_location)
+        target.add_paint(-amount)
 
-
-
-    ## Upgrading tower 
-    def assert_can_upgrade_tower(game, team, tower_location): 
-        if not game.is_on_board(tower_location.x, tower_location.y):
+    #### UPGRADING TOWER METHODS ####
+    def assert_can_upgrade_tower(self, tower_location): 
+        if not self.game.is_on_board(tower_location.x, tower_location.y):
             raise RobotError("Target location is not on the map.")
 
-        tower = game.get_robot(tower_location)
+        tower = self.game.get_robot(tower_location)
         if not tower.type.isTower(): 
-            raise RobotError("Cannot upgrade a robot that is not a tower,")
+            raise RobotError("Cannot upgrade a robot that is not a tower.")
         
-        if tower.team != team: 
+        if tower.team != self.robot.team: 
             raise RobotError("Cannot upgrade opposing team's towers.")
         
         if tower.type.level == 3: 
             raise RobotError("Cannot upgrade anymore, tower is already at the maximum level.")
         
-        if game.teamInfo.get_coins(team) < tower.type.money_cost: 
-            raise RobotError(f"Not enough coins to upgrade the tower")
-        
+        if self.game.teamInfo.get_coins(self.robot.team) < tower.type.money_cost: 
+            raise RobotError("Not enough coins to upgrade the tower.")
 
-    def can_upgrade_tower(game, team, tower_location): 
+    def can_upgrade_tower(self, tower_location): 
         try: 
-            assert_can_upgrade_tower(game, team, tower_location)
+            self.assert_can_upgrade_tower(tower_location)
             return True
         except RobotError as e: 
             print(f"Upgrading failed: {e}")
             return False
 
-    def upgrade_tower(game, team, tower_location): 
-        assert_can_upgrade_tower(game, team, tower_location)
-        tower = game.get_robot(tower_location)
-        game.team_info.add_coins(team, tower.type.money_cost)
+    def upgrade_tower(self, tower_location): 
+        self.assert_can_upgrade_tower(tower_location)
+        tower = self.game.get_robot(tower_location)
+        self.game.team_info.add_coins(self.robot.team, -tower.type.money_cost)
         tower.type.upgradeTower(tower)
 
-    ## Sensing other objects
-    def assert_can_sense_location(loc):
-        pass
+    #### SENSING MAP INFO METHODS ####
+    def assert_can_sense_map_info(self, loc):
+        if loc is None:
+            raise RobotError("Not a valid location")
+        if not self.game.on_the_map(loc):
+            raise RobotError("Location is not on the map")
 
-    def can_sense_location(loc):
-        pass
+    def can_sense_map_info(self, loc):
+        try:
+            self.assert_can_sense_map_info(loc)
+            return True
+        except RobotError:
+            return False
 
-    def sense_map_info(game, loc): 
-        assert_can_sense_location(loc)
-        return game.get_map_info(loc)
+    def sense_map_info(self, loc): 
+        self.assert_can_sense_map_info(loc)
+        return self.game.get_map_info(loc)
 
-    def sense_nearby_map_info(game, robot_loc, center, radius_squared):
-        assert_can_sense_location(center)
+    def sense_nearby_map_info(self, robot_loc, center, radius_squared=-1):
+        self.assert_can_sense_map_info(center)
 
         if radius_squared == -1: 
             radius_squared = GameConstants.VISION_RADIUS_SQUARED
 
         map_info = []
-        for loc in game.get_all_locations_within_radius_squared(center, radius_squared):
+        for loc in self.game.get_all_locations_within_radius_squared(center, radius_squared):
             if loc.is_within_distance_squared(robot_loc, GameConstants.VISION_RADIUS_SQUARED):
-                map_info.append(game.get_map_info(loc))
+                map_info.append(self.game.get_map_info(loc))
         return sorted(map_info)
 
     

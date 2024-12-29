@@ -199,7 +199,7 @@ class GameFB:
         Turn.AddHealth(self.builder, health)
         Turn.AddPaint(self.builder, paint)
         Turn.AddMoveCooldown(self.builder, movement_cooldown)
-        Turn.AddActionCooldown(self.builder, action_cooldown)
+        Turn.AddActionCooldown(self.builder,int(action_cooldown))
         Turn.AddBytecodesUsed(self.builder, bytecodes_used)
         Turn.AddX(self.builder, loc.x)
         Turn.AddY(self.builder, loc.y)
