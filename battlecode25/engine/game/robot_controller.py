@@ -230,6 +230,8 @@ class RobotController:
         """
         if not self.game.on_the_map(loc):
             raise RobotError("Outside of Map")
+        if self.game.walls[self.game.loc_to_index(loc)]:
+            raise RobotError("Outside of Map")
         if self.robot.action_cooldown > self.robot.type.action_cooldown:
             raise RobotError("Action cooldown is in progress.")
 
@@ -269,9 +271,13 @@ class RobotController:
             target_robot = self.game.get_robot(loc)
             if target_robot and target_robot.type.is_tower_type() and target_robot.team != self.robot.team:
                 target_robot.add_health(-self.robot.type.attack_strength)
-            elif self.game.on_the_map(loc):
-    
+                self.game.game_fb.add_attack_action(target_robot.id)
+                self.game.game_fb.add_damage_action(target_robot.id, self.robot.type.attack_strength)
+                print(self.game.walls, loc.to_string())
+            else:
                 self.game.set_paint(loc, paint_type)
+                self.game.game_fb.add_paint_action(loc, use_secondary_color)
+                print(self.game.paint)
 
         elif self.robot.type == RobotType.SPLASHER:
             paint_type = (
@@ -358,7 +364,6 @@ class RobotController:
         if not self.on_the_map(map_location):
             raise RobotError("Build location is out of bounds.")
         if not self.robot.type.is_tower_type() and self.robot.action_cooldown > self.robot.type.action_cooldown:
-            print(self.robot.action_cooldown, "GREATER ", self.robot.type.action_cooldown)
             raise RobotError("Robot cannot spawn: it must be a tower and its action cooldown must be ready.")
         
         if self.robot.paint < robot_type.paint_cost or self.game.team_info.get_coins(self.robot.team) < robot_type.money_cost:
@@ -378,10 +383,8 @@ class RobotController:
         """
         try:
             self.assert_spawn(robot_type, map_location)
-            print("WEE MADE IT OUT")
             return True
         except RobotError as e:
-            print(f"Build failed: {e}")
             return False
 
     def spawn(self, robot_type, map_location):
@@ -440,7 +443,6 @@ class RobotController:
             self.assert_can_transfer_paint(target_location, amount)
             return True
         except RobotError as e:
-            print(f"Transferring failed: {e}")
             return False
 
     def transfer_paint(self, target_location, amount):

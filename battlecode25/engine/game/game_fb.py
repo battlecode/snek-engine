@@ -146,6 +146,7 @@ class GameFB:
     def make_match_header(self, initial_map):
         self.state = self.State.IN_MATCH
         map_offset = serialize_map(self.builder, initial_map)
+        self.initial_map = initial_map
 
         MatchHeader.Start(self.builder)
         MatchHeader.AddMap(self.builder, map_offset)
