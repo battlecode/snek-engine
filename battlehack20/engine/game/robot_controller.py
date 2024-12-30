@@ -387,18 +387,19 @@ class RobotController:
     def mark_tower_pattern(self, loc, tower_type):
         """
         Marks specified tower pattern at location if possible
+        tower_type: RobotType enum
         """
         self.assert_can_mark_tower_pattern(loc)
         self.robot.add_paint(-GameConstants.MARK_PATTERN_COST)
         self.game.mark_tower_pattern(self.robot.team, loc, tower_type) #TODO: implement mark_tower_pattern in game.py
+
     def mark_resource_pattern(self, loc):
         """
         Marks resource pattern at location if possible
         """
         self.assert_can_mark_resource_pattern(loc)
         self.robot.add_paint(-GameConstants.MARK_PATTERN_COST)
-        self.game.mark_resource_pattern(self.robot.team, loc, tower_type) #TODO: implement mark_resource_pattern in game.py
-    
+        self.game.mark_resource_pattern(self.robot.team, loc) #TODO: implement mark_resource_pattern in game.py    
     
     # SPAWN METHODS
     def assert_spawn(game, robot, robot_type, map_location):

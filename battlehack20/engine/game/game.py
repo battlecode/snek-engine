@@ -282,6 +282,40 @@ class Game:
         
         shape_out_of_bounds = (center.x + GameConstants.PATTERN_SIZE//2 >= self.width or center.x - GameConstants.PATTERN_SIZE//2 < 0 or center.y + GameConstants.PATTERN_SIZE//2 >= self.height or center.y < 0)
         return shape_out_of_bounds
+    
+    def mark_pattern(self, team, center, shape):
+        '''
+        Marks pattern at center
+        '''
+        pattern_array = self.pattern[shape]
+
+        offset = GameConstants.PATTERN_SIZE//2
+
+        for dx in range(-offset, offset + 1):
+            for dy in range(-offset, offset + 1):
+                color_indicator = pattern_array[dx + offset, dy + offset]
+                mark_color =  self.get_primary_paint(team) if (color_indicator == 0) else self.get_secondary_paint(team)
+                self.mark_location(MapLocation(center.x + dx, center.y + dy), mark_color)
+
+    def mark_tower_pattern(self, team, center, tower_type):
+        '''
+        Marks specified tower pattern at center
+        tower_type: tower_type: RobotType enum
+        '''
+        if tower_type in {RobotType.LEVEL_ONE_PAINT_TOWER, RobotType.LEVEL_TWO_PAINT_TOWER, RobotType.LEVEL_THREE_PAINT_TOWER}:
+            shape = Shape.PAINT_TOWER
+        if tower_type in {RobotType.LEVEL_ONE_DEFENSE_TOWER, RobotType.LEVEL_TWO_DEFENSE_TOWER, RobotType.LEVEL_THREE_DEFENSE_TOWER}:
+            shape = Shape.DEFENSE_TOWER
+        if tower_type in {RobotType.LEVEL_ONE_MONEY_TOWER, RobotType.LEVEL_TWO_MONEY_TOWER, RobotType.LEVEL_THREE_MONEY_TOWER}:
+            shape = Shape.DEFENSE_TOWER
+
+        self.mark_pattern(team, center, shape)
+
+    def mark_resource_pattern(self, team, center):
+        '''
+        Marks resource pattern at center
+        '''
+        self.mark_pattern(team, center, Shape.RESOURCE)
 
     def detect_pattern(self, center, team):
         '''
