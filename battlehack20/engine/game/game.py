@@ -307,7 +307,7 @@ class Game:
         if tower_type in {RobotType.LEVEL_ONE_DEFENSE_TOWER, RobotType.LEVEL_TWO_DEFENSE_TOWER, RobotType.LEVEL_THREE_DEFENSE_TOWER}:
             shape = Shape.DEFENSE_TOWER
         if tower_type in {RobotType.LEVEL_ONE_MONEY_TOWER, RobotType.LEVEL_TWO_MONEY_TOWER, RobotType.LEVEL_THREE_MONEY_TOWER}:
-            shape = Shape.DEFENSE_TOWER
+            shape = Shape.MONEY_TOWER
 
         self.mark_pattern(team, center, shape)
 
