@@ -62,6 +62,9 @@ class GameConstants:
     # The percent of the map which a team needs to paint to win.
     PAINT_PERCENT_TO_WIN = 70
 
+    # Paint cost for marking a tower pattern.
+    MARK_PATTERN_COST = 25
+
     # *****************************
     # ****** GAME MECHANICS *******
     # *****************************
@@ -84,6 +87,8 @@ class GameConstants:
     # The maximum distance from a robot where information can be sensed
     VISION_RADIUS_SQUARED = 20
 
+    # The maximum distance a robot can mark a pattern
+    MARK_RADIUS_SQUARED = 2
 
     # The maximum distance for transferring paint from/to an ally robot or tower
     PAINT_TRANSFER_RADIUS_SQUARED = 2

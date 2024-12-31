@@ -52,8 +52,7 @@ class RobotController:
         shape: Shape enum specifying the shape pattern to retrieve
         Returns a 5 x 5 array of the mark colors
         """
-        # TODO: map shape enum to 5x5 array of colors
-        return 
+        return self.game.pattern
 
     def mark_pattern(self, center, shape):
         """
@@ -62,19 +61,15 @@ class RobotController:
         Marks the specified pattern centered at the location specified
         """
         # Check bounds
-        shape_out_of_bounds = (
-            center.x + 2 >= self.game.board_width or 
-            center.x - 2 < 0 or 
-            center.y + 2 >= self.game.board_height or 
-            center.y - 2 < 0
-        )
-        assert not shape_out_of_bounds, "Shape out of bounds"
+        assert(not self.game.is_valid_pattern_center(center), "Shape out of bounds")
 
-        pattern_array = self.get_pattern(shape)
-        for i in range(-2, +3):
-            for j in range(-2, +3):
-                loc = MapLocation(center.x + i, center.y + j)
-                self.mark(loc, pattern_array[i+2][j+2])
+        pattern_array = self.game.pattern[shape]
+
+        offset = GameConstants.PATTERN_SIZE//2
+        for dx in range(-offset, offset + 1):
+            for dy in range(-offset, offset + 1):
+                loc = MapLocation(center.x + dx, center.y + dy)
+                self.mark(loc, pattern_array[dx+offset][dy+offset])
 
     #### SENSING METHODS ####
     def sense(self):
@@ -355,6 +350,73 @@ class RobotController:
             target_robot = self.game.get_robot(new_loc)
             if target_robot and target_robot.team != self.robot.team:
                 target_robot.add_paint(-GameConstants.MOPPER_SWING_PAINT_DEPLETION)
+
+    # MARKING METHODS
+    def assert_can_mark_pattern(self, loc):
+        '''
+        Asserts that a pattern can be marked at this location.
+        '''
+        if self.robot.type.is_tower_type():
+            raise RobotError("Marking unit is not a robot.")
+        if self.game.is_valid_pattern_center(loc):
+            raise RobotError(f"Pattern at ({loc.x}, {loc.y}) is out of the bounds of the map.")
+        if not loc.is_within_distance_squared(self.robot.loc, GameConstants.MARK_RADIUS_SQUARED):
+            raise RobotError(f"({loc.x}, {loc.y}) is not within the robot's pattern-marking range")
+        if self.robot.paint < GameConstants.MARK_PATTERN_COST:
+            raise RobotError("Robot does not have enough paint for mark the pattern.")
+        
+    def assert_can_mark_tower_pattern(self, loc, tower_type):
+        '''
+        Asserts that tower pattern can be marked at this location.
+        '''
+        self.assert_can_mark_pattern(loc)
+        if tower_type.is_robot_type():
+            raise RobotError("Pattern type is not a tower type.")
+        if not self.game.get_map_info(loc).has_ruin():
+            raise RobotError(f"Cannot mark tower pattern at ({loc.x}, {loc.y}) because there is no ruin.")
+        
+    def assert_can_mark_resource_pattern(self, loc):
+        '''
+        Asserts that tower pattern can be marked at this location.
+        '''
+        self.assert_can_mark_pattern(loc)
+
+    def can_mark_tower_pattern(self, loc, tower_type):
+        """
+        Checks if specified tower pattern can be marked at location
+        """
+        try:
+            self.assert_can_mark_tower_pattern(loc, tower_type)
+            return True
+        except:
+            return False
+        
+    def can_mark_resource_pattern(self, loc):
+        """
+        Checks if resource pattern can be marked at location
+        """
+        try:
+            self.assert_can_mark_resource_pattern(loc)
+            return True
+        except:
+            return False
+        
+    def mark_tower_pattern(self, loc, tower_type):
+        """
+        Marks specified tower pattern at location if possible
+        tower_type: RobotType enum
+        """
+        self.assert_can_mark_tower_pattern(loc)
+        self.robot.add_paint(-GameConstants.MARK_PATTERN_COST)
+        self.game.mark_tower_pattern(self.robot.team, loc, tower_type) #TODO: implement mark_tower_pattern in game.py
+
+    def mark_resource_pattern(self, loc):
+        """
+        Marks resource pattern at location if possible
+        """
+        self.assert_can_mark_resource_pattern(loc)
+        self.robot.add_paint(-GameConstants.MARK_PATTERN_COST)
+        self.game.mark_resource_pattern(self.robot.team, loc) #TODO: implement mark_resource_pattern in game.py    
 
     #### SPAWN METHODS ####
     def assert_spawn(self, robot_type, map_location):
