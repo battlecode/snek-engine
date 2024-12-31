@@ -102,9 +102,14 @@ class Instrument:
 
         # Next, we cache a reference to the jumpers to each jump target in the targets
         for i, instruction in enumerate(instructions):
+
+            
+
             # We're only looking for jumpers
             if not instruction.is_jumper():
                 continue
+
+            print("argval:", instruction.argval)
 
             target = [t for t in instructions if instruction.argval == t.offset][0]
             instruction.jump_to = target
@@ -113,7 +118,7 @@ class Instrument:
             if instruction == target:
                 raise SyntaxError('No self-referential loops.')
 
-        unsafe = {0, 110, 113, 114, 115, 116, 120, 124, 125, 131}  # bytecode ops that break the instrument
+        unsafe = {0, 110, 113, 114, 115, 116, 120, 124, 125, 131, 172}  # bytecode ops that break the instrument
 
         #110 - 115 jump instructions
         #116 load_global
@@ -285,7 +290,7 @@ class Instrument:
                         old_code.co_posonlyargcount,
                         old_code.co_kwonlyargcount,
                         old_code.co_nlocals,
-                        old_code.co_stacksize,
+                        old_code.co_stacksize + 100,
                         old_code.co_flags,
                         new_code,
                         new_consts,

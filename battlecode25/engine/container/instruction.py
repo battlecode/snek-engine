@@ -28,11 +28,11 @@ class Instruction(SimpleNamespace):
 
     def calculate_offset(self, instructions):
         # Return the offset (rel or abs) to self.jump_to in instructions
-        target_loc = 2 * instructions.index(self.jump_to) - 2 * self.jump_to.extra_extended_args
+        target_loc = instructions.index(self.jump_to) - self.jump_to.extra_extended_args
 
         if self.is_abs_jumper():
             return target_loc
 
-        self_loc = 2 * instructions.index(self)
+        self_loc = instructions.index(self)
 
-        return target_loc - self_loc - 2
+        return target_loc - self_loc - 1

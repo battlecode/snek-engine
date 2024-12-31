@@ -4,6 +4,7 @@ import traceback
 from RestrictedPython import safe_builtins, limited_builtins, utility_builtins, Guards
 from .instrument import Instrument
 from types import CodeType
+import dis
 
 class RobotRunner:
     STARTING_BYTECODE = 20000
@@ -89,14 +90,7 @@ class RobotRunner:
         return accessed[attribute]
 
     def instrument_call(self):
-        print("called instrument", type(self))
-
-        if type(self) == CodeType:
-            print("aborting")
-            return
-        
-        print("continuing with bytecode counter")
-
+        # print("called instrument", type(self))
         self.bytecode -= 1
         self.check_bytecode()
 
@@ -174,6 +168,8 @@ class RobotRunner:
             try:
                 exec(self.locals['turn'].__code__, self.globals, self.locals)
             except:
+                # print("in except block")
+                # print(dis.dis(self.locals['turn'].__code__, show_caches=True, adaptive=False))
                 self.error_method(traceback.format_exc(limit=5))
         else:
             self.error_method('Couldn\'t find turn function.')
@@ -184,6 +180,6 @@ class RobotRunner:
         if not self.initialized:
             self.init_robot()
 
-        # print("starting bytecode", self.bytecode)
+        print("starting bytecode", self.bytecode)
         self.do_turn()
-        # print("ending bytecode", self.bytecode)
+        print("ending bytecode", self.bytecode)

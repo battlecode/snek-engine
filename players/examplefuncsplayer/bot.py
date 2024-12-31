@@ -41,5 +41,8 @@ def turn():
 #     if can_move(direction):
 #         move(direction)
 
+    # loc = get_location()
+    # log(loc)
+
 
 
