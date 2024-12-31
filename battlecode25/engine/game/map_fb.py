@@ -26,8 +26,6 @@ def serialize_map(builder: flatbuffers.Builder, initial_map: InitialMap):
     xs = [loc.x for loc in ruin_locs]
     ys = [loc.y for loc in ruin_locs]
 
-    print(xs, ys)
-
     ruins_offset = create_vec_table(builder, xs, ys)
     pattern_offset = create_vector(builder, GameMap.StartPaintPatternsVector, initial_map.pattern, builder.PrependInt32)
     map_name_offset = builder.CreateString(initial_map.name)
@@ -58,7 +56,6 @@ def deserialize_map(raw: GameMap):
     ruinsTable = raw.Ruins()
     ruins = [False] * (width * height)
     for i in range(ruinsTable.XsLength()):
-        print(f"Setting {ruinsTable.Xs(i)}, {ruinsTable.Ys(i)} to true")
         ruins[ruinsTable.Xs(i) + ruinsTable.Ys(i) * width] = True
 
     initial_bodies = load_spawn_actions(raw.InitialBodies())

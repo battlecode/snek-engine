@@ -3,7 +3,7 @@ import traceback
 
 from RestrictedPython import safe_builtins, limited_builtins, utility_builtins, Guards
 from .instrument import Instrument
-
+from types import CodeType
 
 class RobotRunner:
     STARTING_BYTECODE = 20000
@@ -16,9 +16,9 @@ class RobotRunner:
             '__builtins__': dict(i for dct in [safe_builtins, limited_builtins] for i in dct.items()),
             '__name__': '__main__'
         }
-
+    
         self.globals['__builtins__']['__metaclass__'] = type
-        self.globals['__builtins__']['__instrument__'] = self.instrument_call
+        self.globals['__builtins__']['instrument'] = self.instrument_call
         self.globals['__builtins__']['__multinstrument__'] = self.multinstrument_call
         self.globals['__builtins__']['__import__'] = self.import_call
         self.globals['__builtins__']['_getitem_'] = self.getitem_call
@@ -89,6 +89,14 @@ class RobotRunner:
         return accessed[attribute]
 
     def instrument_call(self):
+        print("called instrument", type(self))
+
+        if type(self) == CodeType:
+            print("aborting")
+            return
+        
+        print("continuing with bytecode counter")
+
         self.bytecode -= 1
         self.check_bytecode()
 
@@ -176,4 +184,6 @@ class RobotRunner:
         if not self.initialized:
             self.init_robot()
 
+        # print("starting bytecode", self.bytecode)
         self.do_turn()
+        # print("ending bytecode", self.bytecode)
