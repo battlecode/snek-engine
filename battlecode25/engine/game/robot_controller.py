@@ -268,11 +268,9 @@ class RobotController:
                 target_robot.add_health(-self.robot.type.attack_strength)
                 self.game.game_fb.add_attack_action(target_robot.id)
                 self.game.game_fb.add_damage_action(target_robot.id, self.robot.type.attack_strength)
-                print(self.game.walls, loc.to_string())
             else:
                 self.game.set_paint(loc, paint_type)
                 self.game.game_fb.add_paint_action(loc, use_secondary_color)
-                print(self.game.paint)
 
         elif self.robot.type == RobotType.SPLASHER:
             paint_type = (

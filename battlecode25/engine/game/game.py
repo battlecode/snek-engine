@@ -42,7 +42,7 @@ class Game:
         self.team_info.add_coins(Team.A, GameConstants.INITIAL_TEAM_MONEY)
         self.team_info.add_coins(Team.B, GameConstants.INITIAL_TEAM_MONEY)
         self.game_fb = game_fb
-        self.pattern = initial_map.pattern
+        self.pattern = [self.create_test_pattern_array() for i in range(4)]
         self.resource_pattern_centers = []
         self.resource_pattern_teams = []
         self.ruins = initial_map.ruins
@@ -402,6 +402,22 @@ class Game:
             if(check_pattern(shape)):
                 return shape
         return None
+    
+    def create_pattern_array(self, pattern):
+        result = [[0 for i in range(GameConstants.PATTERN_SIZE)] for j in range(GameConstants.PATTERN_SIZE)]
+        for i in range(GameConstants.PATTERN_SIZE ** 2):
+            x = i // GameConstants.PATTERN_SIZE
+            y = i % GameConstants.PATTERN_SIZE
+            result[x][y] = (pattern >> i) & 1
+        return result
+
+    def create_test_pattern_array(self):
+        result = [[0 for i in range(GameConstants.PATTERN_SIZE)] for j in range(GameConstants.PATTERN_SIZE)]
+        for i in range(GameConstants.PATTERN_SIZE ** 2):
+            x = i // GameConstants.PATTERN_SIZE
+            y = i % GameConstants.PATTERN_SIZE
+            result[x][y] = i % 2
+        return result
     
     def is_passable(self, loc):
         idx = self.loc_to_index(loc)
