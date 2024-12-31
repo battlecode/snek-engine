@@ -99,19 +99,28 @@ class Game:
             'RobotType': RobotType,
             'RobotError': RobotError,
             'Team': Team,
+            'can_spawn': rc.can_spawn,
+            'spawn': rc.spawn,
             'get_location': rc.get_location,
             'get_map_width': rc.get_map_width,
             'get_map_height': rc.get_map_height,
             'get_team': rc.get_team,
             'can_move': rc.can_move,
             'move': rc.move,
-            'Direction': Direction
+            'attack': rc.attack,
+            'can_attack': rc.can_attack,
+            'mop_swing': rc.mop_swing,
+            'sense': rc.sense,
+            'sense_robot_at_location': rc.sense_robot_at_location,
+            'Direction': Direction,
+            'MapLocation': MapLocation
         }
 
         robot.animate(self.code[team.value], methods, debug=self.debug)
         self.robot_exec_order.append(id)
         self.id_to_robot[id] = robot
         self.add_robot_to_loc(loc, robot)
+        return robot
 
     def destroy_robot(self, id):
         robot: Robot = self.id_to_robot[id]
@@ -238,7 +247,7 @@ class Game:
         elif paint == 3 or paint == 4:
             return Team.B
         else:
-            return 0
+            return Team.NEUTRAL
         
     def set_paint(self, loc, paint):
         idx = self.loc_to_index(loc)

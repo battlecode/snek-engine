@@ -146,6 +146,7 @@ class GameFB:
     def make_match_header(self, initial_map):
         self.state = self.State.IN_MATCH
         map_offset = serialize_map(self.builder, initial_map)
+        self.initial_map = initial_map
 
         MatchHeader.Start(self.builder)
         MatchHeader.AddMap(self.builder, map_offset)
@@ -199,7 +200,7 @@ class GameFB:
         Turn.AddHealth(self.builder, health)
         Turn.AddPaint(self.builder, paint)
         Turn.AddMoveCooldown(self.builder, movement_cooldown)
-        Turn.AddActionCooldown(self.builder, action_cooldown)
+        Turn.AddActionCooldown(self.builder,int(action_cooldown))
         Turn.AddBytecodesUsed(self.builder, bytecodes_used)
         Turn.AddX(self.builder, loc.x)
         Turn.AddY(self.builder, loc.y)
@@ -247,8 +248,8 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().MessageAction)
 
-    def add_spawn_action(self, loc, team, robot_type):
-        action_offset = SpawnAction.CreateSpawnAction(self.builder, loc.x, loc.y, fb_from_team(team), fb_from_robot_type(robot_type))
+    def add_spawn_action(self, id, loc, team, robot_type):
+        action_offset = SpawnAction.CreateSpawnAction(self.builder, id, loc.x, loc.y, fb_from_team(team), fb_from_robot_type(robot_type))
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().SpawnAction)
 
