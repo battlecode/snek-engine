@@ -111,6 +111,13 @@ class Game:
             'mop_swing': rc.mop_swing,
             'sense': rc.sense,
             'sense_robot_at_location': rc.sense_robot_at_location,
+            'assert_can_mark_pattern': rc.assert_can_mark_pattern,
+            'assert_can_mark_tower_pattern': rc.assert_can_mark_tower_pattern,
+            'assert_can_mark_resource_pattern': rc.assert_can_mark_resource_pattern,
+            'can_mark_tower_pattern': rc.can_mark_tower_pattern,
+            'can_mark_resource_pattern': rc.can_mark_resource_pattern,
+            'mark_tower_pattern': rc.mark_tower_pattern,
+            'mark_resource_pattern': rc.mark_resource_pattern,
             'Direction': Direction,
             'MapLocation': MapLocation
         }
