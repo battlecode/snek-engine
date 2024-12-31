@@ -68,6 +68,9 @@ def fb_from_domination_factor(factor):
             return WinType.WinType().RESIGNATION
         case _:
             return None  # Default case
+        
+def fb_from_die_type(was_exception):
+    return 1 if was_exception else 0
     
 def fb_from_team(team):
     if team == Team.A: return 1

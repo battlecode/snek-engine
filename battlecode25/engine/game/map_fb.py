@@ -12,16 +12,13 @@ from .constants import GameConstants
 MAP_EXTENSION = ".map25"
 
 def serialize_map(builder: flatbuffers.Builder, initial_map: InitialMap):
-    robot_ids = [robot.id for robot in initial_map.initial_bodies]
-    robot_ids_offset = create_vector(builder, InitialBodyTable.StartRobotIdsVector, robot_ids, builder.PrependInt32)
     spawn_actions_offset = create_spawn_actions(builder, initial_map.initial_bodies)
     InitialBodyTable.Start(builder)
-    InitialBodyTable.AddRobotIds(builder, robot_ids_offset)
     InitialBodyTable.AddSpawnActions(builder, spawn_actions_offset)
     initial_bodies_offset = InitialBodyTable.End(builder)
 
     walls_offset = create_vector(builder, GameMap.StartWallsVector, initial_map.walls, builder.PrependBool)
-    paint_offset = create_vector(builder, GameMap.StartPaintVector, initial_map.paint, builder.PrependBool)
+    paint_offset = create_vector(builder, GameMap.StartPaintVector, initial_map.paint, builder.PrependByte)
     ruin_locs = [initial_map.index_to_loc(i) for i, ruin in enumerate(initial_map.ruins) if ruin]
     xs = [loc.x for loc in ruin_locs]
     ys = [loc.y for loc in ruin_locs]
@@ -64,17 +61,17 @@ def deserialize_map(raw: GameMap):
 def create_spawn_actions(builder: flatbuffers.Builder, initial_bodies):
     InitialBodyTable.StartSpawnActionsVector(builder, len(initial_bodies))
     for robot in initial_bodies:
-        SpawnAction.CreateSpawnAction(builder, robot.location.x, robot.location.y, fb_from_team(robot.team), fb_from_robot_type(robot.type))
+        SpawnAction.CreateSpawnAction(builder, robot.id, robot.location.x, robot.location.y, fb_from_team(robot.team), fb_from_robot_type(robot.type))
     return builder.EndVector()
 
 def load_spawn_actions(body_table: InitialBodyTable):
     result = []
-    for i in range(body_table.RobotIdsLength()):
+    for i in range(body_table.SpawnActionsLength()):
         spawn_action: SpawnAction.SpawnAction = body_table.SpawnActions(i)
         robot_type = robot_type_from_fb(spawn_action.RobotType())
         loc = MapLocation(spawn_action.X(), spawn_action.Y())
         initial_paint = GameConstants.INITIAL_PAINT_TOWER_PAINT if (robot_type == RobotType.LEVEL_ONE_PAINT_TOWER) else 0
-        result.append(RobotInfo(body_table.RobotIds(i), team_from_fb(spawn_action.Team()), robot_type, robot_type.health, loc, initial_paint))
+        result.append(RobotInfo(i, team_from_fb(spawn_action.Team()), robot_type, robot_type.health, loc, initial_paint))
     return result
 
 def load_map(name, path):
