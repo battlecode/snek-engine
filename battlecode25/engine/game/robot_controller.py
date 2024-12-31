@@ -392,10 +392,11 @@ class RobotController:
         Spawns a new robot of the given type at a specific map location if conditions are met.
         """
         self.assert_spawn(robot_type, map_location)
-        self.game.spawn_robot(robot_type, map_location, self.robot.team)
+        robot = self.game.spawn_robot(robot_type, map_location, self.robot.team)
         self.robot.add_action_cooldown()  # Adjust cooldown as needed
         self.robot.add_paint(-robot_type.paint_cost)
         self.game.team_info.add_coins(self.robot.team, -robot_type.money_cost)
+        self.game.game_fb.add_spawn_action(robot.id, robot.loc, robot.team, robot.type)
         print("----------------------SPAWNED")
 
     #### MESSAGE METHODS ####

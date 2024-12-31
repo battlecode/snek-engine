@@ -22,7 +22,7 @@ from ..schema import TransferAction
 from ..schema import MessageAction
 from ..schema import SpawnAction
 from ..schema import UpgradeAction
-from ..schema import DieExceptionAction
+from ..schema import DieAction
 from ..schema import IndicatorStringAction
 from ..schema import IndicatorDotAction
 from ..schema import IndicatorLineAction
@@ -248,8 +248,8 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().MessageAction)
 
-    def add_spawn_action(self, loc, team, robot_type):
-        action_offset = SpawnAction.CreateSpawnAction(self.builder, loc.x, loc.y, fb_from_team(team), fb_from_robot_type(robot_type))
+    def add_spawn_action(self, id, loc, team, robot_type):
+        action_offset = SpawnAction.CreateSpawnAction(self.builder, id, loc.x, loc.y, fb_from_team(team), fb_from_robot_type(robot_type))
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().SpawnAction)
 
@@ -258,10 +258,10 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().UpgradeAction)
 
-    def add_die_exception_action(self):
-        action_offset = DieExceptionAction.CreateDieExceptionAction(self.builder, -1)
+    def add_die_action(self, id, was_exception):
+        action_offset = DieAction.CreateDieAction(self.builder, id, fb_from_die_type(was_exception))
         self.current_actions.append(action_offset)
-        self.current_action_types.append(Action.Action().DieExceptionAction)
+        self.current_action_types.append(Action.Action().DieAction)
 
     def add_team_info(self, team, money_amount):
         self.team_ids.append(fb_from_team(team))

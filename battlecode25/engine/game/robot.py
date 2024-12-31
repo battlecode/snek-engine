@@ -12,7 +12,7 @@ if 1 == 0:
 
 class Robot:
 
-    def __init__(self, game: Game, id, team: Team, type: RobotType, loc: MapLocation, send_spawn_action=True):
+    def __init__(self, game: Game, id, team: Team, type: RobotType, loc: MapLocation):
         self.game = game
         self.id = id
         self.team = team
@@ -30,7 +30,6 @@ class Robot:
         self.runner = None
         self.debug = False
         self.logs = []
-        self.send_spawn_action = send_spawn_action
 
     def add_paint(self, amount): 
         new_amount = self.paint + amount
@@ -83,9 +82,6 @@ class Robot:
         self.action_cooldown = max(0, self.action_cooldown - GameConstants.COOLDOWNS_PER_TURN)
         self.movement_cooldown = max(0, self.movement_cooldown - GameConstants.COOLDOWNS_PER_TURN)
         self.game.game_fb.start_turn(self.id)
-        if self.send_spawn_action:
-            self.game.game_fb.add_spawn_action(self.loc, self.team, self.type)
-            self.send_spawn_action = False
     
     def process_end_of_turn(self):
         loc_idx = self.game.loc_to_index(self.loc)

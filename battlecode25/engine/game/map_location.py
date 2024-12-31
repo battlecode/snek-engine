@@ -63,3 +63,6 @@ class MapLocation:
     
     def subtract(self, dir):
         return self.translate(-dir.value[0], -dir.value[1])
+    
+    def __str__(self):
+        return f'({self.x}, {self.y})'
