@@ -38,38 +38,29 @@ class RobotController:
 
     def get_type(self):
         return self.robot.type
-
-    def mark(self, loc, color):
-        """ 
-        loc: MapLocation we want to mark
-        color: Color enum specifying the color of the mark
-        Marks the specified map location
-        """
-        self.game.mark_location(self.robot.team, loc, color)
     
     def get_pattern(self, shape):
+        #TODO split into tower and resource, return in correct format
         """
         shape: Shape enum specifying the shape pattern to retrieve
         Returns a 5 x 5 array of the mark colors
         """
         return self.game.pattern
 
-    def mark_pattern(self, center, shape):
-        """
-        center: MapLocation center of the 5x5 pattern
-        shape: Shape enum to be marked
-        Marks the specified pattern centered at the location specified
-        """
-        # Check bounds
-        assert(not self.game.is_valid_pattern_center(center), "Shape out of bounds")
+    def assert_not_none(self, o):
+        if o is None:
+            raise RobotError("Argument has invalid None value")
 
-        pattern_array = self.game.pattern[shape]
-
-        offset = GameConstants.PATTERN_SIZE//2
-        for dx in range(-offset, offset + 1):
-            for dy in range(-offset, offset + 1):
-                loc = MapLocation(center.x + dx, center.y + dy)
-                self.mark(loc, pattern_array[dx+offset][dy+offset])
+    def assert_can_act_location(self, loc, max_radius_squared):
+        self.assert_not_none(loc)
+        if self.robot.loc.distance_squared_to(loc) > max_radius_squared:
+            raise RobotError("Target location is not within action range")
+        if not self.game.on_the_map(loc):
+            raise RobotError("Target location is not on the map")
+        
+    def assert_is_robot_type(self, type: RobotType):
+        if not type.is_robot_type():
+            raise RobotError("Towers cannot perform this action")
 
     #### SENSING METHODS ####
     def sense(self):
@@ -414,8 +405,33 @@ class RobotController:
         """
         self.assert_can_mark_resource_pattern(loc)
         self.robot.add_paint(-GameConstants.MARK_PATTERN_COST)
-        self.game.mark_resource_pattern(self.robot.team, loc) #TODO: implement mark_resource_pattern in game.py    
+        self.game.mark_resource_pattern(self.robot.team, loc) #TODO: implement mark_resource_pattern in game.py 
 
+    def assert_can_mark(self, loc):
+        self.assert_is_robot_type(self.robot.type)
+        self.assert_can_act_location(loc, GameConstants.MARK_RADIUS_SQUARED)
+
+    def can_mark(self, loc):
+        """
+        Checks if the robot can mark a location.
+        Returns True if marking conditions are met, otherwise False
+        """
+        try:
+            self.assert_can_mark(loc)
+            return True
+        except RobotError:
+            return False
+
+    def mark(self, loc, secondary: bool):
+        """
+        Marks the specified map location
+        loc: MapLocation we want to mark
+        color: Color enum specifying the color of the mark
+        """
+        self.assert_can_mark(loc)
+        color = self.game.get_primary_paint(self.robot.team) if not secondary else self.game.get_secondary_paint(self.robot.team)
+        self.game.mark_location(self.robot.team, loc, color)
+           
     #### SPAWN METHODS ####
     def assert_spawn(self, robot_type, map_location):
         """
@@ -461,17 +477,40 @@ class RobotController:
 
     #### MESSAGE METHODS ####
     def assert_can_send_message(self, loc):
-        # Implement the necessary checks
-        pass
+        self.assert_not_none(loc)
+        self.assert_can_act_location(loc, GameConstants.MESSAGE_RADIUS_SQUARED)
+        target = self.game.get_robot(loc)
+        self.assert_not_none(target)
+        if target.team != self.robot.team:
+            raise RobotError("Cannot send messages to robots of the enemy team!")
+        if self.robot.type.is_robot_type() == target.type.is_robot_type():
+            raise RobotError("Only (robot <-> tower) communication is allowed!")
+        if self.robot.type.is_robot_type():
+            if self.robot.sent_message_count >= GameConstants.MAX_MESSAGES_SENT_ROBOT:
+                raise RobotError("Robot has already sent too many messages this round!")
+        elif self.robot.sent_message_count >= GameConstants.MAX_MESSAGES_SENT_TOWER:
+            raise RobotError("Tower has already sent too many messages this round!")
+        if not self.game.connected_by_paint(self.robot.loc, target.loc):
+            raise RobotError("Location specified is not connected to current location by paint!")
 
     def can_send_message(self, loc):
-        # Implement the necessary checks
-        pass
+        try:
+            self.assert_can_send_message(loc)
+            return True
+        except RobotError as e:
+            return False
 
-    def get_messages(self, round=None):
-        if round is not None:
-            return self.game.get_messages(self.robot, round)
-        return self.game.get_messages(self.robot)
+    def send_message(self, loc, message_content):
+        self.assert_can_send_message(loc)
+        target = self.game.get_robot(loc)
+        target.message_buffer.add_message(message_content)
+        self.robot.sent_message_count += 1
+        self.game.game_fb.add_message_action(target.id, message_content)
+
+    def read_messages(self, round=-1):
+        if round == -1:
+            return self.robot.message_buffer.get_all_messages()
+        return self.robot.message_buffer.get_messages(round)
 
     #### TRANSFERRING METHODS ####
     def assert_can_transfer_paint(self, target_location, amount):

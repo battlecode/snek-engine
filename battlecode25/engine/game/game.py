@@ -84,7 +84,7 @@ class Game:
     def remove_robot_from_loc(self, loc):
         self.robots[self.loc_to_index(loc)] = None
 
-    def get_robot(self, loc: MapLocation):
+    def get_robot(self, loc: MapLocation) -> Robot:
         return self.robots[self.loc_to_index(loc)]
 
     def spawn_robot(self, type: RobotType, loc: MapLocation, team: Team, id=None):
@@ -98,6 +98,8 @@ class Game:
             'RobotType': RobotType,
             'RobotError': RobotError,
             'Team': Team,
+            'Direction': Direction,
+            'MapLocation': MapLocation,
             'can_spawn': rc.can_spawn,
             'spawn': rc.spawn,
             'get_location': rc.get_location,
@@ -111,15 +113,10 @@ class Game:
             'mop_swing': rc.mop_swing,
             'sense': rc.sense,
             'sense_robot_at_location': rc.sense_robot_at_location,
-            'assert_can_mark_pattern': rc.assert_can_mark_pattern,
-            'assert_can_mark_tower_pattern': rc.assert_can_mark_tower_pattern,
-            'assert_can_mark_resource_pattern': rc.assert_can_mark_resource_pattern,
             'can_mark_tower_pattern': rc.can_mark_tower_pattern,
             'can_mark_resource_pattern': rc.can_mark_resource_pattern,
             'mark_tower_pattern': rc.mark_tower_pattern,
             'mark_resource_pattern': rc.mark_resource_pattern,
-            'Direction': Direction,
-            'MapLocation': MapLocation
         }
 
         robot.animate(self.code[team.value], methods, debug=self.debug)
@@ -200,7 +197,7 @@ class Game:
     def on_the_map(self, loc):
         return 0 <= loc.x < self.width and 0 <= loc.y < self.height
     
-    def flood_fill(self, robot_loc, tower_loc):
+    def connected_by_paint(self, robot_loc, tower_loc):
         queue = [robot_loc]
         visited = set()
 
@@ -449,33 +446,6 @@ class Game:
         for id in exec_order:
             if id in self.id_to_robot:
                 func(self.id_to_robot[id])
-
-    #### DEBUG METHODS ####
-
-    def view_board(self, colors=True):
-        """
-        @DEBUG_METHOD
-        THIS METHOD IS NOT AVAILABLE DURING ACTUAL GAMES.
-
-        Helper method that displays the full board as a human-readable string.
-        """
-        board = ''
-        for i in range(self.height):
-            for j in range(self.width):
-                if self.robots[i][j]:
-                    board += '['
-                    if colors:
-                        if self.robots[i][j].team == Team.WHITE:
-                            board += '\033[1m\u001b[37m'
-                        else:
-                            board += '\033[1m\u001b[36m'
-                    board += str(self.robots[i][j])
-                    if colors:
-                        board += '\033[0m\u001b[0m] '
-                else:
-                    board += '[    ] '
-            board += '\n'
-        return board
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""

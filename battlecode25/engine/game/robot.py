@@ -5,6 +5,7 @@ from .map_location import MapLocation
 from .constants import GameConstants
 from .team import Team
 from .robot_info import RobotInfo
+from .message_buffer import MessageBuffer
 
 #Imported for type checking
 if 1 == 0:
@@ -29,6 +30,8 @@ class Robot:
         self.indicator_string = ""
         self.runner = None
         self.debug = False
+        self.message_buffer = MessageBuffer(GameConstants.MESSAGE_ROUND_DURATION)
+        self.sent_message_count = 0
         self.logs = []
 
     def add_paint(self, amount): 
@@ -105,6 +108,9 @@ class Robot:
         if self.type.name == "TOWER":
             self.add_paint(self.type.paint_per_turn)
             self.game.team_info.add_coins(self.type.money_per_turn )
+
+        self.message_buffer.next_round()
+        self.sent_message_count = 0
 
         self.game.game_fb.end_turn(self.id, self.health, self.paint, self.movement_cooldown, self.action_cooldown, self.bytecodes_used, self.loc)
         self.rounds_alive += 1

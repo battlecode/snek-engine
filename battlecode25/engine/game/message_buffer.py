@@ -1,6 +1,6 @@
 class MessageBuffer:
 
-    def __init__(self, size, max_per_round):
+    def __init__(self, size):
         self.rounds = [[] for _ in range(size)]
         self.head = 0
         self.round = 0
@@ -16,12 +16,14 @@ class MessageBuffer:
         self.rounds[self.head] = []
 
     def get_all_messages(self):
-        '''return messages in reverse-chronological order'''
+        '''Returns messages in reverse-chronological order'''
         result = []
         for i in range(len(self.rounds)):
             index = self.head - i
-            result.extend([(self.round - i, message) for message in self.rounds[index]])
+            result.extend(self.rounds[index])
         return result
 
     def get_messages(self, round):
-        return [(round, message) for message in self.rounds[self.head - (self.round - round)]]
+        if self.round - round + 1 > len(self.rounds):
+            return []
+        return self.rounds[self.head - (self.round - round)][:]
