@@ -214,6 +214,8 @@ class RobotController:
         Assert that the robot can attack. This function checks all conditions necessary
         for the robot to perform an attack and raises an error if any are not met.
         """
+        if loc == None and not self.robot.type in {RobotType.SOLDIER, RobotType.SPLASHER}:
+            return
         if not self.game.on_the_map(loc):
             raise RobotError("Outside of Map")
         if self.game.walls[self.game.loc_to_index(loc)]:
@@ -271,14 +273,16 @@ class RobotController:
             )
             self.robot.add_paint(-self.robot.type.attack_cost)
 
-            all_locs = self.game.get_all_locations_within_radius_squared(loc, self.robot.type.action_radius_squared)
+            all_locs = self.game.get_all_locations_within_radius_squared(loc, 2)
             for new_loc in all_locs:
-                if not self.game.on_the_map(new_loc):
+                if not self.can_attack(loc):
                     continue
                 target_robot = self.game.get_robot(new_loc)
                 if target_robot and target_robot.type.is_tower_type() and target_robot.team != self.robot.team:
                     target_robot.add_health(-self.robot.type.attack_strength)
-                elif self.game.on_the_map(new_loc):
+                    self.game.game_fb.add_attack_action(target_robot.id)
+                    self.game.game_fb.add_damage_action(target_robot.id, self.robot.type.attack_strength)
+                else:
                     self.game.set_paint(new_loc, paint_type)
 
         elif self.robot.type == RobotType.MOPPER:
@@ -296,8 +300,11 @@ class RobotController:
                 if target_robot and target_robot.type.is_robot_type() and target_robot.team != self.robot.team:
                     target_robot.add_paint(-GameConstants.MOPPER_ATTACK_PAINT_DEPLETION)
                     self.robot.add_paint(GameConstants.MOPPER_ATTACK_PAINT_ADDITION)
+                    self.game.game_fb.add_attack_action(target_robot.id)
+                    self.game.game_fb.add_mop_action(loc)
+                    
 
-                elif self.game.on_the_map(loc):
+                else:
                     self.game.set_paint(loc, 0)
 
         else:  # Tower
@@ -305,14 +312,20 @@ class RobotController:
                 self.robot.has_tower_area_attacked = True
                 all_locs = self.game.get_all_locations_within_radius_squared(self.robot.loc, self.robot.type.action_radius_squared)
                 for new_loc in all_locs:
+                    if not self.can_attack(loc):
+                        continue
                     target_robot = self.game.get_robot(new_loc)
                     if target_robot and target_robot.team != self.robot.team:
                         target_robot.add_health(-self.robot.type.aoe_attack_strength)
+                        self.game.game_fb.add_attack_action(target_robot.id)
+                        self.game.game_fb.add_damage_action(target_robot.id, self.robot.type.aoe_attack_strength)
             else:
                 self.robot.has_tower_single_attacked = True
                 target_robot = self.game.get_robot(loc)
                 if target_robot and target_robot.team != self.robot.team:
                     target_robot.add_health(-self.robot.type.attack_strength)
+                    self.game.game_fb.add_attack_action(target_robot.id)
+                    self.game.game_fb.add_damage_action(target_robot.id, self.robot.type.attack_strength)
 
     def mop_swing(self):
         assert self.robot.type == RobotType.MOPPER, "mop_swing called on non-MOPPER robot"
@@ -333,12 +346,14 @@ class RobotController:
             y = self.robot.loc.y + dy
             new_loc = MapLocation(x, y)
         
-            if not self.game.on_the_map(new_loc):
+            if not self.can_attack(new_loc):
                 continue
         
             target_robot = self.game.get_robot(new_loc)
             if target_robot and target_robot.team != self.robot.team:
                 target_robot.add_paint(-GameConstants.MOPPER_SWING_PAINT_DEPLETION)
+                self.game.game_fb.add_attack_action(target_robot.id)
+                self.game.game_fb.add_mop_action(new_loc)
 
     # MARKING METHODS
     def assert_can_mark_pattern(self, loc):

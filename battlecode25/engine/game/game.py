@@ -264,6 +264,10 @@ class Game:
             self.team_info.add_painted_squares(1, new_paint_team)
 
         self.paint[idx] = paint
+        if paint != 0:
+            self.game_fb.add_paint_action(loc, self.get_secondary_paint(self.team_from_paint(paint)) == paint)
+        else:
+            self.game_fb.add_unpaint_action(loc)
 
     def get_all_locations_within_radius_squared(self, center: MapLocation, radius_squared):
         """
