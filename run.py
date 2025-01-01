@@ -93,7 +93,7 @@ def run_game(args):
     game_fb.make_game_footer(game.winner)
     if not os.path.exists("matches"):
         os.mkdir("matches")
-    game_fb.finish_and_save("./matches/output.bc25")
+    game_fb.finish_and_save(f"./matches/{args.output}.bc25")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -102,6 +102,7 @@ if __name__ == '__main__':
     parser.add_argument('--max-rounds', default=GameConstants.GAME_MAX_NUMBER_OF_ROUNDS, type=int, help="Override the max number of rounds for faster games.")
     parser.add_argument('--seed', default=GameConstants.GAME_DEFAULT_SEED, type=int, help="Override the seed used for random.")
     parser.add_argument('--show_indicators', default='false', choices=('true', 'false'), help="Show debug indicators in output file")
+    parser.add_argument('--output', default = 'output', help="Specify output file name")
     args = parser.parse_args()
     args.debug = args.debug == 'true'
     args.show_indicators = args.show_indicators == 'true'

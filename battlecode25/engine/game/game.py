@@ -306,13 +306,13 @@ class Game:
         '''
         Marks pattern at center
         '''
-        pattern_array = self.pattern[shape]
+        pattern_array = self.pattern[shape.value]
 
         offset = GameConstants.PATTERN_SIZE//2
 
         for dx in range(-offset, offset + 1):
             for dy in range(-offset, offset + 1):
-                color_indicator = pattern_array[dx + offset, dy + offset]
+                color_indicator = pattern_array[dx + offset][dy + offset]
                 mark_color =  self.get_primary_paint(team) if (color_indicator == 0) else self.get_secondary_paint(team)
                 self.mark_location(MapLocation(center.x + dx, center.y + dy), mark_color)
 
@@ -361,7 +361,7 @@ class Game:
             Check presence of a particular pattern type up to 8 symmetries
             Returns True/False, whether pattern is present
             '''
-            pattern_array = self.pattern[shape]
+            pattern_array = self.pattern[shape.value]
             valid_transformations = [True] * len(Transformation) # T/F for whether a transformation is valid
 
             offset = GameConstants.PATTERN_SIZE//2

@@ -181,6 +181,8 @@ class RobotController:
     
     #### MOVEMENT METHODS ####
     def assert_can_move(self, direction):
+        if self.robot.type.is_tower_type():
+            raise RobotError("Towers cannot move")
         if direction is None:
             raise RobotError("Not a valid direction")
         if self.robot.movement_cooldown >= GameConstants.COOLDOWN_LIMIT:
@@ -202,6 +204,7 @@ class RobotController:
             return False
 
     def move(self, direction):
+        print(self.robot.paint, "paint")
         self.assert_can_move(direction)
         self.robot.add_movement_cooldown()
         new_loc = self.robot.loc.add(direction)
@@ -367,6 +370,7 @@ class RobotController:
         if not loc.is_within_distance_squared(self.robot.loc, GameConstants.MARK_RADIUS_SQUARED):
             raise RobotError(f"({loc.x}, {loc.y}) is not within the robot's pattern-marking range")
         if self.robot.paint < GameConstants.MARK_PATTERN_COST:
+            print(self.robot.paint, GameConstants.MARK_PATTERN_COST)
             raise RobotError("Robot does not have enough paint for mark the pattern.")
         
     def assert_can_mark_tower_pattern(self, loc, tower_type):
@@ -410,7 +414,7 @@ class RobotController:
         Marks specified tower pattern at location if possible
         tower_type: RobotType enum
         """
-        self.assert_can_mark_tower_pattern(loc)
+        self.assert_can_mark_tower_pattern(loc, tower_type)
         self.robot.add_paint(-GameConstants.MARK_PATTERN_COST)
         self.game.mark_tower_pattern(self.robot.team, loc, tower_type) #TODO: implement mark_tower_pattern in game.py
 
@@ -454,7 +458,7 @@ class RobotController:
         """
         if not self.on_the_map(map_location):
             raise RobotError("Build location is out of bounds.")
-        if not self.robot.type.is_tower_type() and self.robot.action_cooldown > self.robot.type.action_cooldown:
+        if not self.robot.type.is_tower_type() or self.robot.action_cooldown > self.robot.type.action_cooldown:
             raise RobotError("Robot cannot spawn: it must be a tower and its action cooldown must be ready.")
         
         if self.robot.paint < robot_type.paint_cost or self.game.team_info.get_coins(self.robot.team) < robot_type.money_cost:
