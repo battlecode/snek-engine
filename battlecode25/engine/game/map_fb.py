@@ -76,7 +76,9 @@ def load_spawn_actions(body_table: InitialBodyTable):
 
 def load_map(name, path):
     full_path = path + name + MAP_EXTENSION
+    return load_map_raw(full_path)
 
-    with open(full_path, "rb") as file:
+def load_map_raw(path):
+    with open(path, "rb") as file:
         return deserialize_map(GameMap.GameMap.GetRootAs(bytearray(file.read()), 0))
     

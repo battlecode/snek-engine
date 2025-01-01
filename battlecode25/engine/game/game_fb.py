@@ -30,6 +30,7 @@ from ..schema import Action
 from ..schema import RobotTypeMetadata
 from .fb_helpers import *
 from .map_fb import serialize_map
+from pathlib import Path
 import gzip
 import io
 
@@ -66,16 +67,19 @@ class GameFB:
 
         spec_version_offset = self.builder.CreateString(GameConstants.SPEC_VERSION)
 
-        name = self.builder.CreateString(self.game_args.player[0])
-        package_name = self.builder.CreateString(self.game_args.player[0])
+        p1_name = Path(self.game_args.player1_dir).name
+        p2_name = Path(self.game_args.player2_dir).name
+
+        name = self.builder.CreateString(p1_name)
+        package_name = self.builder.CreateString(p1_name)
         TeamData.Start(self.builder)
         TeamData.AddName(self.builder, name)
         TeamData.AddPackageName(self.builder, package_name)
         TeamData.AddTeamId(self.builder, fb_from_team(Team.A))
         team_a_offset = TeamData.End(self.builder)
 
-        name = self.builder.CreateString(self.game_args.player[1] if len(self.game_args.player) > 1 else self.game_args.player[0])
-        package_name = self.builder.CreateString(self.game_args.player[1] if len(self.game_args.player) > 1 else self.game_args.player[0])
+        name = self.builder.CreateString(p2_name)
+        package_name = self.builder.CreateString(p2_name)
         TeamData.Start(self.builder)
         TeamData.AddName(self.builder, name)
         TeamData.AddPackageName(self.builder, package_name)
