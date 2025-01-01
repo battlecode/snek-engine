@@ -22,31 +22,7 @@ class RobotController:
         self.game = game
         self.robot = robot
 
-    def get_location(self):
-        return self.robot.loc
-
-    def get_map_width(self):
-        return self.game.width
-
-    def get_map_height(self):
-        return self.game.height
-
-    def get_team(self):
-        """
-        Return the current robot's team (Team.A or Team.B)
-        """
-        return self.robot.team
-
-    def get_type(self):
-        return self.robot.type
-    
-    def get_pattern(self, shape):
-        #TODO split into tower and resource, return in correct format
-        """
-        shape: Shape enum specifying the shape pattern to retrieve
-        Returns a 5 x 5 array of the mark colors
-        """
-        return self.game.pattern
+    # INTERNAL HELPERS
 
     def assert_not_none(self, o):
         if o is None:
@@ -67,35 +43,62 @@ class RobotController:
         if not type.is_tower_type():
             raise RobotError("Robots cannot perform this action")
 
-    #### SENSING METHODS ####
-    def sense(self):
+    # GLOBAL QUERY FUNCTIONS
+
+    def get_round_num(self):
+        return self.game.round
+
+    def get_map_width(self):
+        return self.game.width
+
+    def get_map_height(self):
+        return self.game.height
+    
+    def get_resource_pattern(self):
+        return self.game.pattern[Shape.RESOURCE.value]
+    
+    def get_tower_pattern(self, tower_type):
+        self.assert_is_tower_type(tower_type)
+        return self.game.pattern[self.game.shape_from_tower_type(tower_type).value]
+    
+    # ROBOT QUERY FUNCTIONS
+
+    def get_id(self):
+        return self.robot.id
+
+    def get_team(self):
         """
-        Sense nearby units; returns a list of tuples of the form (row, col, robot.team) 
-        within sensor radius of this robot (excluding yourself)
+        Return the current robot's team (Team.A or Team.B)
         """
-        row, col = self.robot.row, self.robot.col
-        robots = []
+        return self.robot.team
+    
+    def get_paint(self):
+        return self.robot.paint
+    
+    def get_location(self):
+        return self.robot.loc
+    
+    def get_health(self):
+        return self.robot.health
+    
+    def get_money(self):
+        return self.game.team_info.get_coins(self.robot.team)
 
-        for i in range(-self.game.sensor_radius, self.game.sensor_radius + 1):
-            for j in range(-self.game.sensor_radius, self.game.sensor_radius + 1):
-                if i == 0 and j == 0:
-                    continue
+    def get_type(self):
+        return self.robot.type
 
-                new_row, new_col = row + i, col + j
-                if not self.game.on_the_map(new_row, new_col):
-                    continue
+    # SENSING FUNCTIONS
 
-                other_robot = self.game.robots[new_row][new_col]
-                if other_robot:
-                    robots.append((new_row, new_col, other_robot.team))
-
-        return robots
+    def on_the_map(self, loc):
+        self.assert_not_none(loc)
+        return self.game.on_the_map(loc)
 
     def assert_can_sense_location(self, loc):
-        if loc is None:
-            raise RobotError("Not a valid location")
+        self.assert_not_none(loc)
         if not self.game.on_the_map(loc):
             raise RobotError("Target location is not on the map")
+        if self.robot.loc.distance_squared_to(loc) > GameConstants.VISION_RADIUS_SQUARED:
+            raise RobotError("Target location is out of vision range")
 
     def can_sense_location(self, loc):
         try:
@@ -106,11 +109,7 @@ class RobotController:
 
     def is_location_occupied(self, loc):
         self.assert_can_sense_location(loc)
-        if self.game.robots[loc.x][loc.y] is not None:
-            return True
-        if self.game.towers[loc.x][loc.y] is not None:
-            return True
-        return False
+        return self.game.get_robot(loc) is not None
 
     def can_sense_robot_at_location(self, loc):
         try:
@@ -120,69 +119,79 @@ class RobotController:
 
     def sense_robot_at_location(self, loc):
         self.assert_can_sense_location(loc)
-        target_robot = self.game.robots[loc.x][loc.y]
-        if target_robot:
-            return RobotInfo(
-                target_robot.id, 
-                target_robot.team, 
-                target_robot.health, 
-                target_robot.location, 
-                target_robot.attack_level
-            )
-        return None
+        robot = self.game.get_robot(loc)
+        return None if robot is None else robot.get_robot_info()   
 
     def can_sense_robot(self, robot_id):
         sensed_robot = self.game.get_robot_by_id(robot_id)
-
-        if sensed_robot is None or not sensed_robot.spawn:
-            return False
-
-        return self.can_sense_location(sensed_robot.location)
+        return sensed_robot is not None and self.can_sense_location(sensed_robot.loc)
 
     def sense_robot(self, robot_id):
         if not self.can_sense_robot(robot_id):
-            raise RobotError("Cannot sense robot")
-        target_robot = self.game.get_robot_by_id(robot_id)
-        return RobotInfo(
-            target_robot.id, 
-            target_robot.team, 
-            target_robot.health, 
-            target_robot.location, 
-            target_robot.attack_level
-        )
-
-    def sense_nearby_robots(self, center=None, radius=-1, team=-1):
-        if center is None:
-            center = self.robot.loc
-        if not self.robot.spawned:
-            raise RobotError("Robot is not spawned")
-        if radius == -1:
-            radius = self.game.VISION_RADIUS_SQUARED
+            raise RobotError("Cannot sense robot; It may be out of vision range not exist")
+        return self.game.get_robot_by_id(robot_id).get_robot_info()
+    
+    def assert_radius_non_negative(self, radius):
         if radius < 0:
             raise RobotError("Radius is negative")
 
-        all_robots_sensed = self.game.get_all_locations_within_radius_squared(center, radius)
-        ans = []
+    def sense_nearby_robots(self, center=None, radius_squared=GameConstants.VISION_RADIUS_SQUARED, team=None):
+        if center is None:
+            center = self.robot.loc
+        self.assert_radius_non_negative(radius_squared)
 
-        for sensed_robot in all_robots_sensed:
-            if sensed_robot.equals(self.robot):
+        radius_squared = min(radius_squared, GameConstants.VISION_RADIUS_SQUARED)
+        sensed_locs = self.game.get_all_locations_within_radius_squared(center, radius_squared)
+        result = []
+        for loc in sensed_locs:
+            sensed_robot = self.game.get_robot(loc)
+            if sensed_robot == self.robot:
                 continue
             if not self.can_sense_location(sensed_robot.loc):
                 continue
-            if team == -1 or self.robot.team == team:
-                info = RobotInfo(
-                    sensed_robot.id, 
-                    sensed_robot.team, 
-                    sensed_robot.health, 
-                    sensed_robot.location, 
-                    sensed_robot.attack_level
-                )
-                ans.append(info)
-        return ans
+            if team is not None and sensed_robot.team != team:
+                continue
+            result.append(sensed_robot.get_robot_info())
+        return result
+    
+    def sense_passability(self, loc):
+        self.assert_can_sense_location(loc)
+        return self.game.is_passable(loc)
+    
+    def sense_nearby_ruins(self, radius_squared=GameConstants.VISION_RADIUS_SQUARED):
+        self.assert_radius_non_negative(radius_squared)
+        radius_squared = min(radius_squared, GameConstants.VISION_RADIUS_SQUARED)
+        result = []
+        for loc in self.game.get_all_locations_within_radius_squared(self.robot.loc, radius_squared):
+            if self.game.has_ruin(loc):
+                result.append(loc)
+        return result
 
-    def on_the_map(self, loc):
-        assert loc is not None, "Not a valid location"
-        return self.game.on_the_map(loc)
+    def sense_map_info(self, loc): 
+        self.assert_not_none(loc)
+        self.assert_can_sense_location(loc)
+        return self.game.get_map_info(loc)
+
+    def sense_nearby_map_info(self, center=None, radius_squared=GameConstants.VISION_RADIUS_SQUARED):
+        if center is None:
+            center = self.robot.loc
+        self.assert_radius_non_negative(radius_squared)
+        radius_squared = min(radius_squared, GameConstants.VISION_RADIUS_SQUARED)
+
+        map_info = []
+        for loc in self.game.get_all_locations_within_radius_squared(center, radius_squared):
+            if self.can_sense_location(loc):
+                map_info.append(self.game.get_map_info(loc))
+        return map_info
+    
+    def get_all_locations_within_radius_squared(self, center, radius_squared):
+        self.assert_not_none(center)
+        self.assert_radius_non_negative(radius_squared)
+        radius_squared = min(radius_squared, GameConstants.VISION_RADIUS_SQUARED)
+        return [loc for loc in self.game.get_all_locations_within_radius_squared(center, radius_squared) if self.can_sense_location(loc)]
+    
+    def adjacent_location(self, direction):
+        return self.robot.loc.add(direction)
     
     #### MOVEMENT METHODS ####
     def assert_can_move(self, direction):
@@ -692,37 +701,6 @@ class RobotController:
         tower = self.game.get_robot(tower_location)
         self.game.team_info.add_coins(self.robot.team, -tower.type.money_cost)
         tower.type.upgradeTower(tower)
-
-    #### SENSING MAP INFO METHODS ####
-    def assert_can_sense_map_info(self, loc):
-        if loc is None:
-            raise RobotError("Not a valid location")
-        if not self.game.on_the_map(loc):
-            raise RobotError("Location is not on the map")
-
-    def can_sense_map_info(self, loc):
-        try:
-            self.assert_can_sense_map_info(loc)
-            return True
-        except RobotError:
-            return False
-
-    def sense_map_info(self, loc): 
-        self.assert_can_sense_map_info(loc)
-        return self.game.get_map_info(loc)
-
-    def sense_nearby_map_info(self, robot_loc, center, radius_squared=-1):
-        self.assert_can_sense_map_info(center)
-
-        if radius_squared == -1: 
-            radius_squared = GameConstants.VISION_RADIUS_SQUARED
-
-        map_info = []
-        for loc in self.game.get_all_locations_within_radius_squared(center, radius_squared):
-            if loc.is_within_distance_squared(robot_loc, GameConstants.VISION_RADIUS_SQUARED):
-                map_info.append(self.game.get_map_info(loc))
-        return sorted(map_info)
-
     
 class RobotError(Exception):
     """Raised for illegal robot inputs"""

@@ -82,6 +82,9 @@ class Game:
     def get_robot(self, loc: MapLocation) -> Robot:
         return self.robots[self.loc_to_index(loc)]
     
+    def get_robot_by_id(self, id) -> Robot:
+        return self.id_to_robot.get(id, None)
+    
     def has_tower(self, loc: MapLocation):
         robot = self.get_robot(loc)
         return robot and robot.type.is_tower_type()
@@ -273,6 +276,15 @@ class Game:
         else:
             return Team.NEUTRAL
         
+    def shape_from_tower_type(self, tower_type):
+        if tower_type in {RobotType.LEVEL_ONE_PAINT_TOWER, RobotType.LEVEL_TWO_PAINT_TOWER, RobotType.LEVEL_THREE_PAINT_TOWER}:
+            return Shape.PAINT_TOWER
+        if tower_type in {RobotType.LEVEL_ONE_DEFENSE_TOWER, RobotType.LEVEL_TWO_DEFENSE_TOWER, RobotType.LEVEL_THREE_DEFENSE_TOWER}:
+            return Shape.DEFENSE_TOWER
+        if tower_type in {RobotType.LEVEL_ONE_MONEY_TOWER, RobotType.LEVEL_TWO_MONEY_TOWER, RobotType.LEVEL_THREE_MONEY_TOWER}:
+            return Shape.MONEY_TOWER
+        return None
+        
     def set_paint(self, loc, paint):
         idx = self.loc_to_index(loc)
         old_paint_team = self.team_from_paint(self.paint[idx])
@@ -341,14 +353,7 @@ class Game:
         Marks specified tower pattern at center
         tower_type: tower_type: RobotType enum
         '''
-        if tower_type in {RobotType.LEVEL_ONE_PAINT_TOWER, RobotType.LEVEL_TWO_PAINT_TOWER, RobotType.LEVEL_THREE_PAINT_TOWER}:
-            shape = Shape.PAINT_TOWER
-        if tower_type in {RobotType.LEVEL_ONE_DEFENSE_TOWER, RobotType.LEVEL_TWO_DEFENSE_TOWER, RobotType.LEVEL_THREE_DEFENSE_TOWER}:
-            shape = Shape.DEFENSE_TOWER
-        if tower_type in {RobotType.LEVEL_ONE_MONEY_TOWER, RobotType.LEVEL_TWO_MONEY_TOWER, RobotType.LEVEL_THREE_MONEY_TOWER}:
-            shape = Shape.MONEY_TOWER
-
-        self.mark_pattern(team, center, shape)
+        self.mark_pattern(team, center, self.shape_from_tower_type(tower_type))
 
     def mark_resource_pattern(self, team, center):
         '''
