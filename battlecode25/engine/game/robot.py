@@ -80,8 +80,10 @@ class Robot:
     def process_beginning_of_round(self):
         self.indicator_string = ""
         self.died_loc = None
-        self.add_paint(self.type.paint_per_turn)
-        self.game.team_info.add_coins(self.team, self.type.money_per_turn)
+        if self.type.paint_per_turn != 0:
+            self.add_paint(self.type.paint_per_turn + self.game.get_resources_from_patterns(self.team))
+        if self.type.money_per_turn != 0:
+            self.game.team_info.add_coins(self.team, self.type.money_per_turn + self.game.get_resources_from_patterns(self.team))
 
     def process_beginning_of_turn(self):
         self.action_cooldown

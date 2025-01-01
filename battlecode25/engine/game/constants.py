@@ -65,6 +65,9 @@ class GameConstants:
     # Paint cost for marking a tower pattern.
     MARK_PATTERN_COST = 25
 
+    # The extra resources per turn that resource patterns give
+    EXTRA_RESOURCES_FROM_PATTERN = 3
+
     # *****************************
     # ****** GAME MECHANICS *******
     # *****************************

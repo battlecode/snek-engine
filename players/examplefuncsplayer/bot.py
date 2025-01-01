@@ -6,14 +6,14 @@ from battlecode25.stubs import *
 # Use this to help write your own code, or run it against your bot to see how well you can do!
 
 
-# turn_count = 0
+turn_count = 0
 
-# directions = [
-#     Direction.NORTH,
-#     Direction.EAST,
-#     Direction.SOUTH,
-#     Direction.WEST,
-# ]
+directions = [
+    Direction.NORTH,
+    Direction.EAST,
+    Direction.SOUTH,
+    Direction.WEST,
+]
 
 def turn():
     global turn_count
@@ -29,23 +29,21 @@ def turn():
     att_dir = get_location().add(directions[random.randint(0, 3)])
     if can_attack(att_dir):
         attack(att_dir, use_secondary_color=False)
-    
-#     dir = directions[random.randint(0, 3)]
-#     if can_move(dir):
-#         move(dir)
+    dir = directions[random.randint(0, 3)]
+    if can_move(dir):
+        move(dir)
 
+# def turn():
 
-def turn():
+#     """
+#     MUST be defined for robot to run
+#     This function will be called at the beginning of every turn and should contain the bulk of your robot commands
+#     """
+#     # direction = directions[random.randint(0, 3)]
+#     # if can_move(direction):
+#     #     move(direction)
 
-    """
-    MUST be defined for robot to run
-    This function will be called at the beginning of every turn and should contain the bulk of your robot commands
-    """
-    # direction = directions[random.randint(0, 3)]
-    # if can_move(direction):
-    #     move(direction)
+#     # loc = get_location()
+#     # log(loc)
 
-    # loc = get_location()
-    # log(loc)
-
-    move(Direction.NORTH)
+#     move(Direction.NORTH)

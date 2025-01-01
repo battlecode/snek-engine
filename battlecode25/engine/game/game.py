@@ -44,7 +44,7 @@ class Game:
         self.game_fb = game_fb
         self.pattern = [self.create_test_pattern_array() for i in range(4)]
         self.resource_pattern_centers = []
-        self.resource_pattern_teams = []
+        self.resouce_pattern_centers_by_loc = [Team.NEUTRAL] * total_area
         self.ruins = initial_map.ruins
         self.code = code
         self.debug = game_args.debug
@@ -59,8 +59,8 @@ class Game:
         if self.running:
             self.round += 1
             self.game_fb.start_round(self.round)
-            self.each_robot(lambda robot: robot.process_beginning_of_round())
             self.update_resource_patterns()
+            self.each_robot(lambda robot: robot.process_beginning_of_round())
             self.each_robot_update(lambda robot: robot.turn())
             self.game_fb.add_team_info(Team.A, self.team_info.get_coins(Team.A))
             self.game_fb.add_team_info(Team.B, self.team_info.get_coins(Team.B))
@@ -194,6 +194,24 @@ class Game:
     def set_winner(self, team, domination_factor):
         self.winner = team
         self.domination_factor = domination_factor
+
+    def update_resource_patterns(self):
+        for i, center in enumerate(self.resource_pattern_centers):
+            team = self.resouce_pattern_centers_by_loc[self.loc_to_index(center)]
+            if self.detect_pattern(center, team) != Shape.RESOURCE:
+                self.resource_pattern_centers.pop(i)
+                self.resouce_pattern_centers_by_loc[self.loc_to_index(center)] = Team.NEUTRAL
+
+    def complete_resource_pattern(self, team, loc):
+        idx = self.loc_to_index(loc)
+        if self.resouce_pattern_centers_by_loc[idx] != Team.NEUTRAL:
+            return
+        self.resource_pattern_centers.append(loc)
+        self.resouce_pattern_centers_by_loc[idx] = team
+
+    def get_resources_from_patterns(self, team):
+        num_patterns = [self.resouce_pattern_centers_by_loc[self.loc_to_index(loc)] == team for loc in self.resource_pattern_centers].count(True)
+        return num_patterns * GameConstants.EXTRA_RESOURCES_FROM_PATTERN
 
     def on_the_map(self, loc):
         return 0 <= loc.x < self.width and 0 <= loc.y < self.height
