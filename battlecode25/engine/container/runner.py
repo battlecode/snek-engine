@@ -2,9 +2,50 @@ import sys
 import traceback
 
 from RestrictedPython import safe_builtins, limited_builtins, utility_builtins, Guards
+from threading import Thread, Event, Condition
+from time import sleep
 from .instrument import Instrument
 from types import CodeType
 import dis
+
+
+class RobotThread(Thread):
+    def __init__(self, runner):
+        Thread.__init__(self)
+        self.pause_event = Event()  # signal = unpause execution
+        self.run_event = Event()  # signal = run next turn
+        self.finished_event = Event()  # signal = current turn finished/paused
+        self.paused = False
+        self.runner = runner
+        self.running = True
+
+    def run(self):
+        # Keep this thread alive until the robot is destroyed
+        while self.running:
+            self.run_event.wait()
+            if not self.running:
+                return
+
+            if not self.runner.initialized:
+                self.runner.init_robot()
+
+            self.runner.do_turn()
+
+            self.run_event.clear()
+            self.finished_event.set()
+
+    def wait(self):
+        self.paused = True
+        self.finished_event.set()  # External signal that we are finished for now
+        self.pause_event.wait()  # Wait for unpause
+        self.pause_event.clear()
+        self.paused = False
+
+    def kill(self):
+        self.running = False
+        self.pause_event.set()
+        self.run_event.set()
+
 
 class RobotRunner:
     STARTING_BYTECODE = 20000
@@ -48,8 +89,11 @@ class RobotRunner:
         self.bytecode = self.STARTING_BYTECODE
 
         self.initialized = False
-
         self.debug = debug
+
+        # Start robot worker
+        self.thread = RobotThread(self)
+        self.thread.start()
 
     @staticmethod
     def inplacevar_call(op, x, y):
@@ -177,9 +221,16 @@ class RobotRunner:
     def run(self):
         self.bytecode = min(self.bytecode, 0) + self.EXTRA_BYTECODE
 
-        if not self.initialized:
-            self.init_robot()
+        # Kickoff execution. If we are currently paused, resume. Otherwise, signal
+        # starting a new turn
+        if self.thread.paused:
+            self.thread.pause_event.set()
+        else:
+            self.thread.run_event.set()
 
-        print("starting bytecode", self.bytecode)
-        self.do_turn()
-        print("ending bytecode", self.bytecode)
+        # Wait until the robot either pauses or completes its turn
+        self.thread.finished_event.wait()
+        self.thread.finished_event.clear()
+
+    def kill(self):
+        self.thread.kill()
