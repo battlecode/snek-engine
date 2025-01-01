@@ -18,9 +18,13 @@ directions = [
 def turn():
     global turn_count
     turn_count += 1
-    robot_type = 0
+    robot_type = random.randint(0, 2)
     spawn_loc = get_location().add(directions[random.randint(0, 3)])
-    if turn_count <= 10 and robot_type == 0 and can_spawn(RobotType.SOLDIER, spawn_loc):
+    if robot_type == 0 and can_spawn(RobotType.MOPPER, spawn_loc):
+        spawn(RobotType.MOPPER, spawn_loc)
+    if robot_type == 1 and can_spawn(RobotType.SPLASHER, spawn_loc):
+        spawn(RobotType.SPLASHER, spawn_loc)
+    if robot_type == 2 and can_spawn(RobotType.SOLDIER, spawn_loc):
         spawn(RobotType.SOLDIER, spawn_loc)
     att_dir = get_location().add(directions[random.randint(0, 3)])
     if can_attack(att_dir):
