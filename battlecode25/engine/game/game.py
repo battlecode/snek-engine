@@ -13,14 +13,9 @@ from .initial_map import InitialMap
 from .game_fb import GameFB
 from .robot_controller import RobotController
 from .domination_factor import DominationFactor
+from .shape import Shape
 
 import math
-
-class Shape(Enum): # marker shapes
-    RESOURCE=0
-    DEFENSE_TOWER=1
-    MONEY_TOWER=2
-    PAINT_TOWER=3
 
 class Game:
 
@@ -86,6 +81,13 @@ class Game:
 
     def get_robot(self, loc: MapLocation) -> Robot:
         return self.robots[self.loc_to_index(loc)]
+    
+    def has_tower(self, loc: MapLocation):
+        robot = self.get_robot(loc)
+        return robot and robot.type.is_tower_type()
+    
+    def has_ruin(self, loc: MapLocation):
+        return self.ruins[self.loc_to_index(loc)]
 
     def spawn_robot(self, type: RobotType, loc: MapLocation, team: Team, id=None):
         if id is None:
@@ -216,7 +218,7 @@ class Game:
     def on_the_map(self, loc):
         return 0 <= loc.x < self.width and 0 <= loc.y < self.height
     
-    def connected_by_paint(self, robot_loc, tower_loc):
+    def connected_by_paint(self, robot_loc: MapLocation, tower_loc: MapLocation):
         queue = [robot_loc]
         visited = set()
 

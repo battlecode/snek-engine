@@ -8,6 +8,7 @@ from .constants import GameConstants
 from .map_location import MapLocation
 from .robot_info import RobotInfo
 from .direction import Direction
+from .shape import Shape
 
 #Imported for type checking
 if 1 == 0:
@@ -61,6 +62,10 @@ class RobotController:
     def assert_is_robot_type(self, type: RobotType):
         if not type.is_robot_type():
             raise RobotError("Towers cannot perform this action")
+        
+    def assert_is_tower_type(self, type: RobotType):
+        if not type.is_tower_type():
+            raise RobotError("Robots cannot perform this action")
 
     #### SENSING METHODS ####
     def sense(self):
@@ -446,6 +451,54 @@ class RobotController:
         self.assert_can_mark(loc)
         color = self.game.get_primary_paint(self.robot.team) if not secondary else self.game.get_secondary_paint(self.robot.team)
         self.game.mark_location(self.robot.team, loc, color)
+    
+    def assert_can_complete_tower_pattern(self, tower_type, loc):
+        self.assert_is_robot_type(self.robot.type)
+        self.assert_is_tower_type(tower_type)
+        self.assert_can_act_location(loc, GameConstants.BUILD_TOWER_RADIUS_SQUARED)
+
+        if self.game.has_tower(loc):
+            raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because the center already contains a tower")
+        if not self.game.has_ruin(loc):
+            raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because the center is not a ruin")
+        if not self.game.is_valid_pattern_center(loc):
+            raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because it is too close to the edge of the map")
+        if self.game.get_robot(loc) is not None:
+            raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because there is a robot at the center of the ruin")
+        if not self.game.detect_pattern(loc, self.robot.team) == tower_type:
+            raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because the paint pattern is wrong")
+        
+    def can_complete_tower_pattern(self, tower_type, loc):
+        try:
+            self.assert_can_complete_tower_pattern(tower_type, loc)
+            return True
+        except RobotError:
+            return False
+        
+    def complete_tower_pattern(self, tower_type, loc):
+        self.assert_can_complete_tower_pattern(tower_type, loc)
+        robot = self.game.spawn_robot(tower_type, loc, self.robot.team)
+        self.game.game_fb.add_build_action(robot.id)
+
+    def assert_can_complete_resource_pattern(self, loc):
+        self.assert_is_robot_type(self.robot.type)
+        self.assert_can_act_location(loc, GameConstants.RESOURCE_PATTERN_RADIUS_SQUARED)
+
+        if not self.game.is_valid_pattern_center(loc):
+            raise RobotError(f"Cannot complete resource pattern at ({loc.x}, {loc.y}) because it is too close to the edge of the map")
+        if not self.game.detect_pattern(loc, self.robot.team) == Shape.RESOURCE:
+            raise RobotError(f"Cannot complete resource pattern at ({loc.x}, {loc.y}) because the paint pattern is wrong")
+        
+    def can_complete_resource_pattern(self, loc):
+        try:
+            self.assert_can_complete_resource_pattern(loc)
+            return True
+        except RobotError:
+            return False
+        
+    def complete_resource_pattern(self, loc):
+        self.assert_can_complete_resource_pattern(loc)
+        self.game.complete_resource_pattern(self.robot.team, loc)
            
     #### SPAWN METHODS ####
     def assert_spawn(self, robot_type, map_location):

@@ -62,6 +62,9 @@ class GameConstants:
     # The percent of the map which a team needs to paint to win.
     PAINT_PERCENT_TO_WIN = 70
 
+    # The maximum number of towers that a team can have.
+    MAX_NUMBER_OF_TOWERS = 25
+
     # Paint cost for marking a tower pattern.
     MARK_PATTERN_COST = 25
 
@@ -98,6 +101,13 @@ class GameConstants:
 
     # The maximum distance from a tower for building robots
     BUILD_ROBOT_RADIUS_SQUARED = 4
+
+    # The maximum distance from a robot for building a tower
+    BUILD_TOWER_RADIUS_SQUARED = 2
+
+    # The maximum distance from a robot for completing special resource patterns
+    # This is 8 so that the robot can complete the pattern anywhere on the 5x5 grid
+    RESOURCE_PATTERN_RADIUS_SQUARED = 8
 
     # The amount of paint depleted from enemy in a regular mopper attack
     MOPPER_ATTACK_PAINT_DEPLETION = 10
