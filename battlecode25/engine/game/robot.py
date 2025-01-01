@@ -50,11 +50,18 @@ class Robot:
             return 2 - 2 * paint_percent
         return 0
     
-    def add_action_cooldown(self):
-        self.action_cooldown += self.type.action_cooldown * self.calc_paint_cooldown_multiplier()
+    def add_action_cooldown(self, cooldown=-1):
+        if cooldown == -1:
+            cooldown = self.type.action_cooldown
+        self.action_cooldown += round(cooldown * self.calc_paint_cooldown_multiplier())
     
     def add_movement_cooldown(self):
         self.movement_cooldown += round(GameConstants.MOVEMENT_COOLDOWN * self.calc_paint_cooldown_multiplier())
+
+    def upgrade_tower(self):
+        damage = self.type.health - self.health
+        self.type = self.type.get_next_level()
+        self.health = self.type.health - damage
 
     def log(self, msg):
         self.logs.append(msg)

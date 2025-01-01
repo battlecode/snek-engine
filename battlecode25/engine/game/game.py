@@ -91,6 +91,9 @@ class Game:
     
     def has_ruin(self, loc: MapLocation):
         return self.ruins[self.loc_to_index(loc)]
+    
+    def get_marker(self, loc: MapLocation):
+        return self.markers[self.loc_to_index(loc)]
 
     def spawn_robot(self, type: RobotType, loc: MapLocation, team: Team, id=None):
         if id is None:
@@ -105,8 +108,8 @@ class Game:
             'Team': Team,
             'Direction': Direction,
             'MapLocation': MapLocation,
-            'can_spawn': rc.can_spawn,
-            'spawn': rc.spawn,
+            'can_build_robot': rc.can_build_robot,
+            'build_robot': rc.build_robot,
             'get_location': rc.get_location,
             'get_map_width': rc.get_map_width,
             'get_map_height': rc.get_map_height,
@@ -116,7 +119,6 @@ class Game:
             'attack': rc.attack,
             'can_attack': rc.can_attack,
             'mop_swing': rc.mop_swing,
-            'sense': rc.sense,
             'sense_robot_at_location': rc.sense_robot_at_location,
             'can_mark_tower_pattern': rc.can_mark_tower_pattern,
             'can_mark_resource_pattern': rc.can_mark_resource_pattern,
@@ -454,8 +456,7 @@ class Game:
         return result
     
     def is_passable(self, loc):
-        idx = self.loc_to_index(loc)
-        return not self.walls[idx] and self.robots[idx] == None
+        return not self.walls[self.loc_to_index(loc)]
   
     def get_map_info(self, loc): 
         idx = self.loc_to_index(loc)

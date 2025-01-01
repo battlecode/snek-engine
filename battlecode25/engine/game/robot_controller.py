@@ -193,20 +193,55 @@ class RobotController:
     def adjacent_location(self, direction):
         return self.robot.loc.add(direction)
     
-    #### MOVEMENT METHODS ####
-    def assert_can_move(self, direction):
-        if direction is None:
-            raise RobotError("Not a valid direction")
+    # READINESS FUNCTIONS
+
+    def assert_is_action_ready(self):
+        if self.robot.action_cooldown >= GameConstants.COOLDOWN_LIMIT:
+            raise RobotError("Robot action cooldown not yet expired")
+        if self.robot.paint == 0 and self.robot.type.is_robot_type():
+            raise RobotError("Robot cannot act at 0 paint.")
+        
+    def is_action_ready(self):
+        try:
+            self.assert_is_action_ready()
+            return True
+        except RobotError:
+            return False
+        
+    def get_action_cooldown_turns(self):
+        return self.robot.action_cooldown
+    
+    def assert_is_movement_ready(self):
         if self.robot.movement_cooldown >= GameConstants.COOLDOWN_LIMIT:
             raise RobotError("Robot movement cooldown not yet expired")
+        if self.robot.paint == 0 and self.robot.type.is_robot_type():
+            raise RobotError("Robot cannot move at 0 paint.")
+        
+    def is_movement_ready(self):
+        try:
+            self.assert_is_movement_ready()
+            return True
+        except RobotError:
+            return False
+        
+    def get_movement_cooldown_turns(self):
+        return self.robot.movement_cooldown
+    
+    # MOVEMEMENT FUNCTIONS
 
+    def assert_can_move(self, direction):
+        self.assert_not_none(direction)
+        self.assert_is_movement_ready()
         new_location = self.robot.loc.add(direction)
+        
         if not self.game.on_the_map(new_location):
             raise RobotError("Robot moved off the map")
-        if self.game.robots[self.game.loc_to_index(new_location)] is not None:
+        if self.game.get_robot(new_location) is not None:
             raise RobotError("Location is already occupied")
         if not self.game.is_passable(new_location):
             raise RobotError("Trying to move to an impassable location")
+        if self.robot.type.is_tower_type():
+            raise RobotError("Towers cannot move!")
 
     def can_move(self, direction):
         try:
@@ -222,7 +257,8 @@ class RobotController:
         self.game.move_robot(self.robot.loc, new_loc)
         self.robot.loc = new_loc
 
-    #### ATTACK METHODS ####
+    # ATTACK FUNCTIONS
+
     def assert_can_attack(self, loc):
         """
         Assert that the robot can attack. This function checks all conditions necessary
@@ -369,8 +405,9 @@ class RobotController:
                 self.game.game_fb.add_attack_action(target_robot.id)
                 self.game.game_fb.add_mop_action(new_loc)
 
-    # MARKING METHODS
-    def assert_can_mark_pattern(self, loc):
+    # MARKING FUNCTIONS
+
+    def assert_can_mark_pattern(self, loc: MapLocation):
         '''
         Asserts that a pattern can be marked at this location.
         '''
@@ -460,6 +497,24 @@ class RobotController:
         self.assert_can_mark(loc)
         color = self.game.get_primary_paint(self.robot.team) if not secondary else self.game.get_secondary_paint(self.robot.team)
         self.game.mark_location(self.robot.team, loc, color)
+
+    def assert_can_remove_mark(self, loc):
+        self.assert_is_robot_type(self.robot.type)
+        self.assert_can_act_location(loc, GameConstants.MARK_RADIUS_SQUARED)
+
+        if self.game.get_marker(loc) == 0:
+            raise RobotError("Cannot remove mark from unmarked location")
+
+    def can_remove_mark(self, loc): 
+        try:
+            self.assert_can_remove_mark(loc)
+            return True
+        except RobotError:
+            return False
+
+    def remove_mark(self, loc):
+        self.assert_can_remove_mark(loc)
+        self.game.mark_location(self.robot.team, loc, 0) 
     
     def assert_can_complete_tower_pattern(self, tower_type, loc):
         self.assert_is_robot_type(self.robot.type)
@@ -509,50 +564,50 @@ class RobotController:
         self.assert_can_complete_resource_pattern(loc)
         self.game.complete_resource_pattern(self.robot.team, loc)
            
-    #### SPAWN METHODS ####
-    def assert_spawn(self, robot_type, map_location):
-        """
-        Assert that the specified robot can spawn a new unit. Raises RobotError if it can't.
-        """
-        if not self.on_the_map(map_location):
-            raise RobotError("Build location is out of bounds.")
-        if not self.robot.type.is_tower_type() and self.robot.action_cooldown > self.robot.type.action_cooldown:
-            raise RobotError("Robot cannot spawn: it must be a tower and its action cooldown must be ready.")
-        
-        if self.robot.paint < robot_type.paint_cost or self.game.team_info.get_coins(self.robot.team) < robot_type.money_cost:
-            raise RobotError("Insufficient resources: Not enough paint or money to spawn this robot.")
-        
-        if not self.robot.loc.is_within_distance_squared(map_location, 3):
-            raise RobotError("Target location is out of the tower's spawn radius.")
-        if self.game.robots:
-            if self.game.get_robot(map_location):
-                raise RobotError("Build location is already occupied.")
-        
+    # BUILDING FUNCTIONS
 
-    def can_spawn(self, robot_type, map_location):
+    def assert_can_build_robot(self, robot_type: RobotType, map_location: MapLocation):
+        self.assert_not_none(robot_type)
+        self.assert_not_none(map_location)
+        self.assert_can_act_location(map_location, GameConstants.BUILD_ROBOT_RADIUS_SQUARED)
+        self.assert_is_action_ready()
+        self.assert_is_tower_type(self.robot.type)
+        self.assert_is_robot_type(robot_type)
+
+        if self.robot.paint < robot_type.paint_cost:
+            raise RobotError("Insufficient resources: Not enough paint to spawn robot")
+        if self.game.team_info.get_coins(self.robot.team) < robot_type.money_cost:
+            raise RobotError("Insufficient resources: Not enough money to spawn robot")
+        if self.game.get_robot(map_location) is not None:
+            raise RobotError("Build location is already occupied.")
+        if not self.game.is_passable(map_location):
+            raise RobotError("Build location is has a wall.")
+        
+    def can_build_robot(self, robot_type, map_location):
         """
         Checks if the specified robot can spawn a new unit.
         Returns True if spawning conditions are met, otherwise False.
         """
         try:
-            self.assert_spawn(robot_type, map_location)
+            self.assert_can_build_robot(robot_type, map_location)
             return True
         except RobotError as e:
             return False
 
-    def spawn(self, robot_type, map_location):
+    def build_robot(self, robot_type: RobotType, map_location: MapLocation):
         """
         Spawns a new robot of the given type at a specific map location if conditions are met.
         """
-        self.assert_spawn(robot_type, map_location)
+        self.assert_can_build_robot(robot_type, map_location)
         robot = self.game.spawn_robot(robot_type, map_location, self.robot.team)
-        self.robot.add_action_cooldown()  # Adjust cooldown as needed
+        self.robot.add_action_cooldown()
         self.robot.add_paint(-robot_type.paint_cost)
         self.game.team_info.add_coins(self.robot.team, -robot_type.money_cost)
         self.game.game_fb.add_spawn_action(robot.id, robot.loc, robot.team, robot.type)
         print("----------------------SPAWNED")
 
-    #### MESSAGE METHODS ####
+    # COMMUNICATION FUNCTIONS
+
     def assert_can_send_message(self, loc):
         self.assert_not_none(loc)
         self.assert_can_act_location(loc, GameConstants.MESSAGE_RADIUS_SQUARED)
@@ -628,7 +683,6 @@ class RobotController:
         target = self.game.get_robot(target_location)
         target.add_paint(amount)
 
-    #### WITHDRAWING METHODS ####
     def assert_can_withdraw_paint(self, target_location, amount): 
         if not self.robot.is_action_ready():
             raise RobotError("Robot cannot withdraw paint yet; action cooldown in progress.")
@@ -670,22 +724,22 @@ class RobotController:
         target = self.game.get_robot(target_location)
         target.add_paint(-amount)
 
-    #### UPGRADING TOWER METHODS ####
-    def assert_can_upgrade_tower(self, tower_location): 
-        if not self.game.is_on_board(tower_location.x, tower_location.y):
-            raise RobotError("Target location is not on the map.")
+    # UPGRADE TOWER FUNCTIONS
 
-        tower = self.game.get_robot(tower_location)
-        if not tower.type.isTower(): 
+    def assert_can_upgrade_tower(self, loc): 
+        self.assert_not_none(loc)
+        self.assert_can_act_location(loc, GameConstants.BUILD_TOWER_RADIUS_SQUARED)
+
+        tower = self.game.get_robot(loc)
+        self.assert_not_none(tower)
+        if not tower.type.is_tower_type(): 
             raise RobotError("Cannot upgrade a robot that is not a tower.")
-        
         if tower.team != self.robot.team: 
             raise RobotError("Cannot upgrade opposing team's towers.")
-        
         if tower.type.level == 3: 
             raise RobotError("Cannot upgrade anymore, tower is already at the maximum level.")
-        
-        if self.game.teamInfo.get_coins(self.robot.team) < tower.type.money_cost: 
+        new_type = self.robot.type.get_next_level()
+        if self.game.team_info.get_coins(self.robot.team) < new_type.money_cost: 
             raise RobotError("Not enough coins to upgrade the tower.")
 
     def can_upgrade_tower(self, tower_location): 
@@ -693,14 +747,15 @@ class RobotController:
             self.assert_can_upgrade_tower(tower_location)
             return True
         except RobotError as e: 
-            print(f"Upgrading failed: {e}")
             return False
 
     def upgrade_tower(self, tower_location): 
         self.assert_can_upgrade_tower(tower_location)
         tower = self.game.get_robot(tower_location)
-        self.game.team_info.add_coins(self.robot.team, -tower.type.money_cost)
-        tower.type.upgradeTower(tower)
+        new_type = tower.type.get_next_level()
+        self.game.team_info.add_coins(self.robot.team, -new_type.money_cost)
+        tower.upgrade_tower()
+        self.game.game_fb.add_upgrade_action(tower.id, new_type)
     
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
