@@ -15,35 +15,36 @@ directions = [
     Direction.WEST,
 ]
 
-def turn():
-    global turn_count
-    turn_count += 1
-    robot_type = random.randint(0, 2)
-    spawn_loc = get_location().add(directions[random.randint(0, 3)])
-    if robot_type == 0 and can_spawn(RobotType.MOPPER, spawn_loc):
-        spawn(RobotType.MOPPER, spawn_loc)
-    if robot_type == 1 and can_spawn(RobotType.SPLASHER, spawn_loc):
-        spawn(RobotType.SPLASHER, spawn_loc)
-    if robot_type == 2 and can_spawn(RobotType.SOLDIER, spawn_loc):
-        spawn(RobotType.SOLDIER, spawn_loc)
-    att_dir = get_location().add(directions[random.randint(0, 3)])
-    if can_attack(att_dir):
-        attack(att_dir, use_secondary_color=False)
-    dir = directions[random.randint(0, 3)]
-    if can_move(dir):
-        move(dir)
-
 # def turn():
+#     global turn_count
+#     turn_count += 1
+#     robot_type = random.randint(0, 2)
+#     spawn_loc = get_location().add(directions[random.randint(0, 3)])
+#     if robot_type == 0 and can_spawn(RobotType.MOPPER, spawn_loc):
+#         spawn(RobotType.MOPPER, spawn_loc)
+#     if robot_type == 1 and can_spawn(RobotType.SPLASHER, spawn_loc):
+#         spawn(RobotType.SPLASHER, spawn_loc)
+#     if robot_type == 2 and can_spawn(RobotType.SOLDIER, spawn_loc):
+#         spawn(RobotType.SOLDIER, spawn_loc)
+#     att_dir = get_location().add(directions[random.randint(0, 3)])
+#     if can_attack(att_dir):
+#         attack(att_dir, use_secondary_color=False)
+#     dir = directions[random.randint(0, 3)]
+#     if can_move(dir):
+#         move(dir)
 
-#     """
-#     MUST be defined for robot to run
-#     This function will be called at the beginning of every turn and should contain the bulk of your robot commands
-#     """
-#     # direction = directions[random.randint(0, 3)]
-#     # if can_move(direction):
-#     #     move(direction)
+def turn():
 
-#     # loc = get_location()
-#     # log(loc)
+    """
+    MUST be defined for robot to run
+    This function will be called at the beginning of every turn and should contain the bulk of your robot commands
+    """
+    # direction = directions[random.randint(0, 3)]
+    # if can_move(direction):
+    #     move(direction)
 
-#     move(Direction.NORTH)
+    # loc = get_location()
+    # log(loc)
+
+    if can_move(Direction.NORTH):
+        move(Direction.NORTH)
