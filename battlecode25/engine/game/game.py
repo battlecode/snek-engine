@@ -95,6 +95,9 @@ class Game:
     def has_ruin(self, loc: MapLocation):
         return self.ruins[self.loc_to_index(loc)]
     
+    def get_paint_num(self, loc: MapLocation):
+        return self.paint[self.loc_to_index(loc)]
+    
     def get_marker(self, team: Team, loc: MapLocation) -> int:
         markers = self.team_a_markers if team == Team.A else self.team_b_markers
         return markers[self.loc_to_index(loc)]

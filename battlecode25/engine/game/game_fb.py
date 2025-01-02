@@ -250,8 +250,8 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().AttackAction)
 
-    def add_mop_action(self, loc):
-        action_offset = MopAction.CreateMopAction(self.builder, self.initial_map.loc_to_index(loc))
+    def add_mop_action(self, id0, id1, id2):
+        action_offset = MopAction.CreateMopAction(self.builder, id0, id1, id2)
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().MopAction)
 

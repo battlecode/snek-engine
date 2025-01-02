@@ -351,11 +351,10 @@ class RobotController:
                 if target_robot and target_robot.type.is_robot_type() and target_robot.team != self.robot.team:
                     target_robot.add_paint(-GameConstants.MOPPER_ATTACK_PAINT_DEPLETION)
                     self.robot.add_paint(GameConstants.MOPPER_ATTACK_PAINT_ADDITION)
-                    self.game.game_fb.add_attack_action(target_robot.id)
-                    self.game.game_fb.add_mop_action(loc)
-                    
-
-                else:
+                    self.game.game_fb.add_attack_action(target_robot.id)                    
+                
+                tile_paint = self.game.get_paint_num(loc)
+                if tile_paint != 0 and self.game.team_from_paint(tile_paint) != self.robot.team:
                     self.game.set_paint(loc, 0)
 
         else:  # Tower
@@ -396,33 +395,26 @@ class RobotController:
         except RobotError:
             return False
 
-    def mop_swing(self) -> None:
-        assert self.robot.type == RobotType.MOPPER, "mop_swing called on non-MOPPER robot"
-        # Example direction; you might want to pass direction as a parameter
-        directions = [Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST]
-        for direction in directions:
-            dx = dy = 0  # Define based on direction
-            if direction == Direction.SOUTH:
-                dx, dy = 1, 0
-            elif direction == Direction.EAST:
-                dx, dy = 0, 1
-            elif direction == Direction.WEST:
-                dx, dy = 0, -1
-            elif direction == Direction.NORTH:
-                dx, dy = -1, 0
+    def mop_swing(self, dir: Direction) -> None:
+        self.assert_can_mop_swing()
 
-            x = self.robot.loc.x + dx
-            y = self.robot.loc.y + dy
-            new_loc = MapLocation(x, y)
-        
-            if not self.can_attack(new_loc):
-                continue
-        
+        swing_offsets = {
+            Direction.NORTH: ((-1, 1), (0, 1), (1, 1)),
+            Direction.SOUTH: ((-1, -1), (0, -1), (1, -1)),
+            Direction.EAST: ((1, -1), (1, 0), (1, 1)),
+            Direction.WEST: ((-1, -1), (-1, 0), (-1, 1))
+        }
+
+        target_ids = []
+        for i in range(3):
+            offset = swing_offsets[dir][i]
+            new_loc = MapLocation(self.robot.loc.x + offset[0], self.robot.loc.y + offset[1])
             target_robot = self.game.get_robot(new_loc)
             if target_robot and target_robot.team != self.robot.team:
                 target_robot.add_paint(-GameConstants.MOPPER_SWING_PAINT_DEPLETION)
-                self.game.game_fb.add_attack_action(target_robot.id)
-                self.game.game_fb.add_mop_action(new_loc)
+                target_ids.append(target_robot.id)
+            target_ids.append(0)
+        self.game.game_fb.add_mop_action(target_ids[0], target_ids[1], target_ids[2])
 
     # MARKING FUNCTIONS
 
