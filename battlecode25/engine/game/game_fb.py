@@ -28,6 +28,7 @@ from ..schema import IndicatorDotAction
 from ..schema import IndicatorLineAction
 from ..schema import Action
 from ..schema import RobotTypeMetadata
+from ..schema import TimelineMarker
 from .fb_helpers import *
 from .map_fb import serialize_map
 from pathlib import Path
@@ -59,6 +60,7 @@ class GameFB:
         self.current_round = 0
         self.logger = []
         self.current_actions = []
+        self.timeline_markers = []
         self.current_action_types = []
         self.current_map_width = 0
 
@@ -161,10 +163,12 @@ class GameFB:
         self.match_headers.append(len(self.events) - 1)
 
     def make_match_footer(self, win_team, win_type, total_rounds):
+        timeline_offset = create_vector(self.builder, MatchFooter.StartTimelineMarkersVector, self.timeline_markers)
         MatchFooter.Start(self.builder)
         MatchFooter.AddWinner(self.builder, fb_from_team(win_team))
         MatchFooter.AddWinType(self.builder, fb_from_domination_factor(win_type))
         MatchFooter.AddTotalRounds(self.builder, total_rounds)
+        MatchFooter.AddTimelineMarkers(self.builder, timeline_offset)
         match_footer_offset = MatchFooter.End(self.builder)
 
         self.events.append(create_event_wrapper(self.builder, Event.Event().MatchFooter, match_footer_offset))
@@ -296,6 +300,18 @@ class GameFB:
         action_offset = IndicatorLineAction.CreateIndicatorLineAction(self.builder, start_idx, end_idx, int_rgb(red, green, blue))
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().IndicatorLineAction)
+
+    def add_timeline_marker(self, team, label, red, green, blue):
+        if not self.show_indicators:
+            return
+        label_offset = self.builder.CreateString(label)
+        TimelineMarker.Start(self.builder)
+        TimelineMarker.AddTeam(self.builder, fb_from_team(team))
+        TimelineMarker.AddLabel(self.builder, label_offset)
+        TimelineMarker.AddRound(self.builder, self.current_round)
+        TimelineMarker.AddColor(self.builder, int_rgb(red, green, blue))
+        marker_offset = TimelineMarker.End(self.builder)
+        self.timeline_markers.append(marker_offset)
 
     def add_died(self, id):
         self.died_ids.append(id)

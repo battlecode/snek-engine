@@ -48,7 +48,7 @@ class Robot:
         paint_percent = self.paint / self.type.paint_capacity
         if paint_percent < 0.5:
             return 2 - 2 * paint_percent
-        return 0
+        return 1
     
     def add_action_cooldown(self, cooldown=-1):
         if cooldown == -1:

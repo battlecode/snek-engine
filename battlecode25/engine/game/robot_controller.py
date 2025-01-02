@@ -1,14 +1,11 @@
 from __future__ import annotations
-import random
-from .map_info import MapInfo
 from .robot import Robot
-from .team import Team
 from .robot_type import RobotType
 from .constants import GameConstants
 from .map_location import MapLocation
-from .robot_info import RobotInfo
 from .direction import Direction
 from .shape import Shape
+from .domination_factor import DominationFactor
 
 #Imported for type checking
 if 1 == 0:
@@ -172,7 +169,7 @@ class RobotController:
         self.assert_can_sense_location(loc)
         return self.game.get_map_info(loc)
 
-    def sense_nearby_map_info(self, center=None, radius_squared=GameConstants.VISION_RADIUS_SQUARED):
+    def sense_nearby_map_infos(self, center=None, radius_squared=GameConstants.VISION_RADIUS_SQUARED):
         if center is None:
             center = self.robot.loc
         self.assert_radius_non_negative(radius_squared)
@@ -259,7 +256,7 @@ class RobotController:
 
     # ATTACK FUNCTIONS
 
-    def assert_can_attack(self, loc):
+    def assert_can_attack(self, loc: MapLocation):
         """
         Assert that the robot can attack. This function checks all conditions necessary
         for the robot to perform an attack and raises an error if any are not met.
@@ -376,6 +373,24 @@ class RobotController:
                     target_robot.add_health(-self.robot.type.attack_strength)
                     self.game.game_fb.add_attack_action(target_robot.id)
                     self.game.game_fb.add_damage_action(target_robot.id, self.robot.type.attack_strength)
+
+    def assert_can_mop_swing(self, dir):
+        self.assert_not_none(dir)
+        self.assert_is_action_ready()
+        if not dir in {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST}:
+            raise RobotError("Must pass in a cardinal direction to mop swing")
+        if self.robot.type != RobotType.MOPPER:
+            raise RobotError("Unit must be a mopper!")
+        next_loc = self.robot.loc.add(dir)
+        if not self.on_the_map(next_loc):
+            raise RobotError("Can't do a mop swing off the edge of the map!")
+
+    def can_mop_swing(self, dir):
+        try:
+            self.assert_can_mop_swing(dir)
+            return True
+        except RobotError:
+            return False
 
     def mop_swing(self):
         assert self.robot.type == RobotType.MOPPER, "mop_swing called on non-MOPPER robot"
@@ -644,31 +659,33 @@ class RobotController:
             return self.robot.message_buffer.get_all_messages()
         return self.robot.message_buffer.get_messages(round)
 
-    #### TRANSFERRING METHODS ####
-    def assert_can_transfer_paint(self, target_location, amount):
-        if not self.robot.is_action_ready():
-            raise RobotError("Robot cannot transfer paint yet; action cooldown in progress.")
-        
-        if not self.game.is_on_board(target_location.x, target_location.y):
-            raise RobotError("Target location is not on the map.")
-        
-        if self.robot.type != RobotType.MOPPER: 
-            raise RobotError("Robot type is not a Mopper, cannot transfer paint.")
-        
-        distance_squared = self.robot.loc.distanceSquaredTo(target_location)
-        if distance_squared > self.robot.type.action_radius_squared:
-            raise RobotError(f"Target is out of range for {self.robot.type.name}.")
-    
-        target = self.game.get_robot(target_location)
-        if target is None: 
-            raise RobotError(f"There is no robot at {target_location}.")
+    # TRANSFER PAINT FUNCTIONS
+
+    def assert_can_transfer_paint(self, loc, amount):
+        self.assert_not_none(loc)
+        self.assert_can_act_location(loc, GameConstants.PAINT_TRANSFER_RADIUS_SQUARED)
+        target = self.game.get_robot(loc)
+        self.assert_not_none(target)
+        self.assert_is_action_ready()
+
+        if loc == self.robot.loc:
+            raise RobotError("Cannot transfer paint to yourself!")
+        if amount == 0:
+            raise RobotError("Cannot transfer zero paint!")
         if target.team != self.robot.team:
-            raise RobotError("Moppers can only transfer paint within their own team")
-        
-        if amount < 0 and target.paint < -amount: 
-            raise RobotError(f"Target does not have enough paint. Tried to request {-amount}, but target only has {target.paint}")
-        if amount > 0 and self.robot.paint < amount: 
-            raise RobotError("Mopper does not have enough paint to transfer.")
+            raise RobotError("Cannot transfer resources to the enemy team!")
+        if self.robot.type.is_tower_type():
+            raise RobotError("Towers cannot transfer paint!")        
+        if amount > 0: #positive give paint, negative take paint
+            if self.robot.type != RobotType.MOPPER:
+                raise RobotError("Only moppers can give paint to allies!")
+            if amount > self.robot.paint:
+                raise RobotError("Cannot give more paint than you currently have!")
+        else:
+            if target.type.is_robot_type():
+                raise RobotError("Paint can be taken only from towers")
+            if -amount > target.paint:
+                raise RobotError("Cannot take more paint from towers than they currently have!")
 
     def can_transfer_paint(self, target_location, amount):
         try:
@@ -682,47 +699,8 @@ class RobotController:
         self.robot.add_paint(-amount)
         target = self.game.get_robot(target_location)
         target.add_paint(amount)
-
-    def assert_can_withdraw_paint(self, target_location, amount): 
-        if not self.robot.is_action_ready():
-            raise RobotError("Robot cannot withdraw paint yet; action cooldown in progress.")
-        
-        if not self.game.is_on_board(target_location.x, target_location.y):
-            raise RobotError("Target location is not on the map.")
-            
-        if self.robot.type != RobotType.MOPPER: 
-            raise RobotError("Robot type is not a Mopper, cannot withdraw paint.")
-        
-        distance_squared = self.robot.loc.distanceSquaredTo(target_location)
-        if distance_squared > self.robot.type.action_radius_squared:
-            raise RobotError(f"Target is out of range for {self.robot.type.name}.")
-        
-        target = self.game.get_robot(target_location)
-        if target is None: 
-            raise RobotError(f"There is no robot at {target_location}.")
-        if target.team != self.robot.team:
-            raise RobotError("Moppers can only withdraw paint within their own team")
-        if not target.type.isTower():
-            raise RobotError("The object at the target location is not a tower.")
-
-        if amount < 0 and target.paint < -amount: 
-            raise RobotError(f"Target does not have enough paint. Tried to request {-amount}, but target only has {target.paint}")
-        if amount > 0 and self.robot.paint < amount: 
-            raise RobotError("Mopper does not have enough paint to withdraw.")
-
-    def can_withdraw_paint(self, target_location, amount):
-        try:
-            self.assert_can_withdraw_paint(target_location, amount)
-            return True
-        except RobotError as e:
-            print(f"Withdrawing failed: {e}")
-            return False
-
-    def withdraw_paint(self, target_location, amount):
-        self.assert_can_withdraw_paint(target_location, amount)
-        self.robot.add_paint(amount)
-        target = self.game.get_robot(target_location)
-        target.add_paint(-amount)
+        self.robot.add_action_cooldown()
+        self.game.game_fb.add_transfer_action(target.id)
 
     # UPGRADE TOWER FUNCTIONS
 
@@ -756,6 +734,30 @@ class RobotController:
         self.game.team_info.add_coins(self.robot.team, -new_type.money_cost)
         tower.upgrade_tower()
         self.game.game_fb.add_upgrade_action(tower.id, new_type)
+
+    # DEBUG INDICATOR FUNCTIONS
+
+    def set_indicator_string(self, string):
+        if len(string) > GameConstants.INDICATOR_STRING_MAX_LENGTH:
+            string = string[:GameConstants.INDICATOR_STRING_MAX_LENGTH]
+        self.robot.indicator_string = string
+
+    def set_indicator_dot(self, loc, red, green, blue):
+        self.assert_not_none(loc)
+        self.game.game_fb.add_indicator_dot(loc, red, green, blue)
+
+    def set_indicator_line(self, start_loc, end_loc, red, green, blue):
+        self.assert_not_none(start_loc)
+        self.assert_not_none(end_loc)
+        self.game.game_fb.add_indicator_line(start_loc, end_loc, red, green, blue)
+
+    def set_timeline_marker(self, label, red, green, blue):
+        if len(label) > GameConstants.INDICATOR_STRING_MAX_LENGTH:
+            label = label[:GameConstants.INDICATOR_STRING_MAX_LENGTH]
+        self.game.game_fb.add_timeline_marker(self.robot.team, label, red, green, blue)
+
+    def resign(self):
+        self.game.set_winner(self.robot.team.opponent(), DominationFactor.RESIGNATION)
     
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
