@@ -5,9 +5,25 @@ from RestrictedPython import safe_builtins, limited_builtins, utility_builtins, 
 from threading import Thread, Event, Condition
 from time import sleep
 from .instrument import Instrument
-from types import CodeType
+from types import CodeType, MethodType
+from typeguard import typechecked, check_type
+from typing import Any, List
+from ..game.map_location import MapLocation
 import dis
+import inspect
 
+def custom_check_type(value: Any, expected_type: type):
+    # print("checking type", value, expected_type)
+    # if isinstance(expected_type, type):  # Only enforce exact types for concrete types
+    #     if type(value) is not expected_type:
+    #         print("type error!")
+    #         raise TypeError(f"Expected exact type {expected_type.__name__}, got {type(value).__name__} instead.")
+    # else:  # Fall back to typeguard's default behavior for non-concrete types
+    #     print("not concrete type", expected_type)
+    #     print(check_type(5, expected_type))
+
+    if type(value) != eval(expected_type):
+        raise TypeError(f"Expected exact type {expected_type}, got {type(value)} instead.")
 
 class RobotThread(Thread):
     def __init__(self, runner):
@@ -29,7 +45,9 @@ class RobotThread(Thread):
             if not self.runner.initialized:
                 self.runner.init_robot()
 
+            print('bytecode before', self.runner.bytecode)
             self.runner.do_turn()
+            print('bytecode after', self.runner.bytecode)
 
             self.run_event.clear()
             self.finished_event.set()
@@ -45,7 +63,6 @@ class RobotThread(Thread):
         self.running = False
         self.pause_event.set()
         self.run_event.set()
-
 
 class RobotRunner:
     STARTING_BYTECODE = 20000
@@ -78,8 +95,18 @@ class RobotRunner:
         # instrumented methods
         self.globals['__builtins__']['sorted'] = self.instrument.instrumented_sorted
 
-        for key, value in game_methods.items():
-            self.globals['__builtins__'][key] = value
+        for name, func in game_methods.items():
+            def make_wrapper(func):
+                if not isinstance(func, MethodType):
+                    return func
+            
+                def func_wrapper(*args, **kwargs):
+                    for arg, expected_type in zip(args, inspect.get_annotations(func).values()):
+                        custom_check_type(arg, expected_type)
+                    return func(*args, **kwargs)
+                return func_wrapper
+            
+            self.globals['__builtins__'][name] = func
 
         self.error_method = error_method
         self.game_methods = game_methods
