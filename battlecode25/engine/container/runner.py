@@ -32,9 +32,7 @@ class RobotThread(Thread):
             if not self.runner.initialized:
                 self.runner.init_robot()
 
-            print('bytecode before', self.runner.bytecode)
             self.runner.do_turn()
-            print('bytecode after', self.runner.bytecode)
 
             self.run_event.clear()
             self.finished_event.set()

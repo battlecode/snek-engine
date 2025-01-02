@@ -1,6 +1,8 @@
+from .map_location import MapLocation
+from .paint_type import PaintType
 class MapInfo:
 
-    def __init__(self, loc, passable, wall, paint, mark, ruin):
+    def __init__(self, loc: MapLocation, passable: bool, wall: bool, paint: PaintType, mark: PaintType, ruin: bool):
         self.loc = loc
         self.passable = passable
         self.wall = wall
@@ -8,27 +10,28 @@ class MapInfo:
         self.mark = mark
         self.ruin = ruin
 
-    def is_passable(self): 
+    def is_passable(self) -> bool: 
         return self.passable
     
-    def is_wall(self):
+    def is_wall(self) -> bool:
         return self.wall
     
-    def has_ruin(self): 
+    def has_ruin(self) -> bool: 
         return self.ruin
     
-    def get_paint(self):
+    def get_paint(self) -> PaintType:
         return self.paint
     
-    def get_mark(self):
+    def get_mark(self) -> PaintType:
         return self.mark
     
-    def get_map_location(self):
+    def get_map_location(self) -> MapLocation:
         return self.loc
 
     def __str__(self):
         return f"Location: {self.loc} \n \
-            isPassable: {self.isPassable} \n \
-            isRuins: {self.isRuins} \n \
-            isTower: {self.isTower} \n  \
-            paintColor: {self.paint_color}"
+            passable: {self.passable} \n \
+            is_wall: {self.wall} \n \
+            has_ruin: {self.ruin} \n  \
+            paint: {self.paint} \n \
+            mark: {self.mark} \n"

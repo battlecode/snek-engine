@@ -15,6 +15,7 @@ from .robot_controller import RobotController
 from .domination_factor import DominationFactor
 from .shape import Shape
 from .map_info import MapInfo
+from .paint_type import PaintType
 
 import math
 
@@ -27,7 +28,8 @@ class Game:
         total_area = self.width * self.height
         self.area_without_walls = total_area - sum(initial_map.walls)
         self.walls = initial_map.walls
-        self.markers = [0] * total_area
+        self.team_a_markers = [0] * total_area
+        self.team_b_markers = [0] * total_area
         self.round = 0
         self.id_generator = IDGenerator()
         self.winner = None
@@ -93,8 +95,23 @@ class Game:
     def has_ruin(self, loc: MapLocation):
         return self.ruins[self.loc_to_index(loc)]
     
-    def get_marker(self, loc: MapLocation):
-        return self.markers[self.loc_to_index(loc)]
+    def get_marker(self, team: Team, loc: MapLocation) -> int:
+        markers = self.team_a_markers if team == Team.A else self.team_b_markers
+        return markers[self.loc_to_index(loc)]
+    
+    def mark_location(self, team: Team, loc: MapLocation, secondary: bool):
+        markers = self.team_a_markers if team == Team.A else self.team_b_markers
+        markers[self.loc_to_index(loc)] = 2 if secondary else 1
+
+    def get_map_info(self, loc): 
+        idx = self.loc_to_index(loc)
+        mark = self.get_marker(loc)
+        mark_type = PaintType.EMPTY
+        if mark == 1:
+            mark_type = PaintType.ALLY_PRIMARY
+        elif mark == 2:
+            mark_type = PaintType.ALLY_SECONDARY
+        return MapInfo(loc, self.is_passable(loc), self.walls[idx], self.get_paint_type(loc), mark_type, self.ruins[idx])    
 
     def spawn_robot(self, type: RobotType, loc: MapLocation, team: Team, id=None):
         if id is None:
@@ -253,6 +270,19 @@ class Game:
         else:
             return Team.NEUTRAL
         
+    def is_primary_paint(self, paint):
+        return paint == 1 or paint == 3
+
+    def get_paint_type(self, team, loc):
+        paint = self.paint[self.loc_to_index(loc)]
+        paint_team = self.team_from_paint(paint)
+        if paint_team == Team.NEUTRAL:
+            return PaintType.EMPTY
+        elif paint_team == team:
+            return PaintType.ALLY_PRIMARY if self.is_primary_paint(paint) else PaintType.ALLY_SECONDARY
+        else:
+            return PaintType.ENEMY_PRIMARY if self.is_primary_paint(paint) else PaintType.ENEMY_SECONDARY
+        
     def shape_from_tower_type(self, tower_type):
         if tower_type in {RobotType.LEVEL_ONE_PAINT_TOWER, RobotType.LEVEL_TWO_PAINT_TOWER, RobotType.LEVEL_THREE_PAINT_TOWER}:
             return Shape.PAINT_TOWER
@@ -299,9 +329,6 @@ class Game:
                 if center.is_within_distance_squared(new_location, radius_squared):
                     return_locations.append(new_location)
         return return_locations
-      
-    def mark_location(self, loc, color):
-        self.markers[self.loc_to_index(loc)] = color
 
     def is_valid_pattern_center(self, center):
         '''
@@ -431,11 +458,8 @@ class Game:
         return result
     
     def is_passable(self, loc):
-        return not self.walls[self.loc_to_index(loc)]
-  
-    def get_map_info(self, loc): 
         idx = self.loc_to_index(loc)
-        return MapInfo(loc, self.is_passable(loc), self.walls[idx], self.paint[idx], self.markers[idx], self.ruins[idx])
+        return not self.walls[idx] and not self.ruins[idx]
     
     def loc_to_index(self, loc):
         return loc.y * self.width + loc.x
@@ -461,6 +485,9 @@ class Game:
             'Team': Team,
             'Direction': Direction,
             'MapLocation': MapLocation,
+            'RobotInfo': RobotInfo,
+            'MapInfo': MapInfo,
+            'PaintType': PaintType,
             'get_round_num': (rc.get_round_num, 1),
             'get_map_width': (rc.get_map_width, 1),
             'get_map_height': (rc.get_map_height, 1),

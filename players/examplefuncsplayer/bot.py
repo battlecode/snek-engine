@@ -43,7 +43,10 @@ def turn():
 #     # if can_move(direction):
 #     #     move(direction)
 
-#     # loc = get_location()
-#     # log(loc)
+#     loc = get_location()
+#     log(loc)
+#     log(loc.add(Direction.NORTH))
 
-#     move(Direction.NORTH)
+#     # log(get_round_num())
+#     # if can_move(Direction.NORTH):
+#     #     move(Direction.NORTH)
