@@ -12,19 +12,6 @@ from ..game.map_location import MapLocation
 import dis
 import inspect
 
-def custom_check_type(value: Any, expected_type: type):
-    # print("checking type", value, expected_type)
-    # if isinstance(expected_type, type):  # Only enforce exact types for concrete types
-    #     if type(value) is not expected_type:
-    #         print("type error!")
-    #         raise TypeError(f"Expected exact type {expected_type.__name__}, got {type(value).__name__} instead.")
-    # else:  # Fall back to typeguard's default behavior for non-concrete types
-    #     print("not concrete type", expected_type)
-    #     print(check_type(5, expected_type))
-
-    if type(value) != eval(expected_type):
-        raise TypeError(f"Expected exact type {expected_type}, got {type(value)} instead.")
-
 class RobotThread(Thread):
     def __init__(self, runner):
         Thread.__init__(self)
@@ -95,18 +82,22 @@ class RobotRunner:
         # instrumented methods
         self.globals['__builtins__']['sorted'] = self.instrument.instrumented_sorted
 
-        for name, func in game_methods.items():
-            def make_wrapper(func):
+        for name, func_and_cost in game_methods.items():
+            def make_wrapper(func_info):
+                # if cost is provided, func_info is func, cost tuple, otherwise just the function
+                if not isinstance(func_info, tuple):
+                    return func_info
+                func, cost = func_info
+                # if not a function, (e.g. MapLocation, Direction, etc) return
                 if not isinstance(func, MethodType):
                     return func
-            
+
                 def func_wrapper(*args, **kwargs):
-                    for arg, expected_type in zip(args, inspect.get_annotations(func).values()):
-                        custom_check_type(arg, expected_type)
+                    self.multinstrument_call(cost)
                     return func(*args, **kwargs)
                 return func_wrapper
             
-            self.globals['__builtins__'][name] = func
+            self.globals['__builtins__'][name] = make_wrapper(func_and_cost)
 
         self.error_method = error_method
         self.game_methods = game_methods
