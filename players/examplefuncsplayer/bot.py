@@ -46,5 +46,7 @@ def turn():
     # loc = get_location()
     # log(loc)
 
-    if can_move(Direction.NORTH):
-        move(Direction.NORTH)
+    pass
+
+    # if can_move(Direction.NORTH):
+    #     move(Direction.NORTH)
