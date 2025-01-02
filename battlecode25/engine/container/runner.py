@@ -9,6 +9,7 @@ from types import CodeType, MethodType
 from typeguard import typechecked, check_type
 from typing import Any, List
 from ..game.map_location import MapLocation
+from ..game.constants import GameConstants
 import dis
 import inspect
 
@@ -50,8 +51,8 @@ class RobotThread(Thread):
         self.run_event.set()
 
 class RobotRunner:
-    STARTING_BYTECODE = 20000
-    EXTRA_BYTECODE = 20000
+    STARTING_BYTECODE = GameConstants.BYTECODE_LIMIT
+    EXTRA_BYTECODE = GameConstants.BYTECODE_LIMIT
 
     def __init__(self, code, game_methods, log_method, error_method, debug=False):
         self.instrument = Instrument(self)

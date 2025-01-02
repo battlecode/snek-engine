@@ -515,6 +515,7 @@ class RobotController:
         """
         self.assert_can_mark(loc)
         self.game.mark_location(self.robot.team, loc, secondary)
+        self.game.game_fb.add_mark_action(loc, secondary)
 
     def assert_can_remove_mark(self, loc: MapLocation) -> None:
         self.assert_is_robot_type(self.robot.type)
@@ -533,6 +534,7 @@ class RobotController:
     def remove_mark(self, loc: MapLocation) -> None:
         self.assert_can_remove_mark(loc)
         self.game.mark_location(self.robot.team, loc, 0) 
+        self.game.game_fb.add_unmark_action(loc)
     
     def assert_can_complete_tower_pattern(self, tower_type: RobotType, loc: MapLocation) -> None:
         self.assert_is_robot_type(self.robot.type)
@@ -702,7 +704,7 @@ class RobotController:
         target = self.game.get_robot(target_location)
         target.add_paint(amount)
         self.robot.add_action_cooldown()
-        self.game.game_fb.add_transfer_action(target.id)
+        self.game.game_fb.add_transfer_action(target.id, amount)
 
     # UPGRADE TOWER FUNCTIONS
 

@@ -40,7 +40,7 @@ class Game:
         self.team_info.add_coins(Team.A, GameConstants.INITIAL_TEAM_MONEY)
         self.team_info.add_coins(Team.B, GameConstants.INITIAL_TEAM_MONEY)
         self.game_fb = game_fb
-        self.pattern = [self.create_test_pattern_array() for i in range(4)]
+        self.pattern = self.create_patterns()
         self.resource_pattern_centers = []
         self.resouce_pattern_centers_by_loc = [Team.NEUTRAL] * total_area
         self.ruins = initial_map.ruins
@@ -338,19 +338,18 @@ class Game:
         shape_out_of_bounds = (center.x + GameConstants.PATTERN_SIZE//2 >= self.width or center.x - GameConstants.PATTERN_SIZE//2 < 0 or center.y + GameConstants.PATTERN_SIZE//2 >= self.height or center.y < 0)
         return shape_out_of_bounds
     
-    def mark_pattern(self, team, center, shape):
+    def mark_pattern(self, team: Team, center: MapLocation, shape: Shape):
         '''
         Marks pattern at center
         '''
-        pattern_array = self.pattern[shape]
-
+        pattern_array = self.pattern[shape.value]
         offset = GameConstants.PATTERN_SIZE//2
-
-        for dx in range(-offset, offset + 1):
-            for dy in range(-offset, offset + 1):
-                color_indicator = pattern_array[dx + offset, dy + offset]
-                mark_color =  self.get_primary_paint(team) if (color_indicator == 0) else self.get_secondary_paint(team)
-                self.mark_location(MapLocation(center.x + dx, center.y + dy), mark_color)
+        for row in range(-offset, offset + 1):
+            for col in range(-offset, offset + 1):
+                loc = self.loc_to_index(center.x + col, center.y + row)
+                secondary = pattern_array[row][col]
+                self.mark_location(team, loc, secondary)
+                self.game_fb.add_mark_action(loc, secondary)        
 
     def mark_tower_pattern(self, team, center, tower_type):
         '''
@@ -385,12 +384,12 @@ class Game:
         
         patterns_list = list(Shape.__members__.values()) # list of Shape enum members
         
-        def check_pattern(shape): 
+        def check_pattern(shape: Shape): 
             '''
             Check presence of a particular pattern type up to 8 symmetries
             Returns True/False, whether pattern is present
             '''
-            pattern_array = self.pattern[shape]
+            pattern_array = self.pattern[shape.value]
             valid_transformations = [True] * len(Transformation) # T/F for whether a transformation is valid
 
             offset = GameConstants.PATTERN_SIZE//2
@@ -424,16 +423,17 @@ class Game:
                             dy_ = -dx
 
                         map_loc = MapLocation(center.x + dx_, center.y + dy_) # location on map after transforming pattern
-                        map_loc_idx = self.loc_to_index(map_loc)
+                        actual_paint = self.paint(self.loc_to_index(map_loc))
                         
-                        if(self.team_from_paint(pattern_array[dx + offset][dy + offset]) != team): # wrong team
+                        if(self.team_from_paint(actual_paint) != team): # wrong team
                             valid_transformations[shape] = False
                         
-                        #assumes pattern arrays have 1 as secondary, 0 as primary
-                        match_primary = (pattern_array[dx + offset][dy + offset] == 0) and (self.paint[map_loc_idx] == self.get_primary_paint(team))
-                        match_secondary = (pattern_array[dx + offset][dy + offset] == 1) and (self.paint[map_loc_idx] == self.get_secondary_paint(team))
-                        if(not (match_primary or match_secondary)): 
+                        #assumes pattern arrays have True as secondary, False as primary
+                        secondary_actual = not self.is_primary_paint(actual_paint)
+                        secondary_pattern = pattern_array[dy + offset][dx + offset]
+                        if secondary_actual != secondary_pattern:
                             valid_transformations[variant] = False
+
             return (any(valid_transformations))
         
         for shape in patterns_list: 
@@ -550,6 +550,37 @@ class Game:
             'set_indicator_line': rc.set_indicator_line,
             'set_timeline_marker': rc.set_timeline_marker,
         }
+    
+    def create_patterns(self):
+        resource_pattern = [
+            [True, False, True, False, True],
+            [False, True, False, True, False],
+            [True, False, True, False, True],
+            [False, True, False, True, False],
+            [True, False, True, False, True]
+        ]
+        money_tower_pattern = [
+            [False, True, True, True, False],
+            [True, False, False, False, True],
+            [True, False, False, False, True],
+            [True, False, False, False, True],
+            [False, True, True, True, False]
+        ]
+        paint_tower_pattern = [
+            [True, False, False, False, True],
+            [False, True, False, True, False],
+            [False, False, True, False, False],
+            [False, True, False, True, False],
+            [True, False, False, False, True]
+        ]
+        defense_tower_pattern = [
+            [False, False, True, False, False],
+            [False, True, True, True, False],
+            [True, True, True, True, True],
+            [False, True, True, True, False],
+            [False, False, True, False, False]
+        ]
+        return resource_pattern, defense_tower_pattern, money_tower_pattern, paint_tower_pattern
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""

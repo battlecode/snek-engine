@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple, Union
 
-from battlecode25.engine.game.game import Team, RobotType, Direction, MapLocation, RobotInfo, MapInfo, PaintType
+from battlecode25.engine.game.game import Team, RobotType, Direction, MapLocation, RobotInfo, MapInfo, PaintType, GameConstants
 
 # The stubs in this file make it possible for editors to auto-complete the global methods
 # They can be imported using "from battlecode25.stubs import *"
