@@ -6,7 +6,6 @@ from threading import Thread, Event, Condition
 from time import sleep
 from .instrument import Instrument
 from types import CodeType, MethodType
-from typeguard import typechecked, check_type
 from typing import Any, List
 from ..game.map_location import MapLocation
 from ..game.constants import GameConstants
