@@ -35,6 +35,8 @@ class Instrument:
         :return: a new code object that has been injected with our bytecode counter
         """
 
+        print("Before instrument. function:", bytecode.co_name, ", names list:", bytecode.co_names, "varnames:", bytecode.co_varnames)
+
         # Recursively instrument functions or anything else that points to a separate code object
         new_consts = []
         for i, constant in enumerate(bytecode.co_consts):
@@ -235,12 +237,12 @@ class Instrument:
         if len(pairs) > 0:
             new_co_lines.append((bytecode_start, pairs[-1][0] + 2, current_line))
 
-        print([i for i in bytecode.co_lines()])
-        print(bytecode_to_line)
-        print(new_bytecode_to_line)
-        print(pairs)
-        print(new_co_lines)
-        print()
+        # print([i for i in bytecode.co_lines()])
+        # print(bytecode_to_line)
+        # print(new_bytecode_to_line)
+        # print(pairs)
+        # print(new_co_lines)
+        # print()
             
         #tranfer to bytes and we are good :)
         new_linetable = Instrument.write_location_table(bytecode.co_firstlineno, new_co_lines)
@@ -258,6 +260,9 @@ class Instrument:
         # Make sure our code can locate the __instrument__ call
         new_names = tuple(bytecode.co_names) + ('instrument',)
         compiled = Instrument.build_code(bytecode, new_code, new_names, new_consts, new_linetable)
+
+        print("After instrument. function:", compiled.co_name, ", names list:", compiled.co_names, "varnames:", compiled.co_varnames)
+
         return compiled
     
     @staticmethod
