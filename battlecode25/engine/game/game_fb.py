@@ -294,7 +294,7 @@ class GameFB:
             return
         label_offset = self.builder.CreateString(label)
         IndicatorStringAction.Start(self.builder)
-        IndicatorStringAction.AddValue(label_offset)
+        IndicatorStringAction.AddValue(self.builder, label_offset)
         action_offset = IndicatorStringAction.End(self.builder)
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().IndicatorStringAction)

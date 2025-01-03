@@ -9,6 +9,7 @@ from types import CodeType, MethodType
 from typing import Any, List
 from ..game.map_location import MapLocation
 from ..game.constants import GameConstants
+from ..game.team import Team
 import dis
 import inspect
 
@@ -72,7 +73,11 @@ class RobotRunner:
         self.globals['__builtins__']['_unpack_sequence_'] = Guards.guarded_unpack_sequence
         self.globals['__builtins__']['_iter_unpack_sequence_'] = Guards.guarded_iter_unpack_sequence
 
-        self.globals['__builtins__']['log'] = log_method
+        def format_print(*args):
+            print(f"[{'A' if game_methods['get_team'][0]() == Team.A else 'B'}: #{game_methods['get_id'][0]()}@{game_methods['get_round_num'][0]()}] ", end="")
+            print(*args)
+
+        self.globals['__builtins__']['log'] = format_print
         self.globals['__builtins__']['enumerate'] = enumerate
         self.globals['__builtins__']['set'] = set
         self.globals['__builtins__']['frozenset'] = frozenset

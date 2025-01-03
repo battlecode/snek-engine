@@ -27,7 +27,6 @@ class Robot:
         self.rounds_alive = 0
         self.action_cooldown = type.action_cooldown
         self.movement_cooldown = GameConstants.COOLDOWN_LIMIT
-        self.indicator_string = ""
         self.runner = None
         self.debug = False
         self.message_buffer = MessageBuffer(GameConstants.MESSAGE_ROUND_DURATION)
@@ -88,7 +87,6 @@ class Robot:
         self.process_end_of_turn()
 
     def process_beginning_of_round(self):
-        self.indicator_string = ""
         self.died_loc = None
         if self.type.paint_per_turn != 0:
             self.add_paint(self.type.paint_per_turn + self.game.get_resources_from_patterns(self.team))

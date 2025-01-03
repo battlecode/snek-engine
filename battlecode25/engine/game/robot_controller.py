@@ -426,7 +426,7 @@ class RobotController:
         '''
         if self.robot.type.is_tower_type():
             raise RobotError("Marking unit is not a robot.")
-        if self.game.is_valid_pattern_center(loc):
+        if not self.game.is_valid_pattern_center(loc):
             raise RobotError(f"Pattern at ({loc.x}, {loc.y}) is out of the bounds of the map.")
         if not loc.is_within_distance_squared(self.robot.loc, GameConstants.MARK_RADIUS_SQUARED):
             raise RobotError(f"({loc.x}, {loc.y}) is not within the robot's pattern-marking range")
@@ -543,7 +543,7 @@ class RobotController:
             raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because it is too close to the edge of the map")
         if self.game.get_robot(loc) is not None:
             raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because there is a robot at the center of the ruin")
-        if not self.game.detect_pattern(loc, self.robot.team) == tower_type:
+        if not self.game.simple_check_pattern(loc, self.game.shape_from_tower_type(tower_type), self.robot.team):
             raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because the paint pattern is wrong")
         
     def can_complete_tower_pattern(self, loc: MapLocation, tower_type: RobotType, ) -> bool:
@@ -556,6 +556,7 @@ class RobotController:
     def complete_tower_pattern(self, loc: MapLocation, tower_type: RobotType) -> None:
         self.assert_can_complete_tower_pattern(loc, tower_type)
         robot = self.game.spawn_robot(tower_type, loc, self.robot.team)
+        self.game.game_fb.add_spawn_action(robot.id, loc, robot.team, robot.type)
         self.game.game_fb.add_build_action(robot.id)
 
     def assert_can_complete_resource_pattern(self, loc: MapLocation) -> None:
@@ -738,7 +739,7 @@ class RobotController:
     def set_indicator_string(self, string: str) -> None:
         if len(string) > GameConstants.INDICATOR_STRING_MAX_LENGTH:
             string = string[:GameConstants.INDICATOR_STRING_MAX_LENGTH]
-        self.robot.indicator_string = string
+        self.game.game_fb.add_indicator_string(string)
 
     def set_indicator_dot(self, loc: MapLocation, red: int, green: int, blue: int) -> None:
         self.assert_not_none(loc)

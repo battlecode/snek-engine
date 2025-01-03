@@ -344,9 +344,12 @@ class Game:
         '''
         Checks if pattern centered at this location would be in the bounds of the map
         '''
-        
-        shape_out_of_bounds = (center.x + GameConstants.PATTERN_SIZE//2 >= self.width or center.x - GameConstants.PATTERN_SIZE//2 < 0 or center.y + GameConstants.PATTERN_SIZE//2 >= self.height or center.y < 0)
-        return shape_out_of_bounds
+        offset = GameConstants.PATTERN_SIZE // 2
+        shape_out_of_bounds = (center.x + offset >= self.width or 
+                               center.x - offset < 0 or 
+                               center.y + offset >= self.height or 
+                               center.y - offset < 0)
+        return not shape_out_of_bounds
     
     def mark_pattern(self, team: Team, center: MapLocation, shape: Shape):
         '''
@@ -368,6 +371,23 @@ class Game:
         '''
         self.mark_pattern(team, center, self.shape_from_tower_type(tower_type))
 
+    def simple_check_pattern(self, center, shape, team):
+        offset = GameConstants.PATTERN_SIZE//2
+        pattern_array = self.pattern[shape.value]
+        for dx in range(-offset, offset + 1):
+            for dy in range(-offset, offset + 1):
+                map_loc = MapLocation(center.x + dx, center.y + dy)
+                if self.has_ruin(map_loc):
+                    continue
+                actual_paint = self.paint[self.loc_to_index(map_loc)]
+                if self.team_from_paint(actual_paint) != team:
+                    return False
+                secondary_actual = not self.is_primary_paint(actual_paint)
+                secondary_pattern = pattern_array[dy + offset][dx + offset]
+                if secondary_actual != secondary_pattern:
+                    return False
+        return True
+
     def mark_resource_pattern(self, team, center):
         '''
         Marks resource pattern at center
@@ -385,16 +405,17 @@ class Game:
             FLIP_Y = 2
             FLIP_D1 = 3
             FLIP_D2 = 4
-            ROTATE_90 = 6
-            ROTATE_180 = 7
-            ROTATE_270 = 8
+            ROTATE_90 = 5
+            ROTATE_180 = 6
+            ROTATE_270 = 7
         
         if not self.is_valid_pattern_center(center):
             return None
         
-        patterns_list = list(Shape.__members__.values()) # list of Shape enum members
-        
+        patterns_list = list(Shape.__members__.values()) # list of Shape enum members 
+
         def check_pattern(shape: Shape): 
+            debug_str = ""
             '''
             Check presence of a particular pattern type up to 8 symmetries
             Returns True/False, whether pattern is present
@@ -433,18 +454,18 @@ class Game:
                             dy_ = -dx
 
                         map_loc = MapLocation(center.x + dx_, center.y + dy_) # location on map after transforming pattern
-                        actual_paint = self.paint(self.loc_to_index(map_loc))
+                        actual_paint = self.paint[self.loc_to_index(map_loc)]
                         
                         if(self.team_from_paint(actual_paint) != team): # wrong team
-                            valid_transformations[shape] = False
+                            valid_transformations[shape.value] = False
                         
                         #assumes pattern arrays have True as secondary, False as primary
                         secondary_actual = not self.is_primary_paint(actual_paint)
                         secondary_pattern = pattern_array[dy + offset][dx + offset]
-                        if secondary_actual != secondary_pattern:
-                            valid_transformations[variant] = False
+                        if secondary_actual != secondary_pattern and not self.has_ruin(map_loc):
+                            valid_transformations[variant.value] = False
 
-            return (any(valid_transformations))
+            return any(valid_transformations)
         
         for shape in patterns_list: 
             if(check_pattern(shape)):

@@ -32,9 +32,9 @@ def run_soldier():
             complete_tower_pattern(ruin, RobotType.LEVEL_ONE_PAINT_TOWER)
     map_infos = sense_nearby_map_infos()
     for info in map_infos:
-        if info.mark.is_ally() and info.paint == PaintType.EMPTY:
+        if info.mark.is_ally() and info.paint == PaintType.EMPTY or (info.paint.is_secondary() != info.mark.is_secondary()):
             if can_attack(info.loc):
-                attack(info.loc, info.mark.is_secondary)
+                attack(info.loc, info.mark.is_secondary())
 
 def run_splasher():
     dir = directions[random.randint(0, 3)]
