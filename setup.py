@@ -24,6 +24,6 @@ setup(name='battlecode25',
             'RestrictedPython==7.4',
             'flatbuffers==24.3.25'
       ],
-      python_requires='>=3.10',
+      python_requires='>=3.12, <3.13',
       zip_safe=False
 )

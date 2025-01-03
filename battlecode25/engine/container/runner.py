@@ -5,9 +5,13 @@ from RestrictedPython import safe_builtins, limited_builtins, utility_builtins, 
 from threading import Thread, Event, Condition
 from time import sleep
 from .instrument import Instrument
-from types import CodeType
+from types import CodeType, MethodType
+from typing import Any, List
+from ..game.map_location import MapLocation
+from ..game.constants import GameConstants
+from ..game.team import Team
 import dis
-
+import inspect
 
 class RobotThread(Thread):
     def __init__(self, runner):
@@ -46,10 +50,9 @@ class RobotThread(Thread):
         self.pause_event.set()
         self.run_event.set()
 
-
 class RobotRunner:
-    STARTING_BYTECODE = 20000
-    EXTRA_BYTECODE = 20000
+    STARTING_BYTECODE = GameConstants.BYTECODE_LIMIT
+    EXTRA_BYTECODE = GameConstants.BYTECODE_LIMIT
 
     def __init__(self, code, game_methods, log_method, error_method, debug=False):
         self.instrument = Instrument(self)
@@ -70,7 +73,11 @@ class RobotRunner:
         self.globals['__builtins__']['_unpack_sequence_'] = Guards.guarded_unpack_sequence
         self.globals['__builtins__']['_iter_unpack_sequence_'] = Guards.guarded_iter_unpack_sequence
 
-        self.globals['__builtins__']['log'] = log_method
+        def format_print(*args):
+            print(f"[{'A' if game_methods['get_team'][0]() == Team.A else 'B'}: #{game_methods['get_id'][0]()}@{game_methods['get_round_num'][0]()}] ", end="")
+            print(*args)
+
+        self.globals['__builtins__']['log'] = format_print
         self.globals['__builtins__']['enumerate'] = enumerate
         self.globals['__builtins__']['set'] = set
         self.globals['__builtins__']['frozenset'] = frozenset
@@ -78,8 +85,22 @@ class RobotRunner:
         # instrumented methods
         self.globals['__builtins__']['sorted'] = self.instrument.instrumented_sorted
 
-        for key, value in game_methods.items():
-            self.globals['__builtins__'][key] = value
+        for name, func_and_cost in game_methods.items():
+            def make_wrapper(func_info):
+                # if cost is provided, func_info is func, cost tuple, otherwise just the function
+                if not isinstance(func_info, tuple):
+                    return func_info
+                func, cost = func_info
+                # if not a function, (e.g. MapLocation, Direction, etc) return
+                if not isinstance(func, MethodType):
+                    return func
+
+                def func_wrapper(*args, **kwargs):
+                    self.multinstrument_call(cost)
+                    return func(*args, **kwargs)
+                return func_wrapper
+            
+            self.globals['__builtins__'][name] = make_wrapper(func_and_cost)
 
         self.error_method = error_method
         self.game_methods = game_methods

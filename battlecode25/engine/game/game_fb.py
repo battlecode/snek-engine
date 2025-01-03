@@ -16,7 +16,6 @@ from ..schema import DamageAction
 from ..schema import PaintAction
 from ..schema import UnpaintAction
 from ..schema import AttackAction
-from ..schema import MopAction
 from ..schema import BuildAction
 from ..schema import TransferAction
 from ..schema import MessageAction
@@ -28,9 +27,14 @@ from ..schema import IndicatorDotAction
 from ..schema import IndicatorLineAction
 from ..schema import Action
 from ..schema import RobotTypeMetadata
+from ..schema import TimelineMarker
+from ..schema import MopAction
+from ..schema import MarkAction
+from ..schema import UnmarkAction
 from .fb_helpers import *
 from .map_fb import serialize_map
 from pathlib import Path
+from .initial_map import InitialMap
 import gzip
 import io
 
@@ -59,6 +63,7 @@ class GameFB:
         self.current_round = 0
         self.logger = []
         self.current_actions = []
+        self.timeline_markers = []
         self.current_action_types = []
         self.current_map_width = 0
 
@@ -139,15 +144,16 @@ class GameFB:
             RobotTypeMetadata.AddActionCooldown(self.builder, robot_type.action_cooldown)
             RobotTypeMetadata.AddActionRadiusSquared(self.builder, robot_type.action_radius_squared)
             RobotTypeMetadata.AddBaseHealth(self.builder, robot_type.health)
-            RobotTypeMetadata.AddBytecodeLimit(self.builder, 1000) #TODO :skull:
+            RobotTypeMetadata.AddBytecodeLimit(self.builder, GameConstants.BYTECODE_LIMIT)
             RobotTypeMetadata.AddMovementCooldown(self.builder, GameConstants.MOVEMENT_COOLDOWN)
             RobotTypeMetadata.AddVisionRadiusSquared(self.builder, GameConstants.VISION_RADIUS_SQUARED)
+            RobotTypeMetadata.AddBasePaint(self.builder, robot_type.paint_capacity // 2)
             offsets.append(RobotTypeMetadata.End(self.builder))
         return create_vector(self.builder, GameHeader.StartRobotTypeMetadataVector, offsets)
 
     #Single match serialization methods
 
-    def make_match_header(self, initial_map):
+    def make_match_header(self, initial_map: InitialMap):
         self.state = self.State.IN_MATCH
         map_offset = serialize_map(self.builder, initial_map)
         self.initial_map = initial_map
@@ -161,10 +167,12 @@ class GameFB:
         self.match_headers.append(len(self.events) - 1)
 
     def make_match_footer(self, win_team, win_type, total_rounds):
+        timeline_offset = create_vector(self.builder, MatchFooter.StartTimelineMarkersVector, self.timeline_markers)
         MatchFooter.Start(self.builder)
         MatchFooter.AddWinner(self.builder, fb_from_team(win_team))
         MatchFooter.AddWinType(self.builder, fb_from_domination_factor(win_type))
         MatchFooter.AddTotalRounds(self.builder, total_rounds)
+        MatchFooter.AddTimelineMarkers(self.builder, timeline_offset)
         match_footer_offset = MatchFooter.End(self.builder)
 
         self.events.append(create_event_wrapper(self.builder, Event.Event().MatchFooter, match_footer_offset))
@@ -217,6 +225,16 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().DamageAction)
 
+    def add_mark_action(self, loc, secondary):
+        action_offset = MarkAction.CreateMarkAction(self.builder, self.initial_map.loc_to_index(loc), secondary)
+        self.current_actions.append(action_offset)
+        self.current_action_types.append(Action.Action().MarkAction)
+
+    def add_unmark_action(self, loc):
+        action_offset = UnmarkAction.CreateUnmarkAction(self.builder, self.initial_map.loc_to_index(loc))
+        self.current_actions.append(action_offset)
+        self.current_action_types.append(Action.Action().UnmarkAction)
+
     def add_paint_action(self, loc, is_secondary):
         action_offset = PaintAction.CreatePaintAction(self.builder, self.initial_map.loc_to_index(loc), fb_from_paint_type(is_secondary))
         self.current_actions.append(action_offset)
@@ -232,8 +250,8 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().AttackAction)
 
-    def add_mop_action(self, loc):
-        action_offset = MopAction.CreateMopAction(self.builder, self.initial_map.loc_to_index(loc))
+    def add_mop_action(self, id0, id1, id2):
+        action_offset = MopAction.CreateMopAction(self.builder, id0, id1, id2)
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().MopAction)
 
@@ -242,8 +260,8 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().BuildAction)
 
-    def add_transfer_action(self, other_robot_id):
-        action_offset = TransferAction.CreateTransferAction(self.builder, other_robot_id)
+    def add_transfer_action(self, other_robot_id, amount):
+        action_offset = TransferAction.CreateTransferAction(self.builder, other_robot_id, amount)
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().TransferAction)
 
@@ -276,7 +294,7 @@ class GameFB:
             return
         label_offset = self.builder.CreateString(label)
         IndicatorStringAction.Start(self.builder)
-        IndicatorStringAction.AddValue(label_offset)
+        IndicatorStringAction.AddValue(self.builder, label_offset)
         action_offset = IndicatorStringAction.End(self.builder)
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().IndicatorStringAction)
@@ -296,6 +314,18 @@ class GameFB:
         action_offset = IndicatorLineAction.CreateIndicatorLineAction(self.builder, start_idx, end_idx, int_rgb(red, green, blue))
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().IndicatorLineAction)
+
+    def add_timeline_marker(self, team, label, red, green, blue):
+        if not self.show_indicators:
+            return
+        label_offset = self.builder.CreateString(label)
+        TimelineMarker.Start(self.builder)
+        TimelineMarker.AddTeam(self.builder, fb_from_team(team))
+        TimelineMarker.AddLabel(self.builder, label_offset)
+        TimelineMarker.AddRound(self.builder, self.current_round)
+        TimelineMarker.AddColor(self.builder, int_rgb(red, green, blue))
+        marker_offset = TimelineMarker.End(self.builder)
+        self.timeline_markers.append(marker_offset)
 
     def add_died(self, id):
         self.died_ids.append(id)

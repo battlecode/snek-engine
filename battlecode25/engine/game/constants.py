@@ -62,11 +62,17 @@ class GameConstants:
     # The percent of the map which a team needs to paint to win.
     PAINT_PERCENT_TO_WIN = 70
 
+    # The maximum number of towers that a team can have.
+    MAX_NUMBER_OF_TOWERS = 25
+
     # Paint cost for marking a tower pattern.
     MARK_PATTERN_COST = 25
 
     # The extra resources per turn that resource patterns give
     EXTRA_RESOURCES_FROM_PATTERN = 3
+
+    # The maximum turns a robot can have 0 paint before it dies.
+    MAX_TURNS_WITHOUT_PAINT = 10
 
     # *****************************
     # ****** GAME MECHANICS *******
@@ -99,6 +105,13 @@ class GameConstants:
     # The maximum distance from a tower for building robots
     BUILD_ROBOT_RADIUS_SQUARED = 4
 
+    # The maximum distance from a robot for building a tower
+    BUILD_TOWER_RADIUS_SQUARED = 2
+
+    # The maximum distance from a robot for completing special resource patterns
+    # This is 8 so that the robot can complete the pattern anywhere on the 5x5 grid
+    RESOURCE_PATTERN_RADIUS_SQUARED = 8
+
     # The amount of paint depleted from enemy in a regular mopper attack
     MOPPER_ATTACK_PAINT_DEPLETION = 10
 
@@ -107,6 +120,12 @@ class GameConstants:
 
     # The amount of paint depleted from enemies in a swing mopper attack
     MOPPER_SWING_PAINT_DEPLETION = 5
+
+    # The area effected by the splasher's attack. Within this radius, empty tiles are painted and towers are damaged
+    SPLASHER_ATTACK_AOE_RADIUS_SQUARED = 4
+
+    # The smaller area within the splasher's attack at which enemy paint is also replaced by allied paint
+    SPLASHER_ATTACK_ENEMY_PAINT_RADIUS_SQUARED = 2
 
     # ************************
     # ****** COOLDOWNS *******

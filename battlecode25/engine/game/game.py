@@ -13,14 +13,11 @@ from .initial_map import InitialMap
 from .game_fb import GameFB
 from .robot_controller import RobotController
 from .domination_factor import DominationFactor
+from .shape import Shape
+from .map_info import MapInfo
+from .paint_type import PaintType
 
 import math
-
-class Shape(Enum): # marker shapes
-    RESOURCE=0
-    DEFENSE_TOWER=1
-    MONEY_TOWER=2
-    PAINT_TOWER=3
 
 class Game:
 
@@ -31,7 +28,8 @@ class Game:
         total_area = self.width * self.height
         self.area_without_walls = total_area - sum(initial_map.walls)
         self.walls = initial_map.walls
-        self.markers = [0] * total_area
+        self.team_a_markers = [0] * total_area
+        self.team_b_markers = [0] * total_area
         self.round = 0
         self.id_generator = IDGenerator()
         self.winner = None
@@ -42,7 +40,7 @@ class Game:
         self.team_info.add_coins(Team.A, GameConstants.INITIAL_TEAM_MONEY)
         self.team_info.add_coins(Team.B, GameConstants.INITIAL_TEAM_MONEY)
         self.game_fb = game_fb
-        self.pattern = [self.create_test_pattern_array() for i in range(4)]
+        self.pattern = self.create_patterns()
         self.resource_pattern_centers = []
         self.resouce_pattern_centers_by_loc = [Team.NEUTRAL] * total_area
         self.ruins = initial_map.ruins
@@ -86,40 +84,47 @@ class Game:
 
     def get_robot(self, loc: MapLocation) -> Robot:
         return self.robots[self.loc_to_index(loc)]
+    
+    def get_robot_by_id(self, id) -> Robot:
+        return self.id_to_robot.get(id, None)
+    
+    def has_tower(self, loc: MapLocation):
+        robot = self.get_robot(loc)
+        return robot and robot.type.is_tower_type()
+    
+    def has_ruin(self, loc: MapLocation):
+        return self.ruins[self.loc_to_index(loc)]
+    
+    def has_wall(self, loc: MapLocation):
+        return self.walls[self.loc_to_index(loc)]
+    
+    def get_paint_num(self, loc: MapLocation):
+        return self.paint[self.loc_to_index(loc)]
+    
+    def get_marker(self, team: Team, loc: MapLocation) -> int:
+        markers = self.team_a_markers if team == Team.A else self.team_b_markers
+        return markers[self.loc_to_index(loc)]
+    
+    def mark_location(self, team: Team, loc: MapLocation, secondary: bool):
+        markers = self.team_a_markers if team == Team.A else self.team_b_markers
+        markers[self.loc_to_index(loc)] = 2 if secondary else 1
+
+    def get_map_info(self, team, loc): 
+        idx = self.loc_to_index(loc)
+        mark = self.get_marker(team, loc)
+        mark_type = PaintType.EMPTY
+        if mark == 1:
+            mark_type = PaintType.ALLY_PRIMARY
+        elif mark == 2:
+            mark_type = PaintType.ALLY_SECONDARY
+        return MapInfo(loc, self.is_passable(loc), self.walls[idx], self.get_paint_type(team, loc), mark_type, self.ruins[idx])    
 
     def spawn_robot(self, type: RobotType, loc: MapLocation, team: Team, id=None):
         if id is None:
             id = self.id_generator.next_id()
         robot = Robot(self, id, team, type, loc)
         rc = RobotController(self, robot)
-
-        methods = {
-            'GameError': GameError,
-            'RobotType': RobotType,
-            'RobotError': RobotError,
-            'Team': Team,
-            'Direction': Direction,
-            'MapLocation': MapLocation,
-            'can_spawn': rc.can_spawn,
-            'spawn': rc.spawn,
-            'get_location': rc.get_location,
-            'get_map_width': rc.get_map_width,
-            'get_map_height': rc.get_map_height,
-            'get_team': rc.get_team,
-            'can_move': rc.can_move,
-            'move': rc.move,
-            'attack': rc.attack,
-            'can_attack': rc.can_attack,
-            'mop_swing': rc.mop_swing,
-            'sense': rc.sense,
-            'sense_robot_at_location': rc.sense_robot_at_location,
-            'can_mark_tower_pattern': rc.can_mark_tower_pattern,
-            'can_mark_resource_pattern': rc.can_mark_resource_pattern,
-            'mark_tower_pattern': rc.mark_tower_pattern,
-            'mark_resource_pattern': rc.mark_resource_pattern,
-        }
-
-        robot.animate(self.code[team.value], methods, debug=self.debug)
+        robot.animate(self.code[team.value], self.create_methods(rc), debug=self.debug)
         self.robot_exec_order.append(id)
         self.id_to_robot[id] = robot
         self.add_robot_to_loc(loc, robot)
@@ -131,6 +136,8 @@ class Game:
         del self.id_to_robot[id]
         self.remove_robot_from_loc(robot.loc)
         robot.kill()
+        self.game_fb.add_die_action(id, False)
+        self.game_fb.add_died(id)
 
     def setWinnerIfPaintPercentReached(self, team):
         if self.team_info.get_tiles_painted(team) / self.area_without_walls * 100 >= GameConstants.PAINT_PERCENT_TO_WIN:
@@ -216,7 +223,7 @@ class Game:
     def on_the_map(self, loc):
         return 0 <= loc.x < self.width and 0 <= loc.y < self.height
     
-    def connected_by_paint(self, robot_loc, tower_loc):
+    def connected_by_paint(self, robot_loc: MapLocation, tower_loc: MapLocation):
         queue = [robot_loc]
         visited = set()
 
@@ -271,8 +278,32 @@ class Game:
         else:
             return Team.NEUTRAL
         
+    def is_primary_paint(self, paint):
+        return paint == 1 or paint == 3
+
+    def get_paint_type(self, team, loc):
+        paint = self.paint[self.loc_to_index(loc)]
+        paint_team = self.team_from_paint(paint)
+        if paint_team == Team.NEUTRAL:
+            return PaintType.EMPTY
+        elif paint_team == team:
+            return PaintType.ALLY_PRIMARY if self.is_primary_paint(paint) else PaintType.ALLY_SECONDARY
+        else:
+            return PaintType.ENEMY_PRIMARY if self.is_primary_paint(paint) else PaintType.ENEMY_SECONDARY
+        
+    def shape_from_tower_type(self, tower_type):
+        if tower_type in {RobotType.LEVEL_ONE_PAINT_TOWER, RobotType.LEVEL_TWO_PAINT_TOWER, RobotType.LEVEL_THREE_PAINT_TOWER}:
+            return Shape.PAINT_TOWER
+        if tower_type in {RobotType.LEVEL_ONE_DEFENSE_TOWER, RobotType.LEVEL_TWO_DEFENSE_TOWER, RobotType.LEVEL_THREE_DEFENSE_TOWER}:
+            return Shape.DEFENSE_TOWER
+        if tower_type in {RobotType.LEVEL_ONE_MONEY_TOWER, RobotType.LEVEL_TWO_MONEY_TOWER, RobotType.LEVEL_THREE_MONEY_TOWER}:
+            return Shape.MONEY_TOWER
+        return None
+        
     def set_paint(self, loc, paint):
         idx = self.loc_to_index(loc)
+        if self.walls[idx] or self.ruins[idx]: return
+
         old_paint_team = self.team_from_paint(self.paint[idx])
         new_paint_team = self.team_from_paint(paint)
 
@@ -284,11 +315,11 @@ class Game:
 
         self.paint[idx] = paint
         if paint != 0:
-            self.game_fb.add_paint_action(loc, self.get_secondary_paint(self.team_from_paint(paint)) == paint)
+            self.game_fb.add_paint_action(loc, not self.is_primary_paint(paint))
         else:
             self.game_fb.add_unpaint_action(loc)
 
-    def get_all_locations_within_radius_squared(self, center: MapLocation, radius_squared):
+    def get_all_locations_within_radius_squared(self, center: MapLocation, radius_squared) -> List[MapLocation]:
         """
         center: MapLocation object
         radius_squared: square of radius around center that we want locations for
@@ -308,45 +339,54 @@ class Game:
                 if center.is_within_distance_squared(new_location, radius_squared):
                     return_locations.append(new_location)
         return return_locations
-      
-    def mark_location(self, loc, color):
-        self.markers[self.loc_to_index(loc)] = color
 
     def is_valid_pattern_center(self, center):
         '''
         Checks if pattern centered at this location would be in the bounds of the map
         '''
-        
-        shape_out_of_bounds = (center.x + GameConstants.PATTERN_SIZE//2 >= self.width or center.x - GameConstants.PATTERN_SIZE//2 < 0 or center.y + GameConstants.PATTERN_SIZE//2 >= self.height or center.y < 0)
-        return shape_out_of_bounds
+        offset = GameConstants.PATTERN_SIZE // 2
+        shape_out_of_bounds = (center.x + offset >= self.width or 
+                               center.x - offset < 0 or 
+                               center.y + offset >= self.height or 
+                               center.y - offset < 0)
+        return not shape_out_of_bounds
     
-    def mark_pattern(self, team, center, shape):
+    def mark_pattern(self, team: Team, center: MapLocation, shape: Shape):
         '''
         Marks pattern at center
         '''
-        pattern_array = self.pattern[shape]
-
+        pattern_array = self.pattern[shape.value]
         offset = GameConstants.PATTERN_SIZE//2
-
-        for dx in range(-offset, offset + 1):
-            for dy in range(-offset, offset + 1):
-                color_indicator = pattern_array[dx + offset, dy + offset]
-                mark_color =  self.get_primary_paint(team) if (color_indicator == 0) else self.get_secondary_paint(team)
-                self.mark_location(MapLocation(center.x + dx, center.y + dy), mark_color)
+        for row in range(-offset, offset + 1):
+            for col in range(-offset, offset + 1):
+                loc = MapLocation(center.x + col, center.y + row)
+                secondary = pattern_array[row + offset][col + offset]
+                self.mark_location(team, loc, secondary)
+                self.game_fb.add_mark_action(loc, secondary)        
 
     def mark_tower_pattern(self, team, center, tower_type):
         '''
         Marks specified tower pattern at center
         tower_type: tower_type: RobotType enum
         '''
-        if tower_type in {RobotType.LEVEL_ONE_PAINT_TOWER, RobotType.LEVEL_TWO_PAINT_TOWER, RobotType.LEVEL_THREE_PAINT_TOWER}:
-            shape = Shape.PAINT_TOWER
-        if tower_type in {RobotType.LEVEL_ONE_DEFENSE_TOWER, RobotType.LEVEL_TWO_DEFENSE_TOWER, RobotType.LEVEL_THREE_DEFENSE_TOWER}:
-            shape = Shape.DEFENSE_TOWER
-        if tower_type in {RobotType.LEVEL_ONE_MONEY_TOWER, RobotType.LEVEL_TWO_MONEY_TOWER, RobotType.LEVEL_THREE_MONEY_TOWER}:
-            shape = Shape.MONEY_TOWER
+        self.mark_pattern(team, center, self.shape_from_tower_type(tower_type))
 
-        self.mark_pattern(team, center, shape)
+    def simple_check_pattern(self, center, shape, team):
+        offset = GameConstants.PATTERN_SIZE//2
+        pattern_array = self.pattern[shape.value]
+        for dx in range(-offset, offset + 1):
+            for dy in range(-offset, offset + 1):
+                map_loc = MapLocation(center.x + dx, center.y + dy)
+                if self.has_ruin(map_loc):
+                    continue
+                actual_paint = self.paint[self.loc_to_index(map_loc)]
+                if self.team_from_paint(actual_paint) != team:
+                    return False
+                secondary_actual = not self.is_primary_paint(actual_paint)
+                secondary_pattern = pattern_array[dy + offset][dx + offset]
+                if secondary_actual != secondary_pattern:
+                    return False
+        return True
 
     def mark_resource_pattern(self, team, center):
         '''
@@ -365,21 +405,22 @@ class Game:
             FLIP_Y = 2
             FLIP_D1 = 3
             FLIP_D2 = 4
-            ROTATE_90 = 6
-            ROTATE_180 = 7
-            ROTATE_270 = 8
+            ROTATE_90 = 5
+            ROTATE_180 = 6
+            ROTATE_270 = 7
         
         if not self.is_valid_pattern_center(center):
             return None
         
-        patterns_list = list(Shape.__members__.values()) # list of Shape enum members
-        
-        def check_pattern(shape): 
+        patterns_list = list(Shape.__members__.values()) # list of Shape enum members 
+
+        def check_pattern(shape: Shape): 
+            debug_str = ""
             '''
             Check presence of a particular pattern type up to 8 symmetries
             Returns True/False, whether pattern is present
             '''
-            pattern_array = self.pattern[shape]
+            pattern_array = self.pattern[shape.value]
             valid_transformations = [True] * len(Transformation) # T/F for whether a transformation is valid
 
             offset = GameConstants.PATTERN_SIZE//2
@@ -413,17 +454,18 @@ class Game:
                             dy_ = -dx
 
                         map_loc = MapLocation(center.x + dx_, center.y + dy_) # location on map after transforming pattern
-                        map_loc_idx = self.loc_to_index(map_loc)
+                        actual_paint = self.paint[self.loc_to_index(map_loc)]
                         
-                        if(self.team_from_paint(pattern_array[dx + offset][dy + offset]) != team): # wrong team
-                            valid_transformations[shape] = False
+                        if(self.team_from_paint(actual_paint) != team): # wrong team
+                            valid_transformations[shape.value] = False
                         
-                        #assumes pattern arrays have 1 as secondary, 0 as primary
-                        match_primary = (pattern_array[dx + offset][dy + offset] == 0) and (self.paint[map_loc_idx] == self.get_primary_paint(team))
-                        match_secondary = (pattern_array[dx + offset][dy + offset] == 1) and (self.paint[map_loc_idx] == self.get_secondary_paint(team))
-                        if(not (match_primary or match_secondary)): 
-                            valid_transformations[variant] = False
-            return (any(valid_transformations))
+                        #assumes pattern arrays have True as secondary, False as primary
+                        secondary_actual = not self.is_primary_paint(actual_paint)
+                        secondary_pattern = pattern_array[dy + offset][dx + offset]
+                        if secondary_actual != secondary_pattern and not self.has_ruin(map_loc):
+                            valid_transformations[variant.value] = False
+
+            return any(valid_transformations)
         
         for shape in patterns_list: 
             if(check_pattern(shape)):
@@ -448,11 +490,7 @@ class Game:
     
     def is_passable(self, loc):
         idx = self.loc_to_index(loc)
-        return not self.walls[idx] and self.robots[idx] == None
-  
-    def get_map_info(self, loc): 
-        idx = self.loc_to_index(loc)
-        return MapInfo(loc, self.is_passable(loc), self.walls[idx], self.paint[idx], self.markers[idx], self.ruins[idx])
+        return not self.walls[idx] and not self.ruins[idx]
     
     def loc_to_index(self, loc):
         return loc.y * self.width + loc.x
@@ -469,6 +507,112 @@ class Game:
         for id in exec_order:
             if id in self.id_to_robot:
                 func(self.id_to_robot[id])
+
+    def create_methods(self, rc: RobotController):
+        return {
+            'GameError': GameError,
+            'RobotType': RobotType,
+            'RobotError': RobotError,
+            'Team': Team,
+            'Direction': Direction,
+            'MapLocation': MapLocation,
+            'RobotInfo': RobotInfo,
+            'MapInfo': MapInfo,
+            'PaintType': PaintType,
+            'get_round_num': (rc.get_round_num, 1),
+            'get_map_width': (rc.get_map_width, 1),
+            'get_map_height': (rc.get_map_height, 1),
+            'get_resource_pattern': (rc.get_resource_pattern, 2),
+            'get_tower_pattern': (rc.get_tower_pattern, 2),
+            'get_id': (rc.get_id, 1),
+            'get_team': (rc.get_team, 1),
+            'get_location': (rc.get_location, 1),
+            'get_health': (rc.get_health, 1),
+            'get_paint': (rc.get_paint, 1),
+            'get_money': (rc.get_money, 1),
+            'get_type': (rc.get_type, 1),
+            'on_the_map': (rc.on_the_map, 5),
+            'can_sense_location': (rc.can_sense_location, 5),
+            'is_location_occupied': (rc.is_location_occupied, 5),
+            'can_sense_robot_at_location': (rc.can_sense_robot_at_location, 5),
+            'sense_robot_at_location': (rc.sense_robot_at_location, 15),
+            'can_sense_robot': (rc.can_sense_robot, 5),
+            'sense_robot': (rc.sense_robot, 25),
+            'sense_nearby_robots': (rc.sense_nearby_robots, 100),
+            'sense_passability': (rc.sense_passability, 5),
+            'sense_nearby_ruins': (rc.sense_nearby_ruins, 100),
+            'sense_map_info': (rc.sense_map_info, 5),
+            'sense_nearby_map_infos': (rc.sense_nearby_map_infos, 100),
+            'adjacent_location': (rc.adjacent_location, 1),
+            'get_all_locations_within_radius_squared': (rc.get_all_locations_within_radius_squared, 100),
+            'is_action_ready': (rc.is_action_ready, 1),
+            'get_action_cooldown_turns': (rc.get_action_cooldown_turns, 1),
+            'is_movement_ready': (rc.is_movement_ready, 1),
+            'get_movement_cooldown_turns': (rc.get_movement_cooldown_turns, 1),
+            'can_move': (rc.can_move, 10),
+            'move': rc.move,
+            'can_build_robot': (rc.can_build_robot, 10),
+            'build_robot': (rc.build_robot, 20),
+            'can_mark': (rc.can_mark, 5),
+            'mark': (rc.mark, 5),
+            'can_remove_mark': (rc.can_remove_mark, 5),
+            'remove_mark': (rc.remove_mark, 5),
+            'can_mark_tower_pattern': (rc.can_mark_tower_pattern, 50),
+            'mark_tower_pattern': (rc.mark_tower_pattern, 50),
+            'can_mark_resource_pattern': (rc.can_mark_resource_pattern, 50),
+            'mark_resource_pattern': (rc.mark_resource_pattern, 50),
+            'can_complete_tower_pattern': (rc.can_complete_tower_pattern, 50),
+            'complete_tower_pattern': (rc.complete_tower_pattern, 50),
+            'can_complete_resource_pattern': (rc.can_complete_resource_pattern, 50),
+            'complete_resource_pattern': (rc.complete_resource_pattern, 50),
+            'can_attack': (rc.can_attack, 10),
+            'attack': rc.attack,
+            'can_mop_swing': (rc.can_mop_swing, 10),
+            'mop_swing': rc.mop_swing,
+            'can_send_message': (rc.can_send_message, 50),
+            'send_message': (rc.send_message, 50),
+            'read_messages': (rc.read_messages, 10),
+            'can_transfer_paint': (rc.can_transfer_paint, 5),
+            'transfer_paint': (rc.transfer_paint, 5),
+            'can_upgrade_tower': (rc.can_upgrade_tower, 2),
+            'upgrade_tower': rc.upgrade_tower,
+            'resign': rc.resign,
+            'set_indicator_string': rc.set_indicator_string,
+            'set_indicator_dot': rc.set_indicator_dot,
+            'set_indicator_line': rc.set_indicator_line,
+            'set_timeline_marker': rc.set_timeline_marker,
+        }
+    
+    def create_patterns(self):
+        resource_pattern = [
+            [True, False, True, False, True],
+            [False, True, False, True, False],
+            [True, False, True, False, True],
+            [False, True, False, True, False],
+            [True, False, True, False, True]
+        ]
+        money_tower_pattern = [
+            [False, True, True, True, False],
+            [True, False, False, False, True],
+            [True, False, False, False, True],
+            [True, False, False, False, True],
+            [False, True, True, True, False]
+        ]
+        paint_tower_pattern = [
+            [True, False, False, False, True],
+            [False, True, False, True, False],
+            [False, False, True, False, False],
+            [False, True, False, True, False],
+            [True, False, False, False, True]
+        ]
+        defense_tower_pattern = [
+            [False, False, True, False, False],
+            [False, True, True, True, False],
+            [True, True, True, True, True],
+            [False, True, True, True, False],
+            [False, False, True, False, False]
+        ]
+        return resource_pattern, defense_tower_pattern, money_tower_pattern, paint_tower_pattern
 
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
