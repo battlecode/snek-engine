@@ -19,28 +19,15 @@ class CodeContainer:
             module_name = filename.split('.py')[0]
             compiled = compile_restricted(cls.preprocess(dic[filename]), filename, 'exec')
 
-            print("before instrument")
+            print("CODE BEFORE INSTRUMENTATION:")
             print(dis.dis(compiled, show_caches=True))
 
             code[module_name] = Instrument.instrument(compiled)
             # code[module_name] = compiled
             
-            print("after instrument")
+            print("CODE AFTER INSTRUMENTATION:")
             print(dis.dis(code[module_name], show_caches=True, adaptive=True))
-            # print(code[module_name].co_names)
-
-            # print("BOT DISASSEMBLY:")
-            # print(dis.dis(compiled))
-
-            # print("INSTRUMENTED:")
-
-            # print(dis.dis(code[module_name]))
-            # print(compiled.co_consts)
-            # print(compiled.co_names)
-            # print(dis.opmap)
             # exit()
-
-            # code[module_name] = compiled
 
         return cls(code)
 
