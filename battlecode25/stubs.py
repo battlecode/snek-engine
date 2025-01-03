@@ -306,14 +306,14 @@ def remove_mark(loc: MapLocation) -> None:
     """
     pass
     
-def can_complete_tower_pattern(tower_type: RobotType, loc: MapLocation) -> bool:
+def can_complete_tower_pattern(loc: MapLocation, tower_type: RobotType) -> bool:
     """
     Checks if the robot can build a tower at the given location. This requires a ruin at the location
     and the tower pattern to be painted correctly.
     """
     pass
     
-def complete_tower_pattern(tower_type: RobotType, loc: MapLocation) -> None:
+def complete_tower_pattern(loc: MapLocation, tower_type: RobotType) -> None:
     """
     Builds a tower at the given location
     """
