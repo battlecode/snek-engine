@@ -55,7 +55,7 @@ class GameFB:
         self.match_headers = []
         self.match_footers = []
 
-        self.initial_map = []
+        self.initial_map = None
         self.team_ids = []
         self.team_money = []
         self.turns = []
@@ -65,7 +65,6 @@ class GameFB:
         self.current_actions = []
         self.timeline_markers = []
         self.current_action_types = []
-        self.current_map_width = 0
 
     def make_game_header(self):
         self.state = self.State.IN_GAME
@@ -168,6 +167,7 @@ class GameFB:
         self.match_headers.append(len(self.events) - 1)
 
     def make_match_footer(self, win_team, win_type, total_rounds):
+        self.state = self.State.IN_GAME
         timeline_offset = create_vector(self.builder, MatchFooter.StartTimelineMarkersVector, self.timeline_markers)
         MatchFooter.Start(self.builder)
         MatchFooter.AddWinner(self.builder, fb_from_team(win_team))
@@ -178,6 +178,7 @@ class GameFB:
 
         self.events.append(create_event_wrapper(self.builder, Event.Event().MatchFooter, match_footer_offset))
         self.match_footers.append(len(self.events) - 1)
+        self.clear_match()
 
     def start_round(self, round_num):
         assert self.state == self.State.IN_MATCH, "Can't start a round while not in a match"
@@ -339,4 +340,15 @@ class GameFB:
 
     def clear_turn(self):
         self.current_actions.clear()
+        self.current_action_types.clear()
+
+    def clear_match(self):
+        self.team_ids.clear()
+        self.team_money.clear()
+        self.turns.clear()
+        self.died_ids.clear()
+        self.current_round = 0
+        self.logger.clear()
+        self.current_actions.clear()
+        self.timeline_markers.clear()
         self.current_action_types.clear()
