@@ -38,7 +38,7 @@ class CodeContainer:
             # print(compiled.co_consts)
             # print(compiled.co_names)
             # print(dis.opmap)
-            exit()
+            # exit()
 
             # code[module_name] = compiled
 
