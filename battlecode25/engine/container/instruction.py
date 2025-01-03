@@ -28,6 +28,15 @@ class Instruction(SimpleNamespace):
 
     def calculate_offset(self, instructions):
         # Return the offset (rel or abs) to self.jump_to in instructions
+
+        if self.opname == "JUMP_BACKWARD":
+            print("backward instruction!")
+
+        starting_loc = instructions.index(self) + 1
+        while instructions[starting_loc].opcode == 0:
+            print("advancing due to cache instruction")
+            starting_loc += 1
+
         target_loc = instructions.index(self.jump_to) - self.jump_to.extra_extended_args
 
         if self.is_abs_jumper():
@@ -35,4 +44,10 @@ class Instruction(SimpleNamespace):
 
         self_loc = instructions.index(self)
 
-        return target_loc - self_loc - 1
+        # return target_loc - self_loc - 1
+
+        if self.opname == "JUMP_BACKWARD":
+            print("backward instruction!", target_loc, starting_loc)
+            return starting_loc - target_loc
+
+        return target_loc - starting_loc
