@@ -559,7 +559,7 @@ class RobotController:
 
         if not self.game.is_valid_pattern_center(loc):
             raise RobotError(f"Cannot complete resource pattern at ({loc.x}, {loc.y}) because it is too close to the edge of the map")
-        if not self.game.detect_pattern(loc, self.robot.team) == Shape.RESOURCE:
+        if not self.game.simple_check_pattern(loc, Shape.RESOURCE, self.robot.team):
             raise RobotError(f"Cannot complete resource pattern at ({loc.x}, {loc.y}) because the paint pattern is wrong")
         
     def can_complete_resource_pattern(self, loc: MapLocation) -> bool:
