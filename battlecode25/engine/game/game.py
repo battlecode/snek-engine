@@ -220,10 +220,10 @@ class Game:
         num_patterns = [self.resouce_pattern_centers_by_loc[self.loc_to_index(loc)] == team for loc in self.resource_pattern_centers].count(True)
         return num_patterns * GameConstants.EXTRA_RESOURCES_FROM_PATTERN
 
-    def on_the_map(self, loc):
+    def on_the_map(self, loc: MapLocation):
         return 0 <= loc.x < self.width and 0 <= loc.y < self.height
     
-    def connected_by_paint(self, robot_loc: MapLocation, tower_loc: MapLocation):
+    def connected_by_paint(self, robot_loc: MapLocation, tower_loc: MapLocation, team: Team):
         queue = [robot_loc]
         visited = set()
 
@@ -233,14 +233,14 @@ class Game:
             if loc.equals(tower_loc):
                 return True
 
-            if loc in visited or self.paint[self.loc_to_index(loc)] != robot_loc.team:
+            if loc in visited or self.team_from_paint(self.paint[self.loc_to_index(loc)]) != team:
                 continue
 
             visited.add(loc)
             for dir in cardinal_directions:
                 new_loc = loc.add(dir)  
 
-                if self.on_the_map(new_loc.x, new_loc.y):  
+                if self.on_the_map(new_loc):
                     queue.append(new_loc)
         return False
     

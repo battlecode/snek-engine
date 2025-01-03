@@ -64,5 +64,11 @@ class MapLocation:
     def subtract(self, dir):
         return self.translate(-dir.value[0], -dir.value[1])
     
+    def __hash__(self):
+        return (self.y + 0x8000) & 0xffff | (self.x << 16)
+    
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+    
     def __str__(self):
         return f'({self.x}, {self.y})'

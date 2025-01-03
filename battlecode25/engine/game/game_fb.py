@@ -148,6 +148,7 @@ class GameFB:
             RobotTypeMetadata.AddMovementCooldown(self.builder, GameConstants.MOVEMENT_COOLDOWN)
             RobotTypeMetadata.AddVisionRadiusSquared(self.builder, GameConstants.VISION_RADIUS_SQUARED)
             RobotTypeMetadata.AddBasePaint(self.builder, robot_type.paint_capacity // 2)
+            RobotTypeMetadata.AddMaxPaint(self.builder, robot_type.paint_capacity)
             offsets.append(RobotTypeMetadata.End(self.builder))
         return create_vector(self.builder, GameHeader.StartRobotTypeMetadataVector, offsets)
 

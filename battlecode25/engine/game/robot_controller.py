@@ -146,6 +146,8 @@ class RobotController:
         result = []
         for loc in sensed_locs:
             sensed_robot = self.game.get_robot(loc)
+            if not sensed_robot:
+                continue
             if sensed_robot == self.robot:
                 continue
             if not self.can_sense_location(sensed_robot.loc):
@@ -265,25 +267,17 @@ class RobotController:
         Assert that the robot can attack. This function checks all conditions necessary
         for the robot to perform an attack and raises an error if any are not met.
         """
-        if loc == None and not self.robot.type in {RobotType.SOLDIER, RobotType.SPLASHER}:
-            return
-        if not self.game.on_the_map(loc):
-            raise RobotError("Outside of Map")
-        if self.game.walls[self.game.loc_to_index(loc)]:
-            raise RobotError("Outside of Map")
-        if self.robot.action_cooldown > self.robot.type.action_cooldown:
-            raise RobotError("Action cooldown is in progress.")
-
-        if self.robot.type in {RobotType.SOLDIER, RobotType.SPLASHER, RobotType.MOPPER}:
-            if not loc.is_within_distance_squared(self.robot.loc, self.robot.type.action_radius_squared):
-                raise RobotError("Target location is out of action range.")
+        self.assert_is_action_ready()
+        if loc is None and not self.robot.type.is_tower_type():
+            raise RobotError("Robot units must specify a location to attack")
+        if self.robot.type.is_robot_type():
+            self.assert_can_act_location(loc, self.robot.type.action_radius_squared)
             if self.robot.paint < self.robot.type.attack_cost:
                 raise RobotError("Insufficient paint to perform attack.")
-                
-        elif self.robot.type.is_tower_type():
-            if not loc.is_within_distance_squared(self.robot.loc, self.robot.type.action_radius_squared):
-                raise RobotError("Target location is out of action range.")
-            if loc == None and self.robot.has_tower_area_attacked:
+        else:
+            if loc is not None:
+                self.assert_can_act_location(loc, self.robot.type.action_radius_squared)
+            if loc is None and self.robot.has_tower_area_attacked:
                 raise RobotError("Tower cannot use area attack more than once per turn.")
             if loc is not None and self.robot.has_tower_single_attacked:
                 raise RobotError("Tower cannot use single tile attack more than once per turn.")
@@ -398,7 +392,7 @@ class RobotController:
             return False
 
     def mop_swing(self, dir: Direction) -> None:
-        self.assert_can_mop_swing()
+        self.assert_can_mop_swing(dir)
 
         swing_offsets = {
             Direction.NORTH: ((-1, 1), (0, 1), (1, 1)),
@@ -636,7 +630,7 @@ class RobotController:
                 raise RobotError("Robot has already sent too many messages this round!")
         elif self.robot.sent_message_count >= GameConstants.MAX_MESSAGES_SENT_TOWER:
             raise RobotError("Tower has already sent too many messages this round!")
-        if not self.game.connected_by_paint(self.robot.loc, target.loc):
+        if not self.game.connected_by_paint(self.robot.loc, target.loc, self.robot.team):
             raise RobotError("Location specified is not connected to current location by paint!")
 
     def can_send_message(self, loc: MapLocation) -> bool:
