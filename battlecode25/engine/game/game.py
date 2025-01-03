@@ -95,6 +95,9 @@ class Game:
     def has_ruin(self, loc: MapLocation):
         return self.ruins[self.loc_to_index(loc)]
     
+    def has_wall(self, loc: MapLocation):
+        return self.walls[self.loc_to_index(loc)]
+    
     def get_paint_num(self, loc: MapLocation):
         return self.paint[self.loc_to_index(loc)]
     
@@ -106,15 +109,15 @@ class Game:
         markers = self.team_a_markers if team == Team.A else self.team_b_markers
         markers[self.loc_to_index(loc)] = 2 if secondary else 1
 
-    def get_map_info(self, loc): 
+    def get_map_info(self, team, loc): 
         idx = self.loc_to_index(loc)
-        mark = self.get_marker(loc)
+        mark = self.get_marker(team, loc)
         mark_type = PaintType.EMPTY
         if mark == 1:
             mark_type = PaintType.ALLY_PRIMARY
         elif mark == 2:
             mark_type = PaintType.ALLY_SECONDARY
-        return MapInfo(loc, self.is_passable(loc), self.walls[idx], self.get_paint_type(loc), mark_type, self.ruins[idx])    
+        return MapInfo(loc, self.is_passable(loc), self.walls[idx], self.get_paint_type(team, loc), mark_type, self.ruins[idx])    
 
     def spawn_robot(self, type: RobotType, loc: MapLocation, team: Team, id=None):
         if id is None:
@@ -299,6 +302,8 @@ class Game:
         
     def set_paint(self, loc, paint):
         idx = self.loc_to_index(loc)
+        if self.walls[idx] or self.ruins[idx]: return
+
         old_paint_team = self.team_from_paint(self.paint[idx])
         new_paint_team = self.team_from_paint(paint)
 
@@ -310,7 +315,7 @@ class Game:
 
         self.paint[idx] = paint
         if paint != 0:
-            self.game_fb.add_paint_action(loc, self.get_secondary_paint(self.team_from_paint(paint)) == paint)
+            self.game_fb.add_paint_action(loc, not self.is_primary_paint(paint))
         else:
             self.game_fb.add_unpaint_action(loc)
 
@@ -514,6 +519,7 @@ class Game:
             'sense_robot': (rc.sense_robot, 25),
             'sense_nearby_robots': (rc.sense_nearby_robots, 100),
             'sense_passability': (rc.sense_passability, 5),
+            'sense_nearby_ruins': (rc.sense_nearby_ruins, 100),
             'sense_map_info': (rc.sense_map_info, 5),
             'sense_nearby_map_infos': (rc.sense_nearby_map_infos, 100),
             'adjacent_location': (rc.adjacent_location, 1),

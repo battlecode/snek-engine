@@ -28,11 +28,22 @@ class Instruction(SimpleNamespace):
 
     def calculate_offset(self, instructions):
         # Return the offset (rel or abs) to self.jump_to in instructions
+
+        # The source of a jump is the first instruction after this instruction that is not a cache instruction
+        starting_loc = instructions.index(self) + 1
+        while instructions[starting_loc].opcode == 0:
+            starting_loc += 1
+
+        # The target of a jump is the first extended args instruction corresponding to the instruction we want to jump to.
         target_loc = instructions.index(self.jump_to) - self.jump_to.extra_extended_args
 
         if self.is_abs_jumper():
             return target_loc
 
-        self_loc = instructions.index(self)
-
-        return target_loc - self_loc - 1
+        # Compute the offset from the start instruction to the target instruction. If backward jump, return the negation.
+        # To make this more robust, we should have a better way of checking for a backward jump, as there are some other variants
+        # of this instruction.
+        offset = target_loc - starting_loc
+        if self.opname == "JUMP_BACKWARD":
+            return -offset
+        return offset
