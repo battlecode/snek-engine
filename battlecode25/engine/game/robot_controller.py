@@ -296,6 +296,7 @@ class RobotController:
             return False
 
     def attack(self, loc: MapLocation, use_secondary_color: bool=False) -> None:
+        print("attack function called", self.robot.type)
         self.assert_can_attack(loc)
         self.robot.add_action_cooldown()
 
@@ -317,6 +318,7 @@ class RobotController:
                 self.game.game_fb.add_paint_action(loc, use_secondary_color)
 
         elif self.robot.type == RobotType.SPLASHER:
+            print("used splasher attack")
             paint_type = (
                 self.game.get_secondary_paint(self.robot.team) 
                 if use_secondary_color 
@@ -324,17 +326,20 @@ class RobotController:
             )
             self.robot.add_paint(-self.robot.type.attack_cost)
 
-            all_locs = self.game.get_all_locations_within_radius_squared(loc, 2)
+            
+            all_locs = self.game.get_all_locations_within_radius_squared(loc, GameConstants.SPLASHER_ATTACK_AOE_RADIUS_SQUARED)
             for new_loc in all_locs:
-                if not self.can_attack(loc):
-                    continue
                 target_robot = self.game.get_robot(new_loc)
                 if target_robot and target_robot.type.is_tower_type() and target_robot.team != self.robot.team:
                     target_robot.add_health(-self.robot.type.attack_strength)
                     self.game.game_fb.add_attack_action(target_robot.id)
                     self.game.game_fb.add_damage_action(target_robot.id, self.robot.type.attack_strength)
                 else:
-                    self.game.set_paint(new_loc, paint_type)
+                    tile_paint = self.game.get_paint_num(new_loc)
+                    if (self.game.team_from_paint(tile_paint) != self.robot.team.opponent or
+                            new_loc.is_within_distance_squared(loc, GameConstants.SPLASHER_ATTACK_ENEMY_PAINT_RADIUS_SQUARED)):
+                        self.game.set_paint(new_loc, paint_type)
+                        self.game.game_fb.add_paint_action(new_loc, use_secondary_color)
 
         elif self.robot.type == RobotType.MOPPER:
             if loc is None:
@@ -729,7 +734,7 @@ class RobotController:
         new_type = tower.type.get_next_level()
         self.game.team_info.add_coins(self.robot.team, -new_type.money_cost)
         tower.upgrade_tower()
-        self.game.game_fb.add_upgrade_action(tower.id, new_type)
+        self.game.game_fb.add_upgrade_action(tower.id)
 
     # DEBUG INDICATOR FUNCTIONS
 

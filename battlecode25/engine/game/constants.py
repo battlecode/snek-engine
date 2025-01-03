@@ -71,6 +71,9 @@ class GameConstants:
     # The extra resources per turn that resource patterns give
     EXTRA_RESOURCES_FROM_PATTERN = 3
 
+    # The maximum turns a robot can have 0 paint before it dies.
+    MAX_TURNS_WITHOUT_PAINT = 10
+
     # *****************************
     # ****** GAME MECHANICS *******
     # *****************************
@@ -117,6 +120,12 @@ class GameConstants:
 
     # The amount of paint depleted from enemies in a swing mopper attack
     MOPPER_SWING_PAINT_DEPLETION = 5
+
+    # The area effected by the splasher's attack. Within this radius, empty tiles are painted and towers are damaged
+    SPLASHER_ATTACK_AOE_RADIUS_SQUARED = 4
+
+    # The smaller area within the splasher's attack at which enemy paint is also replaced by allied paint
+    SPLASHER_ATTACK_ENEMY_PAINT_RADIUS_SQUARED = 2
 
     # ************************
     # ****** COOLDOWNS *******

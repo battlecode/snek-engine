@@ -133,6 +133,8 @@ class Game:
         del self.id_to_robot[id]
         self.remove_robot_from_loc(robot.loc)
         robot.kill()
+        self.game_fb.add_die_action(id, False)
+        self.game_fb.add_died(id)
 
     def setWinnerIfPaintPercentReached(self, team):
         if self.team_info.get_tiles_painted(team) / self.area_without_walls * 100 >= GameConstants.PAINT_PERCENT_TO_WIN:
@@ -312,7 +314,7 @@ class Game:
         else:
             self.game_fb.add_unpaint_action(loc)
 
-    def get_all_locations_within_radius_squared(self, center: MapLocation, radius_squared):
+    def get_all_locations_within_radius_squared(self, center: MapLocation, radius_squared) -> List[MapLocation]:
         """
         center: MapLocation object
         radius_squared: square of radius around center that we want locations for

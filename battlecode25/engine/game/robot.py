@@ -32,6 +32,7 @@ class Robot:
         self.debug = False
         self.message_buffer = MessageBuffer(GameConstants.MESSAGE_ROUND_DURATION)
         self.sent_message_count = 0
+        self.turns_without_paint = 0
         self.logs = []
 
     def add_paint(self, amount): 
@@ -102,27 +103,34 @@ class Robot:
         loc_idx = self.game.loc_to_index(self.loc)
         paint_status = self.game.paint[loc_idx]
 
-        if self.game.team_from_paint(paint_status) == self.team:
-            paint_penalty = 0
-        elif self.game.team_from_paint(paint_status) is None:
-            paint_penalty = GameConstants.PENALTY_NEUTRAL_TERRITORY
-        else:
-            paint_penalty = GameConstants.PENALTY_ENEMY_TERRITORY
-            adjacent_allies = [
-                loc for loc in self.game.get_all_locations_within_radius_squared(self.loc, 1)
-                if self.game.robots[self.game.loc_to_index(loc)] 
-                and self.game.robots[self.game.loc_to_index(loc)].team == self.team
-            ]
-            paint_penalty += 2 * len(adjacent_allies)
-
-        self.add_paint(-paint_penalty)
+        if self.type.is_robot_type():
+            if self.game.team_from_paint(paint_status) == self.team:
+                paint_penalty = 0
+            elif self.game.team_from_paint(paint_status) is None:
+                paint_penalty = GameConstants.PENALTY_NEUTRAL_TERRITORY
+            else:
+                paint_penalty = GameConstants.PENALTY_ENEMY_TERRITORY
+                adjacent_allies = [
+                    loc for loc in self.game.get_all_locations_within_radius_squared(self.loc, 1)
+                    if self.game.robots[self.game.loc_to_index(loc)] 
+                    and self.game.robots[self.game.loc_to_index(loc)].team == self.team
+                ]
+                paint_penalty += 2 * len(adjacent_allies)
+            self.add_paint(-paint_penalty)
 
         if self.type.name == "TOWER":
             self.add_paint(self.type.paint_per_turn)
-            self.game.team_info.add_coins(self.type.money_per_turn )
+            self.game.team_info.add_coins(self.type.money_per_turn)
 
         self.message_buffer.next_round()
         self.sent_message_count = 0
+
+        if self.paint == 0:
+            self.turns_without_paint += 1
+        else:
+            self.turns_without_paint = 0
+        if self.type.is_robot_type() and self.turns_without_paint >= GameConstants.MAX_TURNS_WITHOUT_PAINT:
+            self.game.destroy_robot(self.id)
 
         self.game.game_fb.end_turn(self.id, self.health, self.paint, self.movement_cooldown, self.action_cooldown, self.bytecodes_used, self.loc)
         self.rounds_alive += 1
