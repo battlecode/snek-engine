@@ -351,8 +351,8 @@ class Game:
         offset = GameConstants.PATTERN_SIZE//2
         for row in range(-offset, offset + 1):
             for col in range(-offset, offset + 1):
-                loc = self.loc_to_index(center.x + col, center.y + row)
-                secondary = pattern_array[row][col]
+                loc = MapLocation(center.x + col, center.y + row)
+                secondary = pattern_array[row + offset][col + offset]
                 self.mark_location(team, loc, secondary)
                 self.game_fb.add_mark_action(loc, secondary)        
 

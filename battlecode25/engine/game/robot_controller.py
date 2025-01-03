@@ -281,8 +281,12 @@ class RobotController:
                 raise RobotError("Insufficient paint to perform attack.")
                 
         elif self.robot.type.is_tower_type():
-                if not loc.is_within_distance_squared(self.robot.loc, self.robot.type.action_radius_squared):
-                    raise RobotError("Target location is out of action range.")
+            if not loc.is_within_distance_squared(self.robot.loc, self.robot.type.action_radius_squared):
+                raise RobotError("Target location is out of action range.")
+            if loc == None and self.robot.has_tower_area_attacked:
+                raise RobotError("Tower cannot use area attack more than once per turn.")
+            if loc is not None and self.robot.has_tower_single_attacked:
+                raise RobotError("Tower cannot use single tile attack more than once per turn.")
 
     def can_attack(self, loc: MapLocation) -> bool:
         """
@@ -296,7 +300,6 @@ class RobotController:
             return False
 
     def attack(self, loc: MapLocation, use_secondary_color: bool=False) -> None:
-        print("attack function called", self.robot.type)
         self.assert_can_attack(loc)
         self.robot.add_action_cooldown()
 
@@ -318,14 +321,12 @@ class RobotController:
                 self.game.game_fb.add_paint_action(loc, use_secondary_color)
 
         elif self.robot.type == RobotType.SPLASHER:
-            print("used splasher attack")
             paint_type = (
                 self.game.get_secondary_paint(self.robot.team) 
                 if use_secondary_color 
                 else self.game.get_primary_paint(self.robot.team)
             )
             self.robot.add_paint(-self.robot.type.attack_cost)
-
             
             all_locs = self.game.get_all_locations_within_radius_squared(loc, GameConstants.SPLASHER_ATTACK_AOE_RADIUS_SQUARED)
             for new_loc in all_locs:
@@ -367,8 +368,6 @@ class RobotController:
                 self.robot.has_tower_area_attacked = True
                 all_locs = self.game.get_all_locations_within_radius_squared(self.robot.loc, self.robot.type.action_radius_squared)
                 for new_loc in all_locs:
-                    if not self.can_attack(loc):
-                        continue
                     target_robot = self.game.get_robot(new_loc)
                     if target_robot and target_robot.team != self.robot.team:
                         target_robot.add_health(-self.robot.type.aoe_attack_strength)

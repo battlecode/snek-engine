@@ -33,6 +33,8 @@ class Robot:
         self.message_buffer = MessageBuffer(GameConstants.MESSAGE_ROUND_DURATION)
         self.sent_message_count = 0
         self.turns_without_paint = 0
+        self.has_tower_area_attacked = False
+        self.has_tower_single_attacked = False
         self.logs = []
 
     def add_paint(self, amount): 
@@ -121,6 +123,8 @@ class Robot:
         if self.type.name == "TOWER":
             self.add_paint(self.type.paint_per_turn)
             self.game.team_info.add_coins(self.type.money_per_turn)
+            self.has_tower_area_attacked = False
+            self.has_tower_single_attacked = False
 
         self.message_buffer.next_round()
         self.sent_message_count = 0
