@@ -75,7 +75,7 @@ class GameFB:
         p1_name = Path(self.game_args.player1_dir).name
         p2_name = Path(self.game_args.player2_dir).name
 
-        name = self.builder.CreateString(p1_name)
+        name = self.builder.CreateString(self.game_args.player1_name)
         package_name = self.builder.CreateString(p1_name)
         TeamData.Start(self.builder)
         TeamData.AddName(self.builder, name)
@@ -83,7 +83,7 @@ class GameFB:
         TeamData.AddTeamId(self.builder, fb_from_team(Team.A))
         team_a_offset = TeamData.End(self.builder)
 
-        name = self.builder.CreateString(p2_name)
+        name = self.builder.CreateString(self.game_args.player2_name)
         package_name = self.builder.CreateString(p2_name)
         TeamData.Start(self.builder)
         TeamData.AddName(self.builder, name)

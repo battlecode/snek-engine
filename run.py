@@ -2,9 +2,9 @@ import argparse
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--p1', help="Path to a folder containing a bot.py file.")
-    parser.add_argument('--p2', help="Path to a folder containing a bot.py file.")
-    parser.add_argument('--map', help="Path to a map file.")
+    parser.add_argument('--p1', required=True, help="Path to a folder containing a bot.py file.")
+    parser.add_argument('--p2', required=True, help="Path to a folder containing a bot.py file.")
+    parser.add_argument('--map', required=True, help="Path to a map file.")
     parser.add_argument('--show_indicators', default='false', choices=('true', 'false'), help="Show debug indicators in output file")
     args = parser.parse_args()
     
@@ -17,8 +17,12 @@ if __name__ == '__main__':
     game_args = RunGameArgs(
         player1_dir=f"players/{args.p1}",
         player2_dir=f"players/{args.p2}",
-        map_path=f"maps/{args.map}.map25",
+        player1_name=args.p1,
+        player2_name=args.p2,
+        map_dir="maps",
+        map_names=args.map,
         out_dir="matches",
+        out_name=None,
         show_indicators=True,
         debug=True  # TODO: debug option
     )

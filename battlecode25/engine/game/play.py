@@ -13,8 +13,12 @@ from . import map_fb
 class RunGameArgs:
     player1_dir: str
     player2_dir: str
-    map_path: str
+    player1_name: str  # Visual team name, not player path
+    player2_name: str
+    map_dir: str
+    map_names: str  # Comma separated
     out_dir: str
+    out_name: str | None
     show_indicators: bool
     debug: bool
 
@@ -22,7 +26,9 @@ class RunGameArgs:
 def run_game(args: RunGameArgs):
     container_a = CodeContainer.from_directory(args.player1_dir)
     container_b = CodeContainer.from_directory(args.player2_dir)
-    initial_map = map_fb.load_map_raw(args.map_path)
+
+    # TODO: Fix maps
+    initial_map = map_fb.load_map_raw(str(Path(args.map_dir) / args.map_names) + ".map25")
     game_fb = GameFB(args)
     game = Game([container_a, container_b], initial_map, game_fb, args)
 
@@ -37,9 +43,10 @@ def run_game(args: RunGameArgs):
     if not os.path.exists(args.out_dir):
         os.makedirs(args.out_dir)
 
-    p1_name = Path(args.player1_dir).name
-    p2_name = Path(args.player2_dir).name
-    map_name = Path(args.map_path).name.split(".bc25")[0]
-    timestamp = int(time.time())
-    filename = f"{p1_name}-vs-{p2_name}-on-{map_name}{timestamp}.bc25"
+    if args.out_name:
+        filename = args.out_name
+    else:
+        timestamp = int(time.time())
+        filename = f"{args.player1_name}-vs-{args.player2_name}-on-{args.map_names}-{timestamp}.bc25"
+
     game_fb.finish_and_save(Path(args.out_dir) / filename)
