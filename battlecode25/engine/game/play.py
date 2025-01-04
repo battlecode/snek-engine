@@ -25,7 +25,7 @@ class RunGameArgs:
     debug: bool
 
 def get_winner_string(args: RunGameArgs, reason: DominationFactor, team: Team, rounds: int):
-    team_name = args.player1_name if team == Team.A else args.player2_name
+    team_name = f"{args.player1_name} (A)" if team == Team.A else f"{args.player2_name} (B)"
     string = " " * ((50 - len(team_name)) // 2) + team_name + " wins (round " + str(rounds) + ")\nReason: "
 
     if reason == DominationFactor.PAINT_ENOUGH_AREA:
