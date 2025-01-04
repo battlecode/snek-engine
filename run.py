@@ -10,8 +10,6 @@ if __name__ == '__main__':
     
     from battlecode25 import run_game, RunGameArgs
 
-    print(f"Playing game between {args.p1} and {args.p2} on {args.map}")
-
     # Run the game
     # TODO: look for builtin maps
     game_args = RunGameArgs(

@@ -58,8 +58,8 @@ def run_game(args: RunGameArgs):
         initial_map = map_fb.load_map_raw(str(Path(args.map_dir) / map_name) + ".map25")
         game = Game([container_a, container_b], initial_map, game_fb, args)
         
-        print("-------------------- Match Starting --------------------")
-        print(f"{args.player1_name} vs. {args.player2_name} on {map_name}")
+        print("[server] -------------------- Match Starting --------------------")
+        print(f"[server] {args.player1_name} vs. {args.player2_name} on {map_name}")
 
         game_fb.make_match_header(initial_map)
         while game.running:
@@ -71,8 +71,8 @@ def run_game(args: RunGameArgs):
             b_wins += 1
         game_fb.make_match_footer(game.winner, game.domination_factor, game.round)
 
-        print(get_winner_string(args, game.domination_factor, game.winner, game.round))
-        print("-------------------- Match Finished --------------------")
+        print("[server]", get_winner_string(args, game.domination_factor, game.winner, game.round))
+        print("[server] -------------------- Match Finished --------------------")
 
     winner = Team.A if a_wins >= b_wins else Team.B
     game_fb.make_game_footer(winner)
