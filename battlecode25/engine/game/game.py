@@ -60,8 +60,10 @@ class Game:
             self.update_resource_patterns()
             self.each_robot(lambda robot: robot.process_beginning_of_round())
             self.each_robot_update(lambda robot: robot.turn())
-            self.game_fb.add_team_info(Team.A, self.team_info.get_coins(Team.A))
-            self.game_fb.add_team_info(Team.B, self.team_info.get_coins(Team.B))
+            self.game_fb.add_team_info(Team.A, self.team_info.get_coins(Team.A), 
+                                       math.floor(self.team_info.get_tiles_painted(Team.A) / self.area_without_walls * 1000))
+            self.game_fb.add_team_info(Team.B, self.team_info.get_coins(Team.B), 
+                                       math.floor(self.team_info.get_tiles_painted(Team.B) / self.area_without_walls * 1000))
             self.team_info.process_end_of_round()
             self.game_fb.end_round()
             if self.winner == None and self.round >= self.initial_map.rounds:
@@ -195,7 +197,6 @@ class Game:
         if self.setWinnerIfMoreMoney(): return
         if self.setWinnerIfMorePaint(): return
         if self.setWinnerIfMoreAliveUnits(): return
-        if self.setWinnerArbitrary(): return
         self.setWinnerArbitrary()
     
     def set_winner(self, team, domination_factor):

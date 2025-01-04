@@ -58,6 +58,7 @@ class GameFB:
         self.initial_map = None
         self.team_ids = []
         self.team_money = []
+        self.team_coverage = []
         self.turns = []
         self.died_ids = []
         self.current_round = 0
@@ -187,12 +188,14 @@ class GameFB:
     def end_round(self):
         team_ids_offset = create_vector(self.builder, Round.StartTeamIdsVector, self.team_ids, self.builder.PrependInt32)
         team_money_offset = create_vector(self.builder, Round.StartTeamResourceAmountsVector, self.team_money, self.builder.PrependInt32)
+        team_coverage_offset = create_vector(self.builder, Round.StartTeamCoverageAmountsVector, self.team_coverage, self.builder.PrependInt32)
         died_ids_offset = create_vector(self.builder, Round.StartDiedIdsVector, self.died_ids, self.builder.PrependInt32)
         turns_offset = create_vector(self.builder, Round.StartTurnsVector, self.turns)
 
         Round.Start(self.builder)
         Round.AddTeamIds(self.builder, team_ids_offset)
         Round.AddTeamResourceAmounts(self.builder, team_money_offset)
+        Round.AddTeamCoverageAmounts(self.builder, team_coverage_offset)
         Round.AddDiedIds(self.builder, died_ids_offset)
         Round.AddTurns(self.builder, turns_offset)
         Round.AddRoundId(self.builder, self.current_round)
@@ -287,9 +290,10 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().DieAction)
 
-    def add_team_info(self, team, money_amount):
+    def add_team_info(self, team, money_amount, coverage_amount):
         self.team_ids.append(fb_from_team(team))
         self.team_money.append(money_amount)
+        self.team_coverage.append(coverage_amount)
 
     def add_indicator_string(self, label):
         if not self.show_indicators:
@@ -335,6 +339,7 @@ class GameFB:
     def clear_round(self):
         self.team_ids.clear()
         self.team_money.clear()
+        self.team_coverage.clear()
         self.turns.clear()
         self.died_ids.clear()
 

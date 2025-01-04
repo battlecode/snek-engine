@@ -20,10 +20,6 @@ class TeamInfo:
     def get_tiles_painted(self, team):
         """Return the total tiles painted by the specified team."""
         return self.tiles_painted[team.value]
-    
-    def get_shared_array(self, team):
-        """Return the shared array of the specified team."""
-        return self.shared_arrays[team.value]
 
     def get_round_coin_change(self, team):
         """Return the change in money for the specified team during the current round."""
