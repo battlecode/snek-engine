@@ -22,8 +22,7 @@ setup(name='battlecode25',
       )),
       install_requires=[
             'RestrictedPython==7.4',
-            'flatbuffers==24.3.25',
-            'google-cloud-storage==2.19.0'
+            'flatbuffers==24.3.25'
       ],
       python_requires='>=3.12, <3.13',
       zip_safe=False
