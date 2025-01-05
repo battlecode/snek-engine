@@ -325,9 +325,9 @@ class RobotController:
             for new_loc in all_locs:
                 target_robot = self.game.get_robot(new_loc)
                 if target_robot and target_robot.type.is_tower_type() and target_robot.team != self.robot.team:
-                    target_robot.add_health(-self.robot.type.attack_strength)
+                    target_robot.add_health(-self.robot.type.aoe_attack_strength)
                     self.game.game_fb.add_attack_action(target_robot.id)
-                    self.game.game_fb.add_damage_action(target_robot.id, self.robot.type.attack_strength)
+                    self.game.game_fb.add_damage_action(target_robot.id, self.robot.type.aoe_attack_strength)
                 else:
                     tile_paint = self.game.get_paint_num(new_loc)
                     if (self.game.team_from_paint(tile_paint) != self.robot.team.opponent or
