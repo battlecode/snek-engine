@@ -1,7 +1,7 @@
 import flatbuffers
 from enum import Enum
 from .constants import GameConstants
-from .robot_type import RobotType
+from .unit_type import UnitType
 from ..schema import TeamData
 from ..schema import GameHeader
 from ..schema import Event
@@ -137,7 +137,7 @@ class GameFB:
 
     def make_robot_type_metadata(self):
         offsets = []
-        for robot_type in RobotType:
+        for robot_type in UnitType:
             level_1_type = robot_type_from_fb(fb_from_robot_type(robot_type))
             if level_1_type != robot_type:
                 continue
@@ -290,7 +290,7 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().SpawnAction)
 
-    def add_upgrade_action(self, tower_id, new_type: RobotType, new_health, new_paint):
+    def add_upgrade_action(self, tower_id, new_type: UnitType, new_health, new_paint):
         action_offset = UpgradeAction.CreateUpgradeAction(self.builder, tower_id, new_health, new_type.health, new_paint, new_type.paint_capacity)
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().UpgradeAction)

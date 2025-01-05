@@ -1,6 +1,6 @@
 from __future__ import annotations
 from ..container.runner import RobotRunner
-from .robot_type import RobotType
+from .unit_type import UnitType
 from .map_location import MapLocation
 from .constants import GameConstants
 from .team import Team
@@ -13,7 +13,7 @@ if 1 == 0:
 
 class Robot:
 
-    def __init__(self, game: Game, id, team: Team, type: RobotType, loc: MapLocation):
+    def __init__(self, game: Game, id, team: Team, type: UnitType, loc: MapLocation):
         self.game = game
         self.id = id
         self.team = team

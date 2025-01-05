@@ -2,7 +2,7 @@ import random
 from enum import Enum
 from .robot import Robot
 from .team import Team
-from .robot_type import RobotType
+from .unit_type import UnitType
 from .constants import GameConstants
 from .robot_controller import *
 from .map_location import MapLocation
@@ -118,7 +118,7 @@ class Game:
             mark_type = PaintType.ALLY_SECONDARY
         return MapInfo(loc, self.is_passable(loc), self.walls[idx], self.get_paint_type(team, loc), mark_type, self.ruins[idx])    
 
-    def spawn_robot(self, type: RobotType, loc: MapLocation, team: Team, id=None):
+    def spawn_robot(self, type: UnitType, loc: MapLocation, team: Team, id=None):
         if id is None:
             id = self.id_generator.next_id()
         robot = Robot(self, id, team, type, loc)
@@ -295,11 +295,11 @@ class Game:
             return PaintType.ENEMY_PRIMARY if self.is_primary_paint(paint) else PaintType.ENEMY_SECONDARY
         
     def shape_from_tower_type(self, tower_type):
-        if tower_type in {RobotType.LEVEL_ONE_PAINT_TOWER, RobotType.LEVEL_TWO_PAINT_TOWER, RobotType.LEVEL_THREE_PAINT_TOWER}:
+        if tower_type in {UnitType.LEVEL_ONE_PAINT_TOWER, UnitType.LEVEL_TWO_PAINT_TOWER, UnitType.LEVEL_THREE_PAINT_TOWER}:
             return Shape.PAINT_TOWER
-        if tower_type in {RobotType.LEVEL_ONE_DEFENSE_TOWER, RobotType.LEVEL_TWO_DEFENSE_TOWER, RobotType.LEVEL_THREE_DEFENSE_TOWER}:
+        if tower_type in {UnitType.LEVEL_ONE_DEFENSE_TOWER, UnitType.LEVEL_TWO_DEFENSE_TOWER, UnitType.LEVEL_THREE_DEFENSE_TOWER}:
             return Shape.DEFENSE_TOWER
-        if tower_type in {RobotType.LEVEL_ONE_MONEY_TOWER, RobotType.LEVEL_TWO_MONEY_TOWER, RobotType.LEVEL_THREE_MONEY_TOWER}:
+        if tower_type in {UnitType.LEVEL_ONE_MONEY_TOWER, UnitType.LEVEL_TWO_MONEY_TOWER, UnitType.LEVEL_THREE_MONEY_TOWER}:
             return Shape.MONEY_TOWER
         return None
         
@@ -514,7 +514,7 @@ class Game:
     def create_methods(self, rc: RobotController):
         return {
             'GameError': GameError,
-            'RobotType': RobotType,
+            'UnitType': UnitType,
             'RobotError': RobotError,
             'Team': Team,
             'Direction': Direction,

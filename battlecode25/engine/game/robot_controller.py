@@ -1,6 +1,6 @@
 from __future__ import annotations
 from .robot import Robot
-from .robot_type import RobotType
+from .unit_type import UnitType
 from .constants import GameConstants
 from .map_location import MapLocation
 from .direction import Direction
@@ -36,11 +36,11 @@ class RobotController:
         if not self.game.on_the_map(loc):
             raise RobotError("Target location is not on the map")
         
-    def assert_is_robot_type(self, type: RobotType) -> None:
+    def assert_is_robot_type(self, type: UnitType) -> None:
         if not type.is_robot_type():
             raise RobotError("Towers cannot perform this action")
         
-    def assert_is_tower_type(self, type: RobotType) -> None:
+    def assert_is_tower_type(self, type: UnitType) -> None:
         if not type.is_tower_type():
             raise RobotError("Robots cannot perform this action")
 
@@ -58,7 +58,7 @@ class RobotController:
     def get_resource_pattern(self) -> List[List[bool]]:
         return self.game.pattern[Shape.RESOURCE.value]
     
-    def get_tower_pattern(self, tower_type: RobotType) -> List[List[bool]]:
+    def get_tower_pattern(self, tower_type: UnitType) -> List[List[bool]]:
         self.assert_is_tower_type(tower_type)
         return self.game.pattern[self.game.shape_from_tower_type(tower_type).value]
     
@@ -82,7 +82,7 @@ class RobotController:
     def get_money(self) -> int:
         return self.game.team_info.get_coins(self.robot.team)
 
-    def get_type(self) -> RobotType:
+    def get_type(self) -> UnitType:
         return self.robot.type
 
     # SENSING FUNCTIONS
@@ -286,7 +286,7 @@ class RobotController:
         self.assert_can_attack(loc)
         self.robot.add_action_cooldown()
 
-        if self.robot.type == RobotType.SOLDIER:
+        if self.robot.type == UnitType.SOLDIER:
             paint_type = (
                 self.game.get_secondary_paint(self.robot.team) 
                 if use_secondary_color 
@@ -302,7 +302,7 @@ class RobotController:
             else:
                 self.game.set_paint(loc, paint_type)
 
-        elif self.robot.type == RobotType.SPLASHER:
+        elif self.robot.type == UnitType.SPLASHER:
             paint_type = (
                 self.game.get_secondary_paint(self.robot.team) 
                 if use_secondary_color 
@@ -324,7 +324,7 @@ class RobotController:
                         self.game.set_paint(new_loc, paint_type)
             self.game.game_fb.add_splash_action(loc)
 
-        elif self.robot.type == RobotType.MOPPER:
+        elif self.robot.type == UnitType.MOPPER:
             if loc is None:
                 self.mop_swing() 
             else:
@@ -368,7 +368,7 @@ class RobotController:
         self.assert_is_action_ready()
         if not dir in {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST}:
             raise RobotError("Must pass in a cardinal direction to mop swing")
-        if self.robot.type != RobotType.MOPPER:
+        if self.robot.type != UnitType.MOPPER:
             raise RobotError("Unit must be a mopper!")
         next_loc = self.robot.loc.add(dir)
         if not self.on_the_map(next_loc):
@@ -418,7 +418,7 @@ class RobotController:
         if self.robot.paint < GameConstants.MARK_PATTERN_COST:
             raise RobotError("Robot does not have enough paint for mark the pattern.")
         
-    def assert_can_mark_tower_pattern(self, loc: MapLocation, tower_type: RobotType) -> None:
+    def assert_can_mark_tower_pattern(self, loc: MapLocation, tower_type: UnitType) -> None:
         self.assert_can_mark_pattern(loc)
         if tower_type.is_robot_type():
             raise RobotError("Pattern type is not a tower type.")
@@ -428,7 +428,7 @@ class RobotController:
     def assert_can_mark_resource_pattern(self, loc: MapLocation) -> None:
         self.assert_can_mark_pattern(loc)
 
-    def can_mark_tower_pattern(self, loc: MapLocation, tower_type: RobotType) -> bool:
+    def can_mark_tower_pattern(self, loc: MapLocation, tower_type: UnitType) -> bool:
         try:
             self.assert_can_mark_tower_pattern(loc, tower_type)
             return True
@@ -442,7 +442,7 @@ class RobotController:
         except:
             return False
         
-    def mark_tower_pattern(self, loc: MapLocation, tower_type: RobotType) -> None:
+    def mark_tower_pattern(self, loc: MapLocation, tower_type: UnitType) -> None:
         self.assert_can_mark_tower_pattern(loc, tower_type)
         self.robot.add_paint(-GameConstants.MARK_PATTERN_COST)
         self.game.mark_tower_pattern(self.robot.team, loc, tower_type) #TODO: implement mark_tower_pattern in game.py
@@ -487,7 +487,7 @@ class RobotController:
         self.game.mark_location(self.robot.team, loc, 0) 
         self.game.game_fb.add_unmark_action(loc)
     
-    def assert_can_complete_tower_pattern(self, loc: MapLocation, tower_type: RobotType) -> None:
+    def assert_can_complete_tower_pattern(self, loc: MapLocation, tower_type: UnitType) -> None:
         self.assert_is_robot_type(self.robot.type)
         self.assert_is_tower_type(tower_type)
         self.assert_can_act_location(loc, GameConstants.BUILD_TOWER_RADIUS_SQUARED)
@@ -503,14 +503,14 @@ class RobotController:
         if not self.game.simple_check_pattern(loc, self.game.shape_from_tower_type(tower_type), self.robot.team):
             raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because the paint pattern is wrong")
         
-    def can_complete_tower_pattern(self, loc: MapLocation, tower_type: RobotType, ) -> bool:
+    def can_complete_tower_pattern(self, loc: MapLocation, tower_type: UnitType, ) -> bool:
         try:
             self.assert_can_complete_tower_pattern(loc, tower_type)
             return True
         except RobotError:
             return False
         
-    def complete_tower_pattern(self, loc: MapLocation, tower_type: RobotType) -> None:
+    def complete_tower_pattern(self, loc: MapLocation, tower_type: UnitType) -> None:
         self.assert_can_complete_tower_pattern(loc, tower_type)
         robot = self.game.spawn_robot(tower_type, loc, self.robot.team)
         self.game.game_fb.add_spawn_action(robot.id, loc, robot.team, robot.type)
@@ -538,7 +538,7 @@ class RobotController:
            
     # BUILDING FUNCTIONS
 
-    def assert_can_build_robot(self, robot_type: RobotType, map_location: MapLocation) -> None:
+    def assert_can_build_robot(self, robot_type: UnitType, map_location: MapLocation) -> None:
         self.assert_not_none(robot_type)
         self.assert_not_none(map_location)
         self.assert_can_act_location(map_location, GameConstants.BUILD_ROBOT_RADIUS_SQUARED)
@@ -555,14 +555,14 @@ class RobotController:
         if not self.game.is_passable(map_location):
             raise RobotError("Build location is has a wall.")
         
-    def can_build_robot(self, robot_type: RobotType, map_location: MapLocation) -> bool:
+    def can_build_robot(self, robot_type: UnitType, map_location: MapLocation) -> bool:
         try:
             self.assert_can_build_robot(robot_type, map_location)
             return True
         except RobotError as e:
             return False
 
-    def build_robot(self, robot_type: RobotType, map_location: MapLocation) -> None:
+    def build_robot(self, robot_type: UnitType, map_location: MapLocation) -> None:
         self.assert_can_build_robot(robot_type, map_location)
         robot = self.game.spawn_robot(robot_type, map_location, self.robot.team)
         self.robot.add_action_cooldown()
@@ -627,7 +627,7 @@ class RobotController:
         if self.robot.type.is_tower_type():
             raise RobotError("Towers cannot transfer paint!")        
         if amount > 0: #positive give paint, negative take paint
-            if self.robot.type != RobotType.MOPPER:
+            if self.robot.type != UnitType.MOPPER:
                 raise RobotError("Only moppers can give paint to allies!")
             if amount > self.robot.paint:
                 raise RobotError("Cannot give more paint than you currently have!")
