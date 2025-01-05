@@ -21,7 +21,7 @@ class Robot:
         self.loc = loc
         self.died_loc = None
         self.health = self.type.health
-        self.paint = self.type.paint_capacity // 2
+        self.paint = self.type.paint_capacity
         self.bytecode_limit = GameConstants.BYTECODE_LIMIT
         self.bytecodes_used = 0
         self.rounds_alive = 0

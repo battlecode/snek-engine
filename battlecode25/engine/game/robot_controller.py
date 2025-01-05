@@ -68,9 +68,6 @@ class RobotController:
         return self.robot.id
 
     def get_team(self) -> Team:
-        """
-        Return the current robot's team (Team.A or Team.B)
-        """
         return self.robot.team
     
     def get_paint(self) -> int:
@@ -263,10 +260,6 @@ class RobotController:
     # ATTACK FUNCTIONS
 
     def assert_can_attack(self, loc: MapLocation) -> None:
-        """
-        Assert that the robot can attack. This function checks all conditions necessary
-        for the robot to perform an attack and raises an error if any are not met.
-        """
         self.assert_is_action_ready()
         if loc is None and not self.robot.type.is_tower_type():
             raise RobotError("Robot units must specify a location to attack")
@@ -283,10 +276,6 @@ class RobotController:
                 raise RobotError("Tower cannot use single tile attack more than once per turn.")
 
     def can_attack(self, loc: MapLocation) -> bool:
-        """
-        Check if the robot can attack. This function calls `assert_can_attack`
-        and returns a boolean value: True if the attack can proceed, False otherwise.
-        """
         try:
             self.assert_can_attack(loc)
             return True
@@ -415,9 +404,6 @@ class RobotController:
     # MARKING FUNCTIONS
 
     def assert_can_mark_pattern(self, loc: MapLocation) -> None:
-        '''
-        Asserts that a pattern can be marked at this location.
-        '''
         if self.robot.type.is_tower_type():
             raise RobotError("Marking unit is not a robot.")
         if not self.game.is_valid_pattern_center(loc):
@@ -428,9 +414,6 @@ class RobotController:
             raise RobotError("Robot does not have enough paint for mark the pattern.")
         
     def assert_can_mark_tower_pattern(self, loc: MapLocation, tower_type: RobotType) -> None:
-        '''
-        Asserts that tower pattern can be marked at this location.
-        '''
         self.assert_can_mark_pattern(loc)
         if tower_type.is_robot_type():
             raise RobotError("Pattern type is not a tower type.")
@@ -438,15 +421,9 @@ class RobotController:
             raise RobotError(f"Cannot mark tower pattern at ({loc.x}, {loc.y}) because there is no ruin.")
         
     def assert_can_mark_resource_pattern(self, loc: MapLocation) -> None:
-        '''
-        Asserts that tower pattern can be marked at this location.
-        '''
         self.assert_can_mark_pattern(loc)
 
     def can_mark_tower_pattern(self, loc: MapLocation, tower_type: RobotType) -> bool:
-        """
-        Checks if specified tower pattern can be marked at location
-        """
         try:
             self.assert_can_mark_tower_pattern(loc, tower_type)
             return True
@@ -454,9 +431,6 @@ class RobotController:
             return False
         
     def can_mark_resource_pattern(self, loc: MapLocation) -> bool:
-        """
-        Checks if resource pattern can be marked at location
-        """
         try:
             self.assert_can_mark_resource_pattern(loc)
             return True
@@ -464,18 +438,11 @@ class RobotController:
             return False
         
     def mark_tower_pattern(self, loc: MapLocation, tower_type: RobotType) -> None:
-        """
-        Marks specified tower pattern at location if possible
-        tower_type: RobotType enum
-        """
         self.assert_can_mark_tower_pattern(loc, tower_type)
         self.robot.add_paint(-GameConstants.MARK_PATTERN_COST)
         self.game.mark_tower_pattern(self.robot.team, loc, tower_type) #TODO: implement mark_tower_pattern in game.py
 
     def mark_resource_pattern(self, loc: MapLocation) -> None:
-        """
-        Marks resource pattern at location if possible
-        """
         self.assert_can_mark_resource_pattern(loc)
         self.robot.add_paint(-GameConstants.MARK_PATTERN_COST)
         self.game.mark_resource_pattern(self.robot.team, loc) #TODO: implement mark_resource_pattern in game.py 
@@ -485,10 +452,6 @@ class RobotController:
         self.assert_can_act_location(loc, GameConstants.MARK_RADIUS_SQUARED)
 
     def can_mark(self, loc: MapLocation) -> bool:
-        """
-        Checks if the robot can mark a location.
-        Returns True if marking conditions are met, otherwise False
-        """
         try:
             self.assert_can_mark(loc)
             return True
@@ -496,11 +459,6 @@ class RobotController:
             return False
 
     def mark(self, loc: MapLocation, secondary: bool) -> None:
-        """
-        Marks the specified map location
-        loc: MapLocation we want to mark
-        color: Color enum specifying the color of the mark
-        """
         self.assert_can_mark(loc)
         self.game.mark_location(self.robot.team, loc, secondary)
         self.game.game_fb.add_mark_action(loc, secondary)
@@ -593,10 +551,6 @@ class RobotController:
             raise RobotError("Build location is has a wall.")
         
     def can_build_robot(self, robot_type: RobotType, map_location: MapLocation) -> bool:
-        """
-        Checks if the specified robot can spawn a new unit.
-        Returns True if spawning conditions are met, otherwise False.
-        """
         try:
             self.assert_can_build_robot(robot_type, map_location)
             return True
@@ -604,9 +558,6 @@ class RobotController:
             return False
 
     def build_robot(self, robot_type: RobotType, map_location: MapLocation) -> None:
-        """
-        Spawns a new robot of the given type at a specific map location if conditions are met.
-        """
         self.assert_can_build_robot(robot_type, map_location)
         robot = self.game.spawn_robot(robot_type, map_location, self.robot.team)
         self.robot.add_action_cooldown()
