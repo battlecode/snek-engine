@@ -361,7 +361,8 @@ def can_send_message(loc: MapLocation) -> bool:
 
 def send_message(loc: MapLocation, message_content: int) -> None:
     """
-    Sends a message (contained in an int, so 4 bytes) to a specific unit at a location on the map.
+    Sends a 4 byte message to a specific unit at a location on the map. If you send an int larger than 4 bytes, the value will
+    be truncated to only include the least significant 4 bytes.
     """
     pass
 

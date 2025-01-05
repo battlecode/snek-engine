@@ -48,7 +48,7 @@ class Game:
         self.debug = game_args.debug
         self.running = True
         self.robots = [None] * total_area
-        self.id_to_robot = {}
+        self.id_to_robot: dict[int, RobotInfo] = {}
         self.robot_exec_order = []
         for robot_info in initial_map.initial_bodies:
             self.spawn_robot(robot_info.type, robot_info.location, robot_info.team, id=robot_info.id)
@@ -153,8 +153,8 @@ class Game:
         return True
     
     def setWinnerIfMoreAlliedTowers(self):
-        towers_a = self.team_info.get_num_allied_towers(Team.A)
-        towers_b = self.team_info.get_num_allied_towers(Team.B)
+        towers_a = [robot.team == Team.A and robot.type.is_tower_type() for robot in self.id_to_robot.values()].count(True)
+        towers_b = [robot.team == Team.B and robot.type.is_tower_type() for robot in self.id_to_robot.values()].count(True)
         if towers_a == towers_b:
             return False
         self.set_winner(Team.A if towers_a > towers_b else Team.B, DominationFactor.MORE_TOWERS_ALIVE)
@@ -177,8 +177,8 @@ class Game:
         return True
     
     def setWinnerIfMoreAliveUnits(self):
-        allied_a = self.team_info.get_num_allied_units(Team.A)
-        allied_b = self.team_info.get_num_allied_units(Team.B)
+        allied_a = [robot.team == Team.A and robot.type.is_robot_type() for robot in self.id_to_robot.values()].count(True)
+        allied_b = [robot.team == Team.B and robot.type.is_robot_type() for robot in self.id_to_robot.values()].count(True)
         if allied_a == allied_b:
             return False
         self.set_winner(Team.A if allied_a > allied_b else Team.B, DominationFactor.MORE_ROBOTS_ALIVE)

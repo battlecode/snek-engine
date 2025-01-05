@@ -8,8 +8,6 @@ class TeamInfo:
         self.tiles_painted = [0] * 2 
         self.paint_counts = [0] * 2
         self.old_coin_counts = [0] * 2
-        self.num_allied_towers = [0] * 2
-        self.num_allied_units = [0] * 2
 
     # ***** GETTER METHODS *****
 
@@ -24,15 +22,9 @@ class TeamInfo:
     def get_round_coin_change(self, team):
         """Return the change in money for the specified team during the current round."""
         return self.coin_counts[team.value] - self.old_coin_counts[team.value]
-
-    def get_num_allied_towers(self, team):
-        return self.num_allied_towers[team.value]
     
     def get_paint_counts(self, team):
         return self.paint_counts[team.value]
-    
-    def get_num_allied_units(self, team):
-        return self.num_allied_units[team.value]
     
     # ***** UPDATE METHODS *****
 

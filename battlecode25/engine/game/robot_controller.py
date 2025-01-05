@@ -395,11 +395,15 @@ class RobotController:
         for i in range(3):
             offset = swing_offsets[dir][i]
             new_loc = MapLocation(self.robot.loc.x + offset[0], self.robot.loc.y + offset[1])
+            if not self.game.on_the_map(new_loc):
+                target_ids.append(0)
+                continue
             target_robot = self.game.get_robot(new_loc)
             if target_robot and target_robot.team != self.robot.team:
                 target_robot.add_paint(-GameConstants.MOPPER_SWING_PAINT_DEPLETION)
                 target_ids.append(target_robot.id)
-            target_ids.append(0)
+            else:
+                target_ids.append(0)
         self.game.game_fb.add_mop_action(target_ids[0], target_ids[1], target_ids[2])
 
     # MARKING FUNCTIONS
@@ -594,6 +598,7 @@ class RobotController:
 
     def send_message(self, loc: MapLocation, message_content: int) -> None:
         self.assert_can_send_message(loc)
+        message_content &= 0xFFFFFFFF
         target = self.game.get_robot(loc)
         target.message_buffer.add_message(message_content)
         self.robot.sent_message_count += 1
