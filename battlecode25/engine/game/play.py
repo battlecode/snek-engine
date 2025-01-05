@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+import importlib.resources
 import time
 import os
 
@@ -53,11 +54,23 @@ def run_game(args: RunGameArgs):
     game_fb.make_game_header()
     a_wins, b_wins = 0, 0
 
+    builtin_maps_dir = importlib.resources.files("battlecode25.maps")
     for map_name in args.map_names.split(","):
-        map_name = map_name.strip()
-        initial_map = map_fb.load_map_raw(str(Path(args.map_dir) / map_name) + ".map25")
+        map_name = f"{map_name.strip()}.map25"
+
+        # Load map
+        try:
+            # From maps dir
+            initial_map = map_fb.load_map_raw(str(Path(args.map_dir) / map_name))
+        except:
+            try:
+                # From builtin dir
+                initial_map = map_fb.load_map_raw(str(builtin_maps_dir / map_name))
+            except:
+                raise ValueError(f"Unable to load map {map_name}!")
+
         game = Game([container_a, container_b], initial_map, game_fb, args)
-        
+
         print("[server] -------------------- Match Starting --------------------")
         print(f"[server] {args.player1_name} vs. {args.player2_name} on {map_name}")
 
