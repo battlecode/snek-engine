@@ -31,6 +31,7 @@ from ..schema import TimelineMarker
 from ..schema import MopAction
 from ..schema import MarkAction
 from ..schema import UnmarkAction
+from ..schema import SplashAction
 from .fb_helpers import *
 from .map_fb import serialize_map
 from pathlib import Path
@@ -59,6 +60,7 @@ class GameFB:
         self.team_ids = []
         self.team_money = []
         self.team_coverage = []
+        self.team_resource_patterns = []
         self.turns = []
         self.died_ids = []
         self.current_round = 0
@@ -149,6 +151,7 @@ class GameFB:
             RobotTypeMetadata.AddVisionRadiusSquared(self.builder, GameConstants.VISION_RADIUS_SQUARED)
             RobotTypeMetadata.AddBasePaint(self.builder, robot_type.paint_capacity // 2)
             RobotTypeMetadata.AddMaxPaint(self.builder, robot_type.paint_capacity)
+            RobotTypeMetadata.AddMessageRadiusSquared(self.builder, GameConstants.MESSAGE_RADIUS_SQUARED)
             offsets.append(RobotTypeMetadata.End(self.builder))
         return create_vector(self.builder, GameHeader.StartRobotTypeMetadataVector, offsets)
 
@@ -189,6 +192,7 @@ class GameFB:
         team_ids_offset = create_vector(self.builder, Round.StartTeamIdsVector, self.team_ids, self.builder.PrependInt32)
         team_money_offset = create_vector(self.builder, Round.StartTeamResourceAmountsVector, self.team_money, self.builder.PrependInt32)
         team_coverage_offset = create_vector(self.builder, Round.StartTeamCoverageAmountsVector, self.team_coverage, self.builder.PrependInt32)
+        team_resource_pattern_count_offset = create_vector(self.builder, Round.StartTeamResourcePatternAmountsVector, self.team_resource_patterns, self.builder.PrependInt32)
         died_ids_offset = create_vector(self.builder, Round.StartDiedIdsVector, self.died_ids, self.builder.PrependInt32)
         turns_offset = create_vector(self.builder, Round.StartTurnsVector, self.turns)
 
@@ -196,6 +200,7 @@ class GameFB:
         Round.AddTeamIds(self.builder, team_ids_offset)
         Round.AddTeamResourceAmounts(self.builder, team_money_offset)
         Round.AddTeamCoverageAmounts(self.builder, team_coverage_offset)
+        Round.AddTeamResourcePatternAmounts(self.builder, team_resource_pattern_count_offset)
         Round.AddDiedIds(self.builder, died_ids_offset)
         Round.AddTurns(self.builder, turns_offset)
         Round.AddRoundId(self.builder, self.current_round)
@@ -260,6 +265,11 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().MopAction)
 
+    def add_splash_action(self, loc):
+        action_offset = SplashAction.CreateSplashAction(self.builder, self.initial_map.loc_to_index(loc))
+        self.current_actions.append(action_offset)
+        self.current_action_types.append(Action.Action().SplashAction)
+
     def add_build_action(self, tower_id):
         action_offset = BuildAction.CreateBuildAction(self.builder, tower_id)
         self.current_actions.append(action_offset)
@@ -280,8 +290,8 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().SpawnAction)
 
-    def add_upgrade_action(self, tower_id):
-        action_offset = UpgradeAction.CreateUpgradeAction(self.builder, tower_id)
+    def add_upgrade_action(self, tower_id, new_type: RobotType, new_health, new_paint):
+        action_offset = UpgradeAction.CreateUpgradeAction(self.builder, tower_id, new_health, new_type.health, new_paint, new_type.paint_capacity)
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().UpgradeAction)
 
@@ -290,10 +300,11 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().DieAction)
 
-    def add_team_info(self, team, money_amount, coverage_amount):
+    def add_team_info(self, team, money_amount, coverage_amount, resource_patterns):
         self.team_ids.append(fb_from_team(team))
         self.team_money.append(money_amount)
         self.team_coverage.append(coverage_amount)
+        self.team_resource_patterns.append(resource_patterns)
 
     def add_indicator_string(self, label):
         if not self.show_indicators:
@@ -340,6 +351,7 @@ class GameFB:
         self.team_ids.clear()
         self.team_money.clear()
         self.team_coverage.clear()
+        self.team_resource_patterns.clear()
         self.turns.clear()
         self.died_ids.clear()
 

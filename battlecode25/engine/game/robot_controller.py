@@ -322,6 +322,7 @@ class RobotController:
                     if (self.game.team_from_paint(tile_paint) != self.robot.team.opponent or
                             new_loc.is_within_distance_squared(loc, GameConstants.SPLASHER_ATTACK_ENEMY_PAINT_RADIUS_SQUARED)):
                         self.game.set_paint(new_loc, paint_type)
+            self.game.game_fb.add_splash_action(loc)
 
         elif self.robot.type == RobotType.MOPPER:
             if loc is None:
@@ -677,7 +678,7 @@ class RobotController:
         new_type = tower.type.get_next_level()
         self.game.team_info.add_coins(self.robot.team, -new_type.money_cost)
         tower.upgrade_tower()
-        self.game.game_fb.add_upgrade_action(tower.id)
+        self.game.game_fb.add_upgrade_action(tower.id, tower.type, tower.health, tower.paint)
 
     # DEBUG INDICATOR FUNCTIONS
 

@@ -60,10 +60,7 @@ class Game:
             self.update_resource_patterns()
             self.each_robot(lambda robot: robot.process_beginning_of_round())
             self.each_robot_update(lambda robot: robot.turn())
-            self.game_fb.add_team_info(Team.A, self.team_info.get_coins(Team.A), 
-                                       math.floor(self.team_info.get_tiles_painted(Team.A) / self.area_without_walls * 1000))
-            self.game_fb.add_team_info(Team.B, self.team_info.get_coins(Team.B), 
-                                       math.floor(self.team_info.get_tiles_painted(Team.B) / self.area_without_walls * 1000))
+            self.serialize_team_info()
             self.team_info.process_end_of_round()
             self.game_fb.end_round()
             if self.winner == None and self.round >= self.initial_map.rounds:
@@ -210,6 +207,12 @@ class Game:
                 self.resource_pattern_centers.pop(i)
                 self.resouce_pattern_centers_by_loc[self.loc_to_index(center)] = Team.NEUTRAL
 
+    def serialize_team_info(self):
+        coverage_a = math.floor(self.team_info.get_tiles_painted(Team.A) / self.area_without_walls * 1000)
+        coverage_b = math.floor(self.team_info.get_tiles_painted(Team.B) / self.area_without_walls * 1000)
+        self.game_fb.add_team_info(Team.A, self.team_info.get_coins(Team.A), coverage_a, self.count_resource_patterns(Team.A))
+        self.game_fb.add_team_info(Team.B, self.team_info.get_coins(Team.B), coverage_b, self.count_resource_patterns(Team.B))
+
     def complete_resource_pattern(self, team, loc):
         idx = self.loc_to_index(loc)
         if self.resouce_pattern_centers_by_loc[idx] != Team.NEUTRAL:
@@ -217,9 +220,8 @@ class Game:
         self.resource_pattern_centers.append(loc)
         self.resouce_pattern_centers_by_loc[idx] = team
 
-    def get_resources_from_patterns(self, team):
-        num_patterns = [self.resouce_pattern_centers_by_loc[self.loc_to_index(loc)] == team for loc in self.resource_pattern_centers].count(True)
-        return num_patterns * GameConstants.EXTRA_RESOURCES_FROM_PATTERN
+    def count_resource_patterns(self, team):
+        return [self.resouce_pattern_centers_by_loc[self.loc_to_index(loc)] == team for loc in self.resource_pattern_centers].count(True)
 
     def on_the_map(self, loc: MapLocation):
         return 0 <= loc.x < self.width and 0 <= loc.y < self.height
