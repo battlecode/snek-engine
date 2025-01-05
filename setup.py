@@ -16,6 +16,9 @@ setup(name='battlecode25',
       url="https://play.battlecode.org",
       license='MIT',
       packages=find_packages(),
+      package_data={
+        "": ["**/*.map25"]
+      },
       project_urls=OrderedDict((
           #('Code', 'https://github.com/battlecode/battlecode25/tree/master/engine'),
           #('Documentation', 'https://github.com/battlecode/battlecode25/tree/master/engine')
