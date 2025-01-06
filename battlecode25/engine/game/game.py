@@ -154,13 +154,13 @@ class Game:
         self.game_fb.add_die_action(id, False)
         self.game_fb.add_died(id)
 
-    def setWinnerIfPaintPercentReached(self, team):
+    def set_winner_if_paint_percent_reached(self, team):
         if self.team_info.get_tiles_painted(team) / self.area_without_walls * 100 >= GameConstants.PAINT_PERCENT_TO_WIN:
             self.set_winner(team, DominationFactor.PAINT_ENOUGH_AREA)
             return True
         return False
 
-    def setWinnerIfMoreArea(self):
+    def set_winner_if_more_area(self):
         painted_a = self.team_info.get_tiles_painted(Team.A)
         painted_b = self.team_info.get_tiles_painted(Team.B)
         if painted_a == painted_b:
@@ -168,7 +168,7 @@ class Game:
         self.set_winner(Team.A if painted_a > painted_b else Team.B, DominationFactor.MORE_SQUARES_PAINTED)
         return True
     
-    def setWinnerIfMoreAlliedTowers(self):
+    def set_winner_if_more_allied_towers(self):
         towers_a = [robot.team == Team.A and robot.type.is_tower_type() for robot in self.id_to_robot.values()].count(True)
         towers_b = [robot.team == Team.B and robot.type.is_tower_type() for robot in self.id_to_robot.values()].count(True)
         if towers_a == towers_b:
@@ -176,7 +176,7 @@ class Game:
         self.set_winner(Team.A if towers_a > towers_b else Team.B, DominationFactor.MORE_TOWERS_ALIVE)
         return True
     
-    def setWinnerIfMoreMoney(self):
+    def set_winner_if_more_money(self):
         money_a = self.team_info.get_coins(Team.A)
         money_b = self.team_info.get_coins(Team.B)
         if money_a == money_b:
@@ -184,7 +184,7 @@ class Game:
         self.set_winner(Team.A if money_a > money_b else Team.B, DominationFactor.MORE_MONEY)
         return True
     
-    def setWinnerIfMorePaint(self):
+    def set_winner_if_more_paint(self):
         paint_a = self.team_info.get_paint_counts(Team.A)
         paint_b = self.team_info.get_paint_counts(Team.B)
         if paint_a == paint_b:
@@ -192,7 +192,7 @@ class Game:
         self.set_winner(Team.A if paint_a > paint_b else Team.B, DominationFactor.MORE_PAINT_IN_UNITS)
         return True
     
-    def setWinnerIfMoreAliveUnits(self):
+    def set_winner_if_more_alive_units(self):
         allied_a = [robot.team == Team.A and robot.type.is_robot_type() for robot in self.id_to_robot.values()].count(True)
         allied_b = [robot.team == Team.B and robot.type.is_robot_type() for robot in self.id_to_robot.values()].count(True)
         if allied_a == allied_b:
@@ -200,17 +200,17 @@ class Game:
         self.set_winner(Team.A if allied_a > allied_b else Team.B, DominationFactor.MORE_ROBOTS_ALIVE)
         return True
     
-    def setWinnerArbitrary(self):
+    def set_winner_arbitrary(self):
         self.set_winner(Team.A if random.random() < 0.5 else Team.B, DominationFactor.WON_BY_DUBIOUS_REASONS)
         return True
 
     def run_tiebreakers(self):
-        if self.setWinnerIfMoreArea(): return
-        if self.setWinnerIfMoreAlliedTowers(): return
-        if self.setWinnerIfMoreMoney(): return
-        if self.setWinnerIfMorePaint(): return
-        if self.setWinnerIfMoreAliveUnits(): return
-        self.setWinnerArbitrary()
+        if self.set_winner_if_more_area(): return
+        if self.set_winner_if_more_allied_towers(): return
+        if self.set_winner_if_more_money(): return
+        if self.set_winner_if_more_paint(): return
+        if self.set_winner_if_more_alive_units(): return
+        self.set_winner_arbitrary()
     
     def set_winner(self, team, domination_factor):
         self.winner = team
@@ -328,7 +328,6 @@ class Game:
 
         if old_paint_team != Team.NEUTRAL:
             self.team_info.add_painted_squares(-1, old_paint_team)
-
         if new_paint_team != Team.NEUTRAL:
             self.team_info.add_painted_squares(1, new_paint_team)
 
@@ -337,6 +336,9 @@ class Game:
             self.game_fb.add_paint_action(loc, not self.is_primary_paint(paint))
         else:
             self.game_fb.add_unpaint_action(loc)
+
+        if new_paint_team != Team.NEUTRAL:
+            self.set_winner_if_paint_percent_reached(new_paint_team)
 
     def get_all_locations_within_radius_squared(self, center: MapLocation, radius_squared) -> Generator[MapLocation, None, None]:
         """
