@@ -178,6 +178,8 @@ class Game:
         return False
     
     def set_winner_if_no_units(self, team: Team):
+        if self.winner is not None:
+            return False
         if self.team_info.get_unit_count(team) == 0:
             self.set_winner(team.opponent(), DominationFactor.DESTORY_ALL_UNITS)
             return True

@@ -25,7 +25,6 @@ class Robot:
             self.paint = round(self.type.paint_capacity * GameConstants.INITIAL_ROBOT_PAINT_PERCENTAGE / 100)
         else:
             self.paint = GameConstants.INITIAL_TOWER_PAINT_AMOUNT
-        self.bytecode_limit = GameConstants.BYTECODE_LIMIT
         self.bytecodes_used = 0
         self.rounds_alive = 0
         self.action_cooldown = type.action_cooldown
@@ -75,7 +74,8 @@ class Robot:
         self.logs.append(msg)
 
     def animate(self, code, methods, debug=False):
-        self.runner = RobotRunner(code, methods, self.log, self.error, debug=debug)
+        bytecode_limit = GameConstants.ROBOT_BYTECODE_LIMIT if self.type.is_robot_type() else GameConstants.TOWER_BYTECODE_LIMIT
+        self.runner = RobotRunner(code, methods, self.log, self.error, bytecode_limit, debug=debug)
         self.debug = debug
 
     def kill(self):

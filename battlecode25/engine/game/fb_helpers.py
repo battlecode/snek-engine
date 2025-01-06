@@ -66,6 +66,8 @@ def fb_from_domination_factor(factor):
             return WinType.WinType().COIN_FLIP
         case DominationFactor.RESIGNATION:
             return WinType.WinType().RESIGNATION
+        case DominationFactor.DESTORY_ALL_UNITS:
+            return WinType.WinType().ALL_UNITS_DESTROYED
         case _:
             return None  # Default case
         

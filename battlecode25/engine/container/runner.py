@@ -51,10 +51,8 @@ class RobotThread(Thread):
         self.run_event.set()
 
 class RobotRunner:
-    STARTING_BYTECODE = GameConstants.BYTECODE_LIMIT
-    EXTRA_BYTECODE = GameConstants.BYTECODE_LIMIT
 
-    def __init__(self, code, game_methods, log_method, error_method, debug=False):
+    def __init__(self, code, game_methods, log_method, error_method, bytecode_limit, debug=False):
         self.instrument = Instrument(self)
         self.locals = {}
         self.globals = {
@@ -107,7 +105,8 @@ class RobotRunner:
         self.code = code
         self.imports = {}
 
-        self.bytecode = self.STARTING_BYTECODE
+        self.bytecode = bytecode_limit
+        self.bytecode_limit = bytecode_limit
 
         self.initialized = False
         self.debug = debug
@@ -236,7 +235,7 @@ class RobotRunner:
             self.error_method('Couldn\'t find turn function.')
 
     def run(self):
-        self.bytecode = min(self.bytecode, 0) + self.EXTRA_BYTECODE
+        self.bytecode = self.bytecode_limit
 
         # Kickoff execution. If we are currently paused, resume. Otherwise, signal
         # starting a new turn

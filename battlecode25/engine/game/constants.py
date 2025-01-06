@@ -24,7 +24,9 @@ class GameConstants:
 
     GAME_MAX_NUMBER_OF_ROUNDS = 2000
 
-    BYTECODE_LIMIT = 25000
+    ROBOT_BYTECODE_LIMIT = 15000
+
+    TOWER_BYTECODE_LIMIT = 20000
 
     # The maximum length of indicator strings that a player can associate with a robot.
     INDICATOR_STRING_MAX_LENGTH = 64

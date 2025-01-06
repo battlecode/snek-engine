@@ -146,7 +146,8 @@ class GameFB:
             RobotTypeMetadata.AddActionCooldown(self.builder, robot_type.action_cooldown)
             RobotTypeMetadata.AddActionRadiusSquared(self.builder, robot_type.action_radius_squared)
             RobotTypeMetadata.AddBaseHealth(self.builder, robot_type.health)
-            RobotTypeMetadata.AddBytecodeLimit(self.builder, GameConstants.BYTECODE_LIMIT)
+            bytecode_limit = GameConstants.ROBOT_BYTECODE_LIMIT if robot_type.is_robot_type() else GameConstants.TOWER_BYTECODE_LIMIT
+            RobotTypeMetadata.AddBytecodeLimit(self.builder, bytecode_limit)
             RobotTypeMetadata.AddMovementCooldown(self.builder, GameConstants.MOVEMENT_COOLDOWN)
             RobotTypeMetadata.AddVisionRadiusSquared(self.builder, GameConstants.VISION_RADIUS_SQUARED)
             if robot_type.is_robot_type():
