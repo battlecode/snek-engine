@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple, Union
 
-from battlecode25.engine.game.game import Team, UnitType, Direction, MapLocation, RobotInfo, MapInfo, PaintType, GameConstants
+from battlecode25.engine.game.game import Team, UnitType, Direction, MapLocation, RobotInfo, MapInfo, PaintType, GameConstants, Message
 
 # The stubs in this file make it possible for editors to auto-complete the global methods
 # They can be imported using "from battlecode25.stubs import *"
@@ -366,7 +366,7 @@ def send_message(loc: MapLocation, message_content: int) -> None:
     """
     pass
 
-def read_messages(round=-1) -> List[int]:
+def read_messages(round=-1) -> List[Message]:
     """
     Reads all messages received by this unit within the past 5 rounds if roundNum = -1, or only messages sent from the 
     specified round otherwise

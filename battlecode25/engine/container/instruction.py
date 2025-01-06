@@ -31,7 +31,7 @@ class Instruction(SimpleNamespace):
 
         # The source of a jump is the first instruction after this instruction that is not a cache instruction
         starting_loc = instructions.index(self) + 1
-        while instructions[starting_loc].opcode == 0:
+        while starting_loc < len(instructions) and instructions[starting_loc].opcode == 0:
             starting_loc += 1
 
         # The target of a jump is the first extended args instruction corresponding to the instruction we want to jump to.

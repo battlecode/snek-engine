@@ -17,6 +17,7 @@ from .shape import Shape
 from .map_info import MapInfo
 from .paint_type import PaintType
 from typing import Generator
+from .message import Message
 
 import math
 
@@ -547,6 +548,7 @@ class Game:
             'RobotInfo': RobotInfo,
             'MapInfo': MapInfo,
             'PaintType': PaintType,
+            'Message': Message,
             'get_round_num': (rc.get_round_num, 1),
             'get_map_width': (rc.get_map_width, 1),
             'get_map_height': (rc.get_map_height, 1),
@@ -621,9 +623,9 @@ class Game:
         ]
         money_tower_pattern = [
             [False, True, True, True, False],
+            [True, True, False, True, True],
             [True, False, False, False, True],
-            [True, False, False, False, True],
-            [True, False, False, False, True],
+            [True, True, False, True, True],
             [False, True, True, True, False]
         ]
         paint_tower_pattern = [

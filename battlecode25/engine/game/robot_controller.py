@@ -10,6 +10,7 @@ from .team import Team
 from typing import List
 from .robot_info import RobotInfo
 from .map_info import MapInfo
+from .message import Message
 
 #Imported for type checking
 if 1 == 0:
@@ -600,12 +601,13 @@ class RobotController:
     def send_message(self, loc: MapLocation, message_content: int) -> None:
         self.assert_can_send_message(loc)
         message_content &= 0xFFFFFFFF
+        message = Message(message_content, self.robot.id, self.game.round)
         target = self.game.get_robot(loc)
-        target.message_buffer.add_message(message_content)
+        target.message_buffer.add_message(message)
         self.robot.sent_message_count += 1
         self.game.game_fb.add_message_action(target.id, message_content)
 
-    def read_messages(self, round=-1) -> List[int]:
+    def read_messages(self, round=-1) -> List[Message]:
         if round == -1:
             return self.robot.message_buffer.get_all_messages()
         return self.robot.message_buffer.get_messages(round)
