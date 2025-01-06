@@ -53,8 +53,11 @@ class GameConstants:
     # Paint capacity for mopper robots
     PAINT_CAPACITY_MOPPER = 100
 
-    # The amount of a paint a paint tower starts with.
-    INITIAL_PAINT_TOWER_PAINT = 500
+    # The amount of a tower starts with
+    INITIAL_TOWER_PAINT_AMOUNT = 500
+
+    # The percent of max capacity paint that robots (excluding towers) start with
+    INITIAL_ROBOT_PAINT_PERCENTAGE = 100
 
     # The amount of money each team starts with.
     INITIAL_TEAM_MONEY = 1000

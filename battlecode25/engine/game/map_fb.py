@@ -70,7 +70,10 @@ def load_spawn_actions(body_table: InitialBodyTable):
         spawn_action: SpawnAction.SpawnAction = body_table.SpawnActions(i)
         robot_type = robot_type_from_fb(spawn_action.RobotType())
         loc = MapLocation(spawn_action.X(), spawn_action.Y())
-        initial_paint = GameConstants.INITIAL_PAINT_TOWER_PAINT if (robot_type == UnitType.LEVEL_ONE_PAINT_TOWER) else 0
+        if robot_type.is_robot_type():
+            initial_paint = round(robot_type.paint_capacity * GameConstants.INITIAL_ROBOT_PAINT_PERCENTAGE / 100)
+        else:
+            initial_paint = GameConstants.INITIAL_TOWER_PAINT_AMOUNT
         result.append(RobotInfo(spawn_action.Id(), team_from_fb(spawn_action.Team()), robot_type, robot_type.health, loc, initial_paint))
     return result
 

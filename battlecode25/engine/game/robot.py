@@ -21,7 +21,10 @@ class Robot:
         self.loc = loc
         self.died_loc = None
         self.health = self.type.health
-        self.paint = self.type.paint_capacity
+        if type.is_robot_type():
+            self.paint = round(self.type.paint_capacity * GameConstants.INITIAL_ROBOT_PAINT_PERCENTAGE / 100)
+        else:
+            self.paint = GameConstants.INITIAL_TOWER_PAINT_AMOUNT
         self.bytecode_limit = GameConstants.BYTECODE_LIMIT
         self.bytecodes_used = 0
         self.rounds_alive = 0

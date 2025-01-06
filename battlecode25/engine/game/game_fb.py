@@ -149,7 +149,11 @@ class GameFB:
             RobotTypeMetadata.AddBytecodeLimit(self.builder, GameConstants.BYTECODE_LIMIT)
             RobotTypeMetadata.AddMovementCooldown(self.builder, GameConstants.MOVEMENT_COOLDOWN)
             RobotTypeMetadata.AddVisionRadiusSquared(self.builder, GameConstants.VISION_RADIUS_SQUARED)
-            RobotTypeMetadata.AddBasePaint(self.builder, robot_type.paint_capacity)
+            if robot_type.is_robot_type():
+                base_paint = round(robot_type.paint_capacity * GameConstants.INITIAL_ROBOT_PAINT_PERCENTAGE / 100)
+            else:
+                base_paint = GameConstants.INITIAL_TOWER_PAINT_AMOUNT
+            RobotTypeMetadata.AddBasePaint(self.builder, base_paint)
             RobotTypeMetadata.AddMaxPaint(self.builder, robot_type.paint_capacity)
             RobotTypeMetadata.AddMessageRadiusSquared(self.builder, GameConstants.MESSAGE_RADIUS_SQUARED)
             offsets.append(RobotTypeMetadata.End(self.builder))
@@ -337,7 +341,7 @@ class GameFB:
             return
         label_offset = self.builder.CreateString(label)
         TimelineMarker.Start(self.builder)
-        TimelineMarker.AddTeam(self.builder, fb_from_team(team))
+        TimelineMarker.AddTeam(self.builder, fb_from_team(team) - 1)
         TimelineMarker.AddLabel(self.builder, label_offset)
         TimelineMarker.AddRound(self.builder, self.current_round)
         TimelineMarker.AddColorHex(self.builder, int_rgb(red, green, blue))
