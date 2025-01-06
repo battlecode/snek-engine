@@ -17,23 +17,23 @@ class RobotAttributes:
     paint_per_turn: int
     money_per_turn: int
 
-class RobotType(Enum):
+class UnitType(Enum):
     # Define enum members with RobotAttributes dataclass
-    SOLDIER = RobotAttributes(100, 250, 5, 250, -1, 200, 10, 20, 20, -1, 0, 0)
-    SPLASHER = RobotAttributes(150, 400, 50, 150, -1, 300, 50, 9, -1, 50, 0, 0)
-    MOPPER = RobotAttributes(50, 300, 0, 50, -1, 100, 30, 2, -1, -1, 0, 0)
+    SOLDIER = RobotAttributes(200, 250, 5, 250, -1, 200, 10, 20, 20, -1, 0, 0)
+    SPLASHER = RobotAttributes(300, 400, 50, 150, -1, 300, 50, 9, -1, 50, 0, 0)
+    MOPPER = RobotAttributes(100, 300, 0, 50, -1, 100, 30, 2, -1, -1, 0, 0)
 
     LEVEL_ONE_PAINT_TOWER = RobotAttributes(0, 25, 0, 1000, 1, 1000, 10, 9, 20, 10, 5, 0)
-    LEVEL_TWO_PAINT_TOWER = RobotAttributes(0, 100, 0, 1500, 2, 1000, 10, 9, 20, 10, 10, 0)
-    LEVEL_THREE_PAINT_TOWER = RobotAttributes(0, 100, 0, 2000, 3, 1000, 10, 9, 20, 10, 15, 0)
+    LEVEL_TWO_PAINT_TOWER = RobotAttributes(0, 250, 0, 1500, 2, 1000, 10, 9, 20, 10, 10, 0)
+    LEVEL_THREE_PAINT_TOWER = RobotAttributes(0, 500, 0, 2000, 3, 1000, 10, 9, 20, 10, 15, 0)
 
     LEVEL_ONE_MONEY_TOWER = RobotAttributes(0, 25, 0, 1000, 1, 1000, 10, 9, 20, 10, 0, 10)
-    LEVEL_TWO_MONEY_TOWER = RobotAttributes(0, 100, 0, 1500, 2, 1000, 10, 9, 20, 10, 0, 15)
-    LEVEL_THREE_MONEY_TOWER = RobotAttributes(0, 100, 0, 2000, 3, 1000, 10, 9, 20, 10, 0, 20)
+    LEVEL_TWO_MONEY_TOWER = RobotAttributes(0, 250, 0, 1500, 2, 1000, 10, 9, 20, 10, 0, 15)
+    LEVEL_THREE_MONEY_TOWER = RobotAttributes(0, 500, 0, 2000, 3, 1000, 10, 9, 20, 10, 0, 20)
 
     LEVEL_ONE_DEFENSE_TOWER = RobotAttributes(0, 25, 0, 2500, 1, 1000, 10, 25, 60, 30, 0, 0)
-    LEVEL_TWO_DEFENSE_TOWER = RobotAttributes(0, 50, 0, 3000, 2, 1000, 10, 25, 65, 35, 0, 0)
-    LEVEL_THREE_DEFENSE_TOWER = RobotAttributes(0, 50, 0, 3500, 3, 1000, 10, 25, 70, 40, 0, 0)
+    LEVEL_TWO_DEFENSE_TOWER = RobotAttributes(0, 250, 0, 3000, 2, 1000, 10, 25, 65, 35, 0, 0)
+    LEVEL_THREE_DEFENSE_TOWER = RobotAttributes(0, 500, 0, 3500, 3, 1000, 10, 25, 70, 40, 0, 0)
 
     # Read-only property accessors for attributes
     @property
@@ -85,10 +85,10 @@ class RobotType(Enum):
         return self.value.money_per_turn
 
     def can_attack(self): 
-        return self == RobotType.SOLDIER or self == RobotType.SPLASHER
+        return self == UnitType.SOLDIER or self == UnitType.SPLASHER
     
     def is_robot_type(self):
-        return self == RobotType.SOLDIER or self == RobotType.SPLASHER or self == RobotType.MOPPER
+        return self == UnitType.SOLDIER or self == UnitType.SPLASHER or self == UnitType.MOPPER
 
     def is_tower_type(self): 
         return not self.is_robot_type()
@@ -97,17 +97,17 @@ class RobotType(Enum):
         return self.is_tower_type() and (self.level == 1 or self.level == 2)
     
     def get_next_level(self): 
-        if self == RobotType.LEVEL_ONE_PAINT_TOWER:
-            return RobotType.LEVEL_TWO_PAINT_TOWER
-        elif self == RobotType.LEVEL_TWO_PAINT_TOWER:
-            return RobotType.LEVEL_THREE_PAINT_TOWER
+        if self == UnitType.LEVEL_ONE_PAINT_TOWER:
+            return UnitType.LEVEL_TWO_PAINT_TOWER
+        elif self == UnitType.LEVEL_TWO_PAINT_TOWER:
+            return UnitType.LEVEL_THREE_PAINT_TOWER
         
-        elif self == RobotType.LEVEL_ONE_MONEY_TOWER:
-            return RobotType.LEVEL_TWO_MONEY_TOWER
-        elif self == RobotType.LEVEL_TWO_MONEY_TOWER:
-            return RobotType.LEVEL_THREE_MONEY_TOWER
+        elif self == UnitType.LEVEL_ONE_MONEY_TOWER:
+            return UnitType.LEVEL_TWO_MONEY_TOWER
+        elif self == UnitType.LEVEL_TWO_MONEY_TOWER:
+            return UnitType.LEVEL_THREE_MONEY_TOWER
         
-        elif self == RobotType.LEVEL_ONE_DEFENSE_TOWER:
-            return RobotType.LEVEL_TWO_DEFENSE_TOWER
-        elif self ==  RobotType.LEVEL_TWO_DEFENSE_TOWER:
-            return RobotType.LEVEL_THREE_DEFENSE_TOWER
+        elif self == UnitType.LEVEL_ONE_DEFENSE_TOWER:
+            return UnitType.LEVEL_TWO_DEFENSE_TOWER
+        elif self ==  UnitType.LEVEL_TWO_DEFENSE_TOWER:
+            return UnitType.LEVEL_THREE_DEFENSE_TOWER

@@ -167,7 +167,7 @@ class RobotRunner:
 
     def check_bytecode(self):
         if self.bytecode <= 0:
-            self.error_method(f'Ran out of bytecode.Remaining bytecode: {self.bytecode}')
+            self.error_method(f'Ran out of bytecode. Remaining bytecode: {self.bytecode}')
             self.thread.wait()
 
     def import_call(self, name, globals=None, locals=None, fromlist=(), level=0, caller='robot'):

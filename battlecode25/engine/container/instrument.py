@@ -35,8 +35,6 @@ class Instrument:
         :return: a new code object that has been injected with our bytecode counter
         """
 
-        print("Before instrument. function:", bytecode.co_name, ", names list:", bytecode.co_names, "varnames:", bytecode.co_varnames)
-
         # Recursively instrument functions or anything else that points to a separate code object
         new_consts = []
         for i, constant in enumerate(bytecode.co_consts):
@@ -261,7 +259,7 @@ class Instrument:
         new_names = tuple(bytecode.co_names) + ('instrument',)
         compiled = Instrument.build_code(bytecode, new_code, new_names, new_consts, new_linetable)
 
-        print("After instrument. function:", compiled.co_name, ", names list:", compiled.co_names, "varnames:", compiled.co_varnames)
+        # print("After instrument. function:", compiled.co_name, ", names list:", compiled.co_names, "varnames:", compiled.co_varnames)
 
         return compiled
     
@@ -299,7 +297,6 @@ class Instrument:
             except StopIteration:
                 return
             code = (first_byte >> 3) & 15
-            print("code", code)
             length = ((first_byte & 7) + 1) * 2
             end_addr = addr + length
             if code == 15:

@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple, Union
 
-from battlecode25.engine.game.game import Team, RobotType, Direction, MapLocation, RobotInfo, MapInfo, PaintType, GameConstants
+from battlecode25.engine.game.game import Team, UnitType, Direction, MapLocation, RobotInfo, MapInfo, PaintType, GameConstants
 
 # The stubs in this file make it possible for editors to auto-complete the global methods
 # They can be imported using "from battlecode25.stubs import *"
@@ -42,7 +42,7 @@ def get_resource_pattern() -> List[List[bool]]:
     """
     pass
 
-def get_tower_pattern(tower_type: RobotType) -> List[List[bool]]:
+def get_tower_pattern(tower_type: UnitType) -> List[List[bool]]:
     """
     Returns the 5x5 tower pattern for the given tower type. Entry [i][j] is true if the ith row and jth column
     of the pattern has the secondary color.
@@ -87,7 +87,7 @@ def get_money() -> int:
     """
     pass
 
-def get_type() -> RobotType:
+def get_type() -> UnitType:
     """
     Returns what type the robot is.
     """
@@ -257,7 +257,7 @@ def mop_swing(dir: Direction) -> None:
 
 # MARKING FUNCTIONS
     
-def can_mark_tower_pattern(loc: MapLocation, tower_type: RobotType) -> bool:
+def can_mark_tower_pattern(loc: MapLocation, tower_type: UnitType) -> bool:
     """
     Checks if a robot can build a tower by marking a 5x5 pattern centered at the given location.
     This requires there to be a ruin at the location.
@@ -270,7 +270,7 @@ def can_mark_resource_pattern(loc: MapLocation) -> bool:
     """
     pass
     
-def mark_tower_pattern(loc: MapLocation, tower_type: RobotType) -> None:
+def mark_tower_pattern(loc: MapLocation, tower_type: UnitType) -> None:
     """
     Places markers for the 5x5 pattern corresponding to the given tower type.
     """
@@ -306,14 +306,14 @@ def remove_mark(loc: MapLocation) -> None:
     """
     pass
     
-def can_complete_tower_pattern(loc: MapLocation, tower_type: RobotType) -> bool:
+def can_complete_tower_pattern(loc: MapLocation, tower_type: UnitType) -> bool:
     """
     Checks if the robot can build a tower at the given location. This requires a ruin at the location
     and the tower pattern to be painted correctly.
     """
     pass
     
-def complete_tower_pattern(loc: MapLocation, tower_type: RobotType) -> None:
+def complete_tower_pattern(loc: MapLocation, tower_type: UnitType) -> None:
     """
     Builds a tower at the given location
     """
@@ -336,14 +336,14 @@ def complete_resource_pattern(loc: MapLocation) -> None:
         
 # BUILDING FUNCTIONS
     
-def can_build_robot(robot_type: RobotType, map_location: MapLocation) -> bool:
+def can_build_robot(robot_type: UnitType, map_location: MapLocation) -> bool:
     """
     Checks if a tower can spawn a robot at the given location. Robots can spawn within a circle of radius sqrt(4)
     of the tower.
     """
     pass
 
-def build_robot(robot_type: RobotType, map_location: MapLocation) -> None:
+def build_robot(robot_type: UnitType, map_location: MapLocation) -> None:
     """
     Spawns a new robot at the given location.
     """
@@ -361,7 +361,8 @@ def can_send_message(loc: MapLocation) -> bool:
 
 def send_message(loc: MapLocation, message_content: int) -> None:
     """
-    Sends a message (contained in an int, so 4 bytes) to a specific unit at a location on the map.
+    Sends a 4 byte message to a specific unit at a location on the map. If you send an int larger than 4 bytes, the value will
+    be truncated to only include the least significant 4 bytes.
     """
     pass
 

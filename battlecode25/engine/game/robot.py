@@ -1,6 +1,6 @@
 from __future__ import annotations
 from ..container.runner import RobotRunner
-from .robot_type import RobotType
+from .unit_type import UnitType
 from .map_location import MapLocation
 from .constants import GameConstants
 from .team import Team
@@ -13,7 +13,7 @@ if 1 == 0:
 
 class Robot:
 
-    def __init__(self, game: Game, id, team: Team, type: RobotType, loc: MapLocation):
+    def __init__(self, game: Game, id, team: Team, type: UnitType, loc: MapLocation):
         self.game = game
         self.id = id
         self.team = team
@@ -21,7 +21,7 @@ class Robot:
         self.loc = loc
         self.died_loc = None
         self.health = self.type.health
-        self.paint = self.type.paint_capacity // 2
+        self.paint = self.type.paint_capacity
         self.bytecode_limit = GameConstants.BYTECODE_LIMIT
         self.bytecodes_used = 0
         self.rounds_alive = 0
@@ -89,9 +89,10 @@ class Robot:
     def process_beginning_of_round(self):
         self.died_loc = None
         if self.type.paint_per_turn != 0:
-            self.add_paint(self.type.paint_per_turn + self.game.get_resources_from_patterns(self.team))
+            self.add_paint(self.type.paint_per_turn + self.game.count_resource_patterns(self.team) * GameConstants.EXTRA_RESOURCES_FROM_PATTERN)
         if self.type.money_per_turn != 0:
-            self.game.team_info.add_coins(self.team, self.type.money_per_turn + self.game.get_resources_from_patterns(self.team))
+            self.game.team_info.add_coins(self.team,
+                            self.type.money_per_turn + self.game.count_resource_patterns(self.team) * GameConstants.EXTRA_RESOURCES_FROM_PATTERN)
 
     def process_beginning_of_turn(self):
         self.action_cooldown

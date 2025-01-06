@@ -16,7 +16,7 @@ directions = [
     Direction.SOUTHWEST
 ]
 
-paint_towers = [RobotType.LEVEL_ONE_PAINT_TOWER, RobotType.LEVEL_TWO_PAINT_TOWER, RobotType.LEVEL_THREE_PAINT_TOWER]
+paint_towers = [UnitType.LEVEL_ONE_PAINT_TOWER, UnitType.LEVEL_TWO_PAINT_TOWER, UnitType.LEVEL_THREE_PAINT_TOWER]
 
 def turn():
     loc = get_location()

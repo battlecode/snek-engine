@@ -1,4 +1,4 @@
-from .robot_type import RobotType
+from .unit_type import UnitType
 from ..schema import VecTable
 from ..schema import WinType
 from ..schema import EventWrapper
@@ -6,44 +6,44 @@ from .team import Team
 import flatbuffers
 from .domination_factor import DominationFactor
 
-def robot_type_from_fb(b: int) -> RobotType:
+def robot_type_from_fb(b: int) -> UnitType:
     unit_type_mapping = {
-        1: RobotType.LEVEL_ONE_PAINT_TOWER,
-        2: RobotType.LEVEL_ONE_MONEY_TOWER,
-        3: RobotType.LEVEL_ONE_DEFENSE_TOWER,
-        4: RobotType.SOLDIER,
-        5: RobotType.SPLASHER,
-        6: RobotType.MOPPER,
-        0: RobotType.LEVEL_ONE_PAINT_TOWER  # TODO: fix
+        1: UnitType.LEVEL_ONE_PAINT_TOWER,
+        2: UnitType.LEVEL_ONE_MONEY_TOWER,
+        3: UnitType.LEVEL_ONE_DEFENSE_TOWER,
+        4: UnitType.SOLDIER,
+        5: UnitType.SPLASHER,
+        6: UnitType.MOPPER,
+        0: UnitType.LEVEL_ONE_PAINT_TOWER  # TODO: fix
     }
     if b in unit_type_mapping:
         return unit_type_mapping[b]
     raise RuntimeError(f"No unit type for {b}")
 
-def fb_from_robot_type(unit_type: RobotType) -> int:
+def fb_from_robot_type(unit_type: UnitType) -> int:
     if unit_type in {
-        RobotType.LEVEL_ONE_PAINT_TOWER,
-        RobotType.LEVEL_TWO_PAINT_TOWER,
-        RobotType.LEVEL_THREE_PAINT_TOWER
+        UnitType.LEVEL_ONE_PAINT_TOWER,
+        UnitType.LEVEL_TWO_PAINT_TOWER,
+        UnitType.LEVEL_THREE_PAINT_TOWER
     }:
         return 1
     elif unit_type in {
-        RobotType.LEVEL_ONE_MONEY_TOWER,
-        RobotType.LEVEL_TWO_MONEY_TOWER,
-        RobotType.LEVEL_THREE_MONEY_TOWER
+        UnitType.LEVEL_ONE_MONEY_TOWER,
+        UnitType.LEVEL_TWO_MONEY_TOWER,
+        UnitType.LEVEL_THREE_MONEY_TOWER
     }:
         return 2
     elif unit_type in {
-        RobotType.LEVEL_ONE_DEFENSE_TOWER,
-        RobotType.LEVEL_TWO_DEFENSE_TOWER,
-        RobotType.LEVEL_THREE_DEFENSE_TOWER
+        UnitType.LEVEL_ONE_DEFENSE_TOWER,
+        UnitType.LEVEL_TWO_DEFENSE_TOWER,
+        UnitType.LEVEL_THREE_DEFENSE_TOWER
     }:
         return 3
-    elif unit_type == RobotType.SOLDIER:
+    elif unit_type == UnitType.SOLDIER:
         return 4
-    elif unit_type == RobotType.SPLASHER:
+    elif unit_type == UnitType.SPLASHER:
         return 5
-    elif unit_type == RobotType.MOPPER:
+    elif unit_type == UnitType.MOPPER:
         return 6
     else:
         raise RuntimeError(f"Cannot find byte encoding for {unit_type}")

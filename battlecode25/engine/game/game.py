@@ -2,7 +2,7 @@ import random
 from enum import Enum
 from .robot import Robot
 from .team import Team
-from .robot_type import RobotType
+from .unit_type import UnitType
 from .constants import GameConstants
 from .robot_controller import *
 from .map_location import MapLocation
@@ -48,7 +48,7 @@ class Game:
         self.debug = game_args.debug
         self.running = True
         self.robots = [None] * total_area
-        self.id_to_robot = {}
+        self.id_to_robot: dict[int, RobotInfo] = {}
         self.robot_exec_order = []
         for robot_info in initial_map.initial_bodies:
             self.spawn_robot(robot_info.type, robot_info.location, robot_info.team, id=robot_info.id)
@@ -60,8 +60,7 @@ class Game:
             self.update_resource_patterns()
             self.each_robot(lambda robot: robot.process_beginning_of_round())
             self.each_robot_update(lambda robot: robot.turn())
-            self.game_fb.add_team_info(Team.A, self.team_info.get_coins(Team.A))
-            self.game_fb.add_team_info(Team.B, self.team_info.get_coins(Team.B))
+            self.serialize_team_info()
             self.team_info.process_end_of_round()
             self.game_fb.end_round()
             if self.winner == None and self.round >= self.initial_map.rounds:
@@ -119,7 +118,7 @@ class Game:
             mark_type = PaintType.ALLY_SECONDARY
         return MapInfo(loc, self.is_passable(loc), self.walls[idx], self.get_paint_type(team, loc), mark_type, self.ruins[idx])    
 
-    def spawn_robot(self, type: RobotType, loc: MapLocation, team: Team, id=None):
+    def spawn_robot(self, type: UnitType, loc: MapLocation, team: Team, id=None):
         if id is None:
             id = self.id_generator.next_id()
         robot = Robot(self, id, team, type, loc)
@@ -154,8 +153,8 @@ class Game:
         return True
     
     def setWinnerIfMoreAlliedTowers(self):
-        towers_a = self.team_info.get_num_allied_towers(Team.A)
-        towers_b = self.team_info.get_num_allied_towers(Team.B)
+        towers_a = [robot.team == Team.A and robot.type.is_tower_type() for robot in self.id_to_robot.values()].count(True)
+        towers_b = [robot.team == Team.B and robot.type.is_tower_type() for robot in self.id_to_robot.values()].count(True)
         if towers_a == towers_b:
             return False
         self.set_winner(Team.A if towers_a > towers_b else Team.B, DominationFactor.MORE_TOWERS_ALIVE)
@@ -178,8 +177,8 @@ class Game:
         return True
     
     def setWinnerIfMoreAliveUnits(self):
-        allied_a = self.team_info.get_num_allied_units(Team.A)
-        allied_b = self.team_info.get_num_allied_units(Team.B)
+        allied_a = [robot.team == Team.A and robot.type.is_robot_type() for robot in self.id_to_robot.values()].count(True)
+        allied_b = [robot.team == Team.B and robot.type.is_robot_type() for robot in self.id_to_robot.values()].count(True)
         if allied_a == allied_b:
             return False
         self.set_winner(Team.A if allied_a > allied_b else Team.B, DominationFactor.MORE_ROBOTS_ALIVE)
@@ -195,7 +194,6 @@ class Game:
         if self.setWinnerIfMoreMoney(): return
         if self.setWinnerIfMorePaint(): return
         if self.setWinnerIfMoreAliveUnits(): return
-        if self.setWinnerArbitrary(): return
         self.setWinnerArbitrary()
     
     def set_winner(self, team, domination_factor):
@@ -209,6 +207,12 @@ class Game:
                 self.resource_pattern_centers.pop(i)
                 self.resouce_pattern_centers_by_loc[self.loc_to_index(center)] = Team.NEUTRAL
 
+    def serialize_team_info(self):
+        coverage_a = math.floor(self.team_info.get_tiles_painted(Team.A) / self.area_without_walls * 1000)
+        coverage_b = math.floor(self.team_info.get_tiles_painted(Team.B) / self.area_without_walls * 1000)
+        self.game_fb.add_team_info(Team.A, self.team_info.get_coins(Team.A), coverage_a, self.count_resource_patterns(Team.A))
+        self.game_fb.add_team_info(Team.B, self.team_info.get_coins(Team.B), coverage_b, self.count_resource_patterns(Team.B))
+
     def complete_resource_pattern(self, team, loc):
         idx = self.loc_to_index(loc)
         if self.resouce_pattern_centers_by_loc[idx] != Team.NEUTRAL:
@@ -216,14 +220,13 @@ class Game:
         self.resource_pattern_centers.append(loc)
         self.resouce_pattern_centers_by_loc[idx] = team
 
-    def get_resources_from_patterns(self, team):
-        num_patterns = [self.resouce_pattern_centers_by_loc[self.loc_to_index(loc)] == team for loc in self.resource_pattern_centers].count(True)
-        return num_patterns * GameConstants.EXTRA_RESOURCES_FROM_PATTERN
+    def count_resource_patterns(self, team):
+        return [self.resouce_pattern_centers_by_loc[self.loc_to_index(loc)] == team for loc in self.resource_pattern_centers].count(True)
 
-    def on_the_map(self, loc):
+    def on_the_map(self, loc: MapLocation):
         return 0 <= loc.x < self.width and 0 <= loc.y < self.height
     
-    def connected_by_paint(self, robot_loc: MapLocation, tower_loc: MapLocation):
+    def connected_by_paint(self, robot_loc: MapLocation, tower_loc: MapLocation, team: Team):
         queue = [robot_loc]
         visited = set()
 
@@ -233,14 +236,14 @@ class Game:
             if loc.equals(tower_loc):
                 return True
 
-            if loc in visited or self.paint[self.loc_to_index(loc)] != robot_loc.team:
+            if loc in visited or self.team_from_paint(self.paint[self.loc_to_index(loc)]) != team:
                 continue
 
             visited.add(loc)
             for dir in cardinal_directions:
                 new_loc = loc.add(dir)  
 
-                if self.on_the_map(new_loc.x, new_loc.y):  
+                if self.on_the_map(new_loc):
                     queue.append(new_loc)
         return False
     
@@ -292,11 +295,11 @@ class Game:
             return PaintType.ENEMY_PRIMARY if self.is_primary_paint(paint) else PaintType.ENEMY_SECONDARY
         
     def shape_from_tower_type(self, tower_type):
-        if tower_type in {RobotType.LEVEL_ONE_PAINT_TOWER, RobotType.LEVEL_TWO_PAINT_TOWER, RobotType.LEVEL_THREE_PAINT_TOWER}:
+        if tower_type in {UnitType.LEVEL_ONE_PAINT_TOWER, UnitType.LEVEL_TWO_PAINT_TOWER, UnitType.LEVEL_THREE_PAINT_TOWER}:
             return Shape.PAINT_TOWER
-        if tower_type in {RobotType.LEVEL_ONE_DEFENSE_TOWER, RobotType.LEVEL_TWO_DEFENSE_TOWER, RobotType.LEVEL_THREE_DEFENSE_TOWER}:
+        if tower_type in {UnitType.LEVEL_ONE_DEFENSE_TOWER, UnitType.LEVEL_TWO_DEFENSE_TOWER, UnitType.LEVEL_THREE_DEFENSE_TOWER}:
             return Shape.DEFENSE_TOWER
-        if tower_type in {RobotType.LEVEL_ONE_MONEY_TOWER, RobotType.LEVEL_TWO_MONEY_TOWER, RobotType.LEVEL_THREE_MONEY_TOWER}:
+        if tower_type in {UnitType.LEVEL_ONE_MONEY_TOWER, UnitType.LEVEL_TWO_MONEY_TOWER, UnitType.LEVEL_THREE_MONEY_TOWER}:
             return Shape.MONEY_TOWER
         return None
         
@@ -511,7 +514,7 @@ class Game:
     def create_methods(self, rc: RobotController):
         return {
             'GameError': GameError,
-            'RobotType': RobotType,
+            'UnitType': UnitType,
             'RobotError': RobotError,
             'Team': Team,
             'Direction': Direction,

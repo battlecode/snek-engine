@@ -1,7 +1,7 @@
 import flatbuffers
 from enum import Enum
 from .constants import GameConstants
-from .robot_type import RobotType
+from .unit_type import UnitType
 from ..schema import TeamData
 from ..schema import GameHeader
 from ..schema import Event
@@ -31,6 +31,7 @@ from ..schema import TimelineMarker
 from ..schema import MopAction
 from ..schema import MarkAction
 from ..schema import UnmarkAction
+from ..schema import SplashAction
 from .fb_helpers import *
 from .map_fb import serialize_map
 from pathlib import Path
@@ -55,9 +56,11 @@ class GameFB:
         self.match_headers = []
         self.match_footers = []
 
-        self.initial_map = []
+        self.initial_map = None
         self.team_ids = []
         self.team_money = []
+        self.team_coverage = []
+        self.team_resource_patterns = []
         self.turns = []
         self.died_ids = []
         self.current_round = 0
@@ -65,7 +68,6 @@ class GameFB:
         self.current_actions = []
         self.timeline_markers = []
         self.current_action_types = []
-        self.current_map_width = 0
 
     def make_game_header(self):
         self.state = self.State.IN_GAME
@@ -75,7 +77,7 @@ class GameFB:
         p1_name = Path(self.game_args.player1_dir).name
         p2_name = Path(self.game_args.player2_dir).name
 
-        name = self.builder.CreateString(p1_name)
+        name = self.builder.CreateString(self.game_args.player1_name)
         package_name = self.builder.CreateString(p1_name)
         TeamData.Start(self.builder)
         TeamData.AddName(self.builder, name)
@@ -83,7 +85,7 @@ class GameFB:
         TeamData.AddTeamId(self.builder, fb_from_team(Team.A))
         team_a_offset = TeamData.End(self.builder)
 
-        name = self.builder.CreateString(p2_name)
+        name = self.builder.CreateString(self.game_args.player2_name)
         package_name = self.builder.CreateString(p2_name)
         TeamData.Start(self.builder)
         TeamData.AddName(self.builder, name)
@@ -135,7 +137,7 @@ class GameFB:
 
     def make_robot_type_metadata(self):
         offsets = []
-        for robot_type in RobotType:
+        for robot_type in UnitType:
             level_1_type = robot_type_from_fb(fb_from_robot_type(robot_type))
             if level_1_type != robot_type:
                 continue
@@ -148,6 +150,8 @@ class GameFB:
             RobotTypeMetadata.AddMovementCooldown(self.builder, GameConstants.MOVEMENT_COOLDOWN)
             RobotTypeMetadata.AddVisionRadiusSquared(self.builder, GameConstants.VISION_RADIUS_SQUARED)
             RobotTypeMetadata.AddBasePaint(self.builder, robot_type.paint_capacity // 2)
+            RobotTypeMetadata.AddMaxPaint(self.builder, robot_type.paint_capacity)
+            RobotTypeMetadata.AddMessageRadiusSquared(self.builder, GameConstants.MESSAGE_RADIUS_SQUARED)
             offsets.append(RobotTypeMetadata.End(self.builder))
         return create_vector(self.builder, GameHeader.StartRobotTypeMetadataVector, offsets)
 
@@ -167,6 +171,7 @@ class GameFB:
         self.match_headers.append(len(self.events) - 1)
 
     def make_match_footer(self, win_team, win_type, total_rounds):
+        self.state = self.State.IN_GAME
         timeline_offset = create_vector(self.builder, MatchFooter.StartTimelineMarkersVector, self.timeline_markers)
         MatchFooter.Start(self.builder)
         MatchFooter.AddWinner(self.builder, fb_from_team(win_team))
@@ -177,6 +182,7 @@ class GameFB:
 
         self.events.append(create_event_wrapper(self.builder, Event.Event().MatchFooter, match_footer_offset))
         self.match_footers.append(len(self.events) - 1)
+        self.clear_match()
 
     def start_round(self, round_num):
         assert self.state == self.State.IN_MATCH, "Can't start a round while not in a match"
@@ -185,12 +191,16 @@ class GameFB:
     def end_round(self):
         team_ids_offset = create_vector(self.builder, Round.StartTeamIdsVector, self.team_ids, self.builder.PrependInt32)
         team_money_offset = create_vector(self.builder, Round.StartTeamResourceAmountsVector, self.team_money, self.builder.PrependInt32)
+        team_coverage_offset = create_vector(self.builder, Round.StartTeamCoverageAmountsVector, self.team_coverage, self.builder.PrependInt32)
+        team_resource_pattern_count_offset = create_vector(self.builder, Round.StartTeamResourcePatternAmountsVector, self.team_resource_patterns, self.builder.PrependInt32)
         died_ids_offset = create_vector(self.builder, Round.StartDiedIdsVector, self.died_ids, self.builder.PrependInt32)
         turns_offset = create_vector(self.builder, Round.StartTurnsVector, self.turns)
 
         Round.Start(self.builder)
         Round.AddTeamIds(self.builder, team_ids_offset)
         Round.AddTeamResourceAmounts(self.builder, team_money_offset)
+        Round.AddTeamCoverageAmounts(self.builder, team_coverage_offset)
+        Round.AddTeamResourcePatternAmounts(self.builder, team_resource_pattern_count_offset)
         Round.AddDiedIds(self.builder, died_ids_offset)
         Round.AddTurns(self.builder, turns_offset)
         Round.AddRoundId(self.builder, self.current_round)
@@ -255,6 +265,11 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().MopAction)
 
+    def add_splash_action(self, loc):
+        action_offset = SplashAction.CreateSplashAction(self.builder, self.initial_map.loc_to_index(loc))
+        self.current_actions.append(action_offset)
+        self.current_action_types.append(Action.Action().SplashAction)
+
     def add_build_action(self, tower_id):
         action_offset = BuildAction.CreateBuildAction(self.builder, tower_id)
         self.current_actions.append(action_offset)
@@ -275,8 +290,8 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().SpawnAction)
 
-    def add_upgrade_action(self, tower_id):
-        action_offset = UpgradeAction.CreateUpgradeAction(self.builder, tower_id)
+    def add_upgrade_action(self, tower_id, new_type: UnitType, new_health, new_paint):
+        action_offset = UpgradeAction.CreateUpgradeAction(self.builder, tower_id, new_health, new_type.health, new_paint, new_type.paint_capacity)
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().UpgradeAction)
 
@@ -285,9 +300,11 @@ class GameFB:
         self.current_actions.append(action_offset)
         self.current_action_types.append(Action.Action().DieAction)
 
-    def add_team_info(self, team, money_amount):
+    def add_team_info(self, team, money_amount, coverage_amount, resource_patterns):
         self.team_ids.append(fb_from_team(team))
         self.team_money.append(money_amount)
+        self.team_coverage.append(coverage_amount)
+        self.team_resource_patterns.append(resource_patterns)
 
     def add_indicator_string(self, label):
         if not self.show_indicators:
@@ -333,9 +350,22 @@ class GameFB:
     def clear_round(self):
         self.team_ids.clear()
         self.team_money.clear()
+        self.team_coverage.clear()
+        self.team_resource_patterns.clear()
         self.turns.clear()
         self.died_ids.clear()
 
     def clear_turn(self):
         self.current_actions.clear()
+        self.current_action_types.clear()
+
+    def clear_match(self):
+        self.team_ids.clear()
+        self.team_money.clear()
+        self.turns.clear()
+        self.died_ids.clear()
+        self.current_round = 0
+        self.logger.clear()
+        self.current_actions.clear()
+        self.timeline_markers.clear()
         self.current_action_types.clear()

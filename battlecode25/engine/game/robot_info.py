@@ -1,5 +1,9 @@
+from .team import Team
+from .unit_type import UnitType
+from .map_location import MapLocation
+
 class RobotInfo:
-    def __init__(self, id, team, type, health, location, paint_amount):
+    def __init__(self, id: int, team: Team, type: UnitType, health: int, location: MapLocation, paint_amount: int):
         self.id = id
         self.team = team
         self.type = type
