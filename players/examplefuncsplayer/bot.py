@@ -58,6 +58,11 @@ def run_tower():
         #build_robot(RobotType.SPLASHER, next_loc)
         #log("BUILT A SPLASHER")
 
+    # Read incoming messages
+    messages = read_messages()
+    for m in messages:
+        log(f"Tower received message: '#{m.get_sender_id()}: {m.get_bytes()}'")
+
 
 def run_soldier():
     # Sense information about all visible nearby tiles.
