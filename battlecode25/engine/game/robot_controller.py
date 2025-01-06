@@ -146,6 +146,8 @@ class RobotController:
         result = []
         for loc in sensed_locs:
             sensed_robot = self.game.get_robot(loc)
+            if sensed_robot is None:
+                continue
             if sensed_robot == self.robot:
                 continue
             if not self.can_sense_location(sensed_robot.loc):
