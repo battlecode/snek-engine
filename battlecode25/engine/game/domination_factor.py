@@ -9,3 +9,4 @@ class DominationFactor(Enum):
     MORE_ROBOTS_ALIVE=5
     WON_BY_DUBIOUS_REASONS=6
     RESIGNATION=7
+    DESTORY_ALL_UNITS = 8

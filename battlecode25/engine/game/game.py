@@ -147,6 +147,9 @@ class Game:
         self.robot_exec_order.append(id)
         self.id_to_robot[id] = robot
         self.add_robot_to_loc(loc, robot)
+        self.team_info.add_unit_count(team, 1)
+        if type == UnitType.LEVEL_ONE_DEFENSE_TOWER:
+            self.team_info.add_defense_damage_increase(team, GameConstants.EXTRA_DAMAGE_FROM_DEFENSE_TOWER)
         return robot
 
     def destroy_robot(self, id):
@@ -157,10 +160,26 @@ class Game:
         robot.kill()
         self.game_fb.add_die_action(id, False)
         self.game_fb.add_died(id)
+        self.team_info.add_unit_count(robot.team, -1)
+        damage_decrease = 0
+        if robot.type == UnitType.LEVEL_ONE_DEFENSE_TOWER:
+            damage_decrease = GameConstants.EXTRA_DAMAGE_FROM_DEFENSE_TOWER
+        elif robot.type == UnitType.LEVEL_TWO_DEFENSE_TOWER:
+            damage_decrease = GameConstants.EXTRA_DAMAGE_FROM_DEFENSE_TOWER + GameConstants.EXTRA_TOWER_DAMAGE_LEVEL_INCREASE
+        elif robot.type == UnitType.LEVEL_THREE_DEFENSE_TOWER:
+            damage_decrease = GameConstants.EXTRA_DAMAGE_FROM_DEFENSE_TOWER + GameConstants.EXTRA_TOWER_DAMAGE_LEVEL_INCREASE * 2
+        self.team_info.add_defense_damage_increase(robot.team, -damage_decrease)
+        self.set_winner_if_no_units(robot.team)
 
     def set_winner_if_paint_percent_reached(self, team):
         if self.team_info.get_tiles_painted(team) / self.area_without_walls * 100 >= GameConstants.PAINT_PERCENT_TO_WIN:
             self.set_winner(team, DominationFactor.PAINT_ENOUGH_AREA)
+            return True
+        return False
+    
+    def set_winner_if_no_units(self, team: Team):
+        if self.team_info.get_unit_count(team) == 0:
+            self.set_winner(team.opponent(), DominationFactor.DESTORY_ALL_UNITS)
             return True
         return False
 
@@ -242,6 +261,10 @@ class Game:
 
     def count_resource_patterns(self, team):
         return [self.resouce_pattern_centers_by_loc[self.loc_to_index(loc)] == team for loc in self.resource_pattern_centers].count(True)
+    
+    def update_defense_towers(self, team, new_tower_type):
+        if new_tower_type == UnitType.LEVEL_TWO_DEFENSE_TOWER or new_tower_type == UnitType.LEVEL_THREE_DEFENSE_TOWER:
+            self.team_info.add_defense_damage_increase(team, GameConstants.EXTRA_TOWER_DAMAGE_LEVEL_INCREASE)
 
     def on_the_map(self, loc: MapLocation):
         return 0 <= loc.x < self.width and 0 <= loc.y < self.height

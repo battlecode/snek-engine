@@ -130,6 +130,12 @@ class GameConstants:
     # The smaller area within the splasher's attack at which enemy paint is also replaced by allied paint
     SPLASHER_ATTACK_ENEMY_PAINT_RADIUS_SQUARED = 2
 
+    # The extra damage all ally towers get for each level 1 defense tower
+    EXTRA_DAMAGE_FROM_DEFENSE_TOWER = 10
+
+    # The increase in extra damage for ally towers for upgrading a defense tower
+    EXTRA_TOWER_DAMAGE_LEVEL_INCREASE = 5
+
     # ************************
     # ****** COOLDOWNS *******
     # ************************

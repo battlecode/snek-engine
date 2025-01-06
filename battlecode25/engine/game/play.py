@@ -45,6 +45,8 @@ def get_winner_string(args: RunGameArgs, reason: DominationFactor, team: Team, r
         string += "The winning team won arbitrarily (coin flip)."
     elif reason == DominationFactor.RESIGNATION:
         string += "Other team has resigned. Congrats on scaring them I guess..."
+    elif reason == DominationFactor.DESTORY_ALL_UNITS:
+        string += "The winning team destroyed all of the enemy team's units."
     return string
 
 def run_game(args: RunGameArgs):

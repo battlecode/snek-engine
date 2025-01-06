@@ -349,20 +349,22 @@ class RobotController:
         else:  # Tower
             if loc is None:
                 self.robot.has_tower_area_attacked = True
+                damage = self.robot.type.aoe_attack_strength + self.game.team_info.get_defense_damage_increase(self.robot.team)
                 all_locs = self.game.get_all_locations_within_radius_squared(self.robot.loc, self.robot.type.action_radius_squared)
                 for new_loc in all_locs:
                     target_robot = self.game.get_robot(new_loc)
                     if target_robot and target_robot.team != self.robot.team:
-                        target_robot.add_health(-self.robot.type.aoe_attack_strength)
+                        target_robot.add_health(-damage)
                         self.game.game_fb.add_attack_action(target_robot.id)
-                        self.game.game_fb.add_damage_action(target_robot.id, self.robot.type.aoe_attack_strength)
+                        self.game.game_fb.add_damage_action(target_robot.id, damage)
             else:
+                damage = self.robot.type.attack_strength + self.game.team_info.get_defense_damage_increase(self.robot.team)
                 self.robot.has_tower_single_attacked = True
                 target_robot = self.game.get_robot(loc)
                 if target_robot and target_robot.team != self.robot.team:
-                    target_robot.add_health(-self.robot.type.attack_strength)
+                    target_robot.add_health(-damage)
                     self.game.game_fb.add_attack_action(target_robot.id)
-                    self.game.game_fb.add_damage_action(target_robot.id, self.robot.type.attack_strength)
+                    self.game.game_fb.add_damage_action(target_robot.id, damage)
 
     def assert_can_mop_swing(self, dir: Direction) -> None:
         self.assert_not_none(dir)
@@ -688,6 +690,7 @@ class RobotController:
         new_type = tower.type.get_next_level()
         self.game.team_info.add_coins(self.robot.team, -new_type.money_cost)
         tower.upgrade_tower()
+        self.game.update_defense_towers(new_type)
         self.game.game_fb.add_upgrade_action(tower.id, tower.type, tower.health, tower.paint)
 
     # DEBUG INDICATOR FUNCTIONS

@@ -8,6 +8,8 @@ class TeamInfo:
         self.tiles_painted = [0] * 2 
         self.paint_counts = [0] * 2
         self.old_coin_counts = [0] * 2
+        self.unit_counts = [0] * 2
+        self.defense_damage_increase = [0] * 2
 
     # ***** GETTER METHODS *****
 
@@ -26,6 +28,12 @@ class TeamInfo:
     def get_paint_counts(self, team):
         return self.paint_counts[team.value]
     
+    def get_unit_count(self, team):
+        return self.unit_counts[team.value]
+    
+    def get_defense_damage_increase(self, team):
+        return self.defense_damage_increase[team.value]
+    
     # ***** UPDATE METHODS *****
 
     def add_coins(self, team, amount):
@@ -42,3 +50,9 @@ class TeamInfo:
     def process_end_of_round(self):
         """Save the current money to track changes in the next round."""
         self.old_coin_counts = self.coin_counts[:]
+
+    def add_unit_count(self, team, amount):
+        self.unit_counts[team.value] += amount
+    
+    def add_defense_damage_increase(self, team, amount):
+        self.defense_damage_increase[team.value] += amount
