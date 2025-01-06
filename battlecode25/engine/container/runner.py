@@ -155,17 +155,13 @@ class RobotRunner:
         return accessed[attribute]
 
     def instrument_call(self):
-        # print("called instrument", type(self))
         self.bytecode -= 1
-        self.check_bytecode()
+        if self.bytecode <= 0:
+            self.error_method(f'Ran out of bytecode. Remaining bytecode: {self.bytecode}')
+            self.thread.wait()
 
     def multinstrument_call(self, n):
-        if n < 0:
-            raise ValueError('n must be greater than 0')
         self.bytecode -= n
-        self.check_bytecode()
-
-    def check_bytecode(self):
         if self.bytecode <= 0:
             self.error_method(f'Ran out of bytecode. Remaining bytecode: {self.bytecode}')
             self.thread.wait()

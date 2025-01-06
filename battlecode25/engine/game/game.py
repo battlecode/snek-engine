@@ -16,6 +16,7 @@ from .domination_factor import DominationFactor
 from .shape import Shape
 from .map_info import MapInfo
 from .paint_type import PaintType
+from typing import Generator
 
 import math
 
@@ -76,13 +77,13 @@ class Game:
         self.remove_robot_from_loc(start_loc)
 
     def add_robot_to_loc(self, loc, robot):
-        self.robots[self.loc_to_index(loc)] = robot
+        self.robots[loc.y * self.width + loc.x] = robot
 
     def remove_robot_from_loc(self, loc):
-        self.robots[self.loc_to_index(loc)] = None
+        self.robots[loc.y * self.width + loc.x] = None
 
     def get_robot(self, loc: MapLocation) -> Robot:
-        return self.robots[self.loc_to_index(loc)]
+        return self.robots[loc.y * self.width + loc.x]
     
     def get_robot_by_id(self, id) -> Robot:
         return self.id_to_robot.get(id, None)
@@ -92,31 +93,46 @@ class Game:
         return robot and robot.type.is_tower_type()
     
     def has_ruin(self, loc: MapLocation):
-        return self.ruins[self.loc_to_index(loc)]
+        return self.ruins[loc.y * self.width + loc.x]
     
     def has_wall(self, loc: MapLocation):
-        return self.walls[self.loc_to_index(loc)]
+        return self.walls[loc.y * self.width + loc.x]
     
     def get_paint_num(self, loc: MapLocation):
-        return self.paint[self.loc_to_index(loc)]
+        return self.paint[loc.y * self.width + loc.x]
     
     def get_marker(self, team: Team, loc: MapLocation) -> int:
         markers = self.team_a_markers if team == Team.A else self.team_b_markers
-        return markers[self.loc_to_index(loc)]
+        return markers[loc.y * self.width + loc.x]
     
     def mark_location(self, team: Team, loc: MapLocation, secondary: bool):
         markers = self.team_a_markers if team == Team.A else self.team_b_markers
-        markers[self.loc_to_index(loc)] = 2 if secondary else 1
+        markers[loc.y * self.width + loc.x] = 2 if secondary else 1
 
     def get_map_info(self, team, loc): 
         idx = self.loc_to_index(loc)
-        mark = self.get_marker(team, loc)
-        mark_type = PaintType.EMPTY
-        if mark == 1:
-            mark_type = PaintType.ALLY_PRIMARY
-        elif mark == 2:
-            mark_type = PaintType.ALLY_SECONDARY
-        return MapInfo(loc, self.is_passable(loc), self.walls[idx], self.get_paint_type(team, loc), mark_type, self.ruins[idx])    
+        paint = self.paint[idx]
+        match paint:
+            case 0:
+                paint_type = PaintType.EMPTY
+            case 1:
+                paint_type = PaintType.ALLY_PRIMARY if team == Team.A else PaintType.ENEMY_PRIMARY
+            case 2:
+                paint_type = PaintType.ALLY_SECONDARY if team == Team.A else PaintType.ENEMY_SECONDARY
+            case 3:
+                paint_type = PaintType.ENEMY_PRIMARY if team == Team.A else PaintType.ALLY_PRIMARY
+            case 4:
+                paint_type = PaintType.ENEMY_SECONDARY if team == Team.A else PaintType.ALLY_SECONDARY
+        mark = self.team_a_markers[idx] if team == Team.A else self.team_b_markers[idx]
+        match mark:
+            case 0:
+                mark_type = PaintType.EMPTY
+            case 1:
+                mark_type = PaintType.ALLY_PRIMARY
+            case 2:
+                mark_type = PaintType.ALLY_SECONDARY
+        passable = not self.walls[idx] and not self.ruins[idx]
+        return MapInfo(loc, passable, self.walls[idx], paint_type, mark_type, self.ruins[idx])
 
     def spawn_robot(self, type: UnitType, loc: MapLocation, team: Team, id=None):
         if id is None:
@@ -138,13 +154,13 @@ class Game:
         self.game_fb.add_die_action(id, False)
         self.game_fb.add_died(id)
 
-    def setWinnerIfPaintPercentReached(self, team):
+    def set_winner_if_paint_percent_reached(self, team):
         if self.team_info.get_tiles_painted(team) / self.area_without_walls * 100 >= GameConstants.PAINT_PERCENT_TO_WIN:
             self.set_winner(team, DominationFactor.PAINT_ENOUGH_AREA)
             return True
         return False
 
-    def setWinnerIfMoreArea(self):
+    def set_winner_if_more_area(self):
         painted_a = self.team_info.get_tiles_painted(Team.A)
         painted_b = self.team_info.get_tiles_painted(Team.B)
         if painted_a == painted_b:
@@ -152,7 +168,7 @@ class Game:
         self.set_winner(Team.A if painted_a > painted_b else Team.B, DominationFactor.MORE_SQUARES_PAINTED)
         return True
     
-    def setWinnerIfMoreAlliedTowers(self):
+    def set_winner_if_more_allied_towers(self):
         towers_a = [robot.team == Team.A and robot.type.is_tower_type() for robot in self.id_to_robot.values()].count(True)
         towers_b = [robot.team == Team.B and robot.type.is_tower_type() for robot in self.id_to_robot.values()].count(True)
         if towers_a == towers_b:
@@ -160,7 +176,7 @@ class Game:
         self.set_winner(Team.A if towers_a > towers_b else Team.B, DominationFactor.MORE_TOWERS_ALIVE)
         return True
     
-    def setWinnerIfMoreMoney(self):
+    def set_winner_if_more_money(self):
         money_a = self.team_info.get_coins(Team.A)
         money_b = self.team_info.get_coins(Team.B)
         if money_a == money_b:
@@ -168,7 +184,7 @@ class Game:
         self.set_winner(Team.A if money_a > money_b else Team.B, DominationFactor.MORE_MONEY)
         return True
     
-    def setWinnerIfMorePaint(self):
+    def set_winner_if_more_paint(self):
         paint_a = self.team_info.get_paint_counts(Team.A)
         paint_b = self.team_info.get_paint_counts(Team.B)
         if paint_a == paint_b:
@@ -176,7 +192,7 @@ class Game:
         self.set_winner(Team.A if paint_a > paint_b else Team.B, DominationFactor.MORE_PAINT_IN_UNITS)
         return True
     
-    def setWinnerIfMoreAliveUnits(self):
+    def set_winner_if_more_alive_units(self):
         allied_a = [robot.team == Team.A and robot.type.is_robot_type() for robot in self.id_to_robot.values()].count(True)
         allied_b = [robot.team == Team.B and robot.type.is_robot_type() for robot in self.id_to_robot.values()].count(True)
         if allied_a == allied_b:
@@ -184,17 +200,17 @@ class Game:
         self.set_winner(Team.A if allied_a > allied_b else Team.B, DominationFactor.MORE_ROBOTS_ALIVE)
         return True
     
-    def setWinnerArbitrary(self):
+    def set_winner_arbitrary(self):
         self.set_winner(Team.A if random.random() < 0.5 else Team.B, DominationFactor.WON_BY_DUBIOUS_REASONS)
         return True
 
     def run_tiebreakers(self):
-        if self.setWinnerIfMoreArea(): return
-        if self.setWinnerIfMoreAlliedTowers(): return
-        if self.setWinnerIfMoreMoney(): return
-        if self.setWinnerIfMorePaint(): return
-        if self.setWinnerIfMoreAliveUnits(): return
-        self.setWinnerArbitrary()
+        if self.set_winner_if_more_area(): return
+        if self.set_winner_if_more_allied_towers(): return
+        if self.set_winner_if_more_money(): return
+        if self.set_winner_if_more_paint(): return
+        if self.set_winner_if_more_alive_units(): return
+        self.set_winner_arbitrary()
     
     def set_winner(self, team, domination_factor):
         self.winner = team
@@ -312,7 +328,6 @@ class Game:
 
         if old_paint_team != Team.NEUTRAL:
             self.team_info.add_painted_squares(-1, old_paint_team)
-
         if new_paint_team != Team.NEUTRAL:
             self.team_info.add_painted_squares(1, new_paint_team)
 
@@ -322,26 +337,28 @@ class Game:
         else:
             self.game_fb.add_unpaint_action(loc)
 
-    def get_all_locations_within_radius_squared(self, center: MapLocation, radius_squared) -> List[MapLocation]:
+        if new_paint_team != Team.NEUTRAL:
+            self.set_winner_if_paint_percent_reached(new_paint_team)
+
+    def get_all_locations_within_radius_squared(self, center: MapLocation, radius_squared) -> Generator[MapLocation, None, None]:
         """
         center: MapLocation object
         radius_squared: square of radius around center that we want locations for
 
         Returns a list of MapLocations within radius squared of center
         """
-        return_locations = []
-        ceiled_radius = math.ceil(math.sqrt(radius_squared)) + 1 # add +1 just to be safe
-        min_x = max(center.x - ceiled_radius, 0)
-        min_y = max(center.y - ceiled_radius, 0)
-        max_x = min(center.x + ceiled_radius, self.width - 1)
-        max_y = min(center.y + ceiled_radius, self.height - 1)
+        cx = center.x
+        cy = center.y
+        ceiled_radius = math.ceil(math.sqrt(radius_squared)) # add +1 just to be safe
+        min_x = max(cx - ceiled_radius, 0)
+        min_y = max(cy - ceiled_radius, 0)
+        max_x = min(cx + ceiled_radius, self.width - 1)
+        max_y = min(cy + ceiled_radius, self.height - 1)
 
         for x in range(min_x, max_x + 1):
             for y in range(min_y, max_y + 1):
-                new_location = MapLocation(x, y) 
-                if center.is_within_distance_squared(new_location, radius_squared):
-                    return_locations.append(new_location)
-        return return_locations
+                if (cx - x) ** 2 + (cy - y) ** 2 <= radius_squared:
+                    yield MapLocation(x, y)
 
     def is_valid_pattern_center(self, center):
         '''
