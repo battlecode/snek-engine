@@ -340,7 +340,7 @@ class GameFB:
         TimelineMarker.AddTeam(self.builder, fb_from_team(team))
         TimelineMarker.AddLabel(self.builder, label_offset)
         TimelineMarker.AddRound(self.builder, self.current_round)
-        TimelineMarker.AddColor(self.builder, int_rgb(red, green, blue))
+        TimelineMarker.AddColorHex(self.builder, int_rgb(red, green, blue))
         marker_offset = TimelineMarker.End(self.builder)
         self.timeline_markers.append(marker_offset)
 

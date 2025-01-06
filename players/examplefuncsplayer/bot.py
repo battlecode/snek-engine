@@ -82,9 +82,9 @@ def run_soldier():
 
         # Mark the pattern we need to draw to build a tower here if we haven't already.
         should_mark = cur_ruin.get_map_location().subtract(dir)
-        if sense_map_info(should_mark).get_mark() == PaintType.EMPTY and can_mark_tower_pattern(target_loc, UnitType.LEVEL_ONE_PAINT_TOWER):
+        if sense_map_info(should_mark).get_mark() == PaintType.EMPTY and can_mark_tower_pattern(UnitType.LEVEL_ONE_PAINT_TOWER, target_loc):
             mark_tower_pattern(UnitType.LEVEL_ONE_PAINT_TOWER, target_loc)
-            log("Trying to build a tower at " + targetLoc)
+            log("Trying to build a tower at " + str(target_loc))
 
         # Fill in any spots in the pattern with the appropriate paint.
         for pattern_tile in sense_nearby_map_infos(target_loc, 8):
@@ -95,9 +95,9 @@ def run_soldier():
 
         # Complete the ruin if we can.
         if can_complete_tower_pattern(UnitType.LEVEL_ONE_PAINT_TOWER, target_loc):
-            complete_tower_pattern(target_loc, UnitType.LEVEL_ONE_PAINT_TOWER)
+            complete_tower_pattern(UnitType.LEVEL_ONE_PAINT_TOWER, target_loc)
             set_timeline_marker("Tower built", 0, 255, 0)
-            log("Built a tower at " + targetLoc + "!")
+            log("Built a tower at " + str(target_loc) + "!")
 
     # Move and attack randomly if no objective.
     dir = directions[random.randint(0, len(directions) - 1)]

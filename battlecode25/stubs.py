@@ -257,7 +257,7 @@ def mop_swing(dir: Direction) -> None:
 
 # MARKING FUNCTIONS
     
-def can_mark_tower_pattern(loc: MapLocation, tower_type: UnitType) -> bool:
+def can_mark_tower_pattern(tower_type: UnitType, loc: MapLocation) -> bool:
     """
     Checks if a robot can build a tower by marking a 5x5 pattern centered at the given location.
     This requires there to be a ruin at the location.
@@ -270,7 +270,7 @@ def can_mark_resource_pattern(loc: MapLocation) -> bool:
     """
     pass
     
-def mark_tower_pattern(loc: MapLocation, tower_type: UnitType) -> None:
+def mark_tower_pattern(tower_type: UnitType, loc: MapLocation) -> None:
     """
     Places markers for the 5x5 pattern corresponding to the given tower type.
     """
@@ -306,14 +306,14 @@ def remove_mark(loc: MapLocation) -> None:
     """
     pass
     
-def can_complete_tower_pattern(loc: MapLocation, tower_type: UnitType) -> bool:
+def can_complete_tower_pattern(tower_type: UnitType, loc: MapLocation) -> bool:
     """
     Checks if the robot can build a tower at the given location. This requires a ruin at the location
     and the tower pattern to be painted correctly.
     """
     pass
     
-def complete_tower_pattern(loc: MapLocation, tower_type: UnitType) -> None:
+def complete_tower_pattern(tower_type: UnitType, loc: MapLocation) -> None:
     """
     Builds a tower at the given location
     """
