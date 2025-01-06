@@ -319,7 +319,7 @@ class RobotController:
                     self.game.game_fb.add_damage_action(target_robot.id, self.robot.type.aoe_attack_strength)
                 else:
                     tile_paint = self.game.get_paint_num(new_loc)
-                    if (self.game.team_from_paint(tile_paint) != self.robot.team.opponent or
+                    if (self.game.team_from_paint(tile_paint) != self.robot.team.opponent() or
                             new_loc.is_within_distance_squared(loc, GameConstants.SPLASHER_ATTACK_ENEMY_PAINT_RADIUS_SQUARED)):
                         self.game.set_paint(new_loc, paint_type)
             self.game.game_fb.add_splash_action(loc)
@@ -666,7 +666,7 @@ class RobotController:
             raise RobotError("Cannot upgrade opposing team's towers.")
         if tower.type.level == 3: 
             raise RobotError("Cannot upgrade anymore, tower is already at the maximum level.")
-        new_type = self.robot.type.get_next_level()
+        new_type = tower.type.get_next_level()
         if self.game.team_info.get_coins(self.robot.team) < new_type.money_cost: 
             raise RobotError("Not enough coins to upgrade the tower.")
 
