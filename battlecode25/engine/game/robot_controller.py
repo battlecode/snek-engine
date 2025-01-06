@@ -16,8 +16,6 @@ from .message import Message
 if 1 == 0:
     from .game import Game
 
-#### SHARED METHODS ####
-
 class RobotController:
 
     def __init__(self, game: Game, robot: Robot):
@@ -449,12 +447,12 @@ class RobotController:
     def mark_tower_pattern(self, tower_type: UnitType, loc: MapLocation) -> None:
         self.assert_can_mark_tower_pattern(tower_type, loc)
         self.robot.add_paint(-GameConstants.MARK_PATTERN_COST)
-        self.game.mark_tower_pattern(self.robot.team, loc, tower_type) #TODO: implement mark_tower_pattern in game.py
+        self.game.mark_tower_pattern(self.robot.team, loc, tower_type)
 
     def mark_resource_pattern(self, loc: MapLocation) -> None:
         self.assert_can_mark_resource_pattern(loc)
         self.robot.add_paint(-GameConstants.MARK_PATTERN_COST)
-        self.game.mark_resource_pattern(self.robot.team, loc) #TODO: implement mark_resource_pattern in game.py 
+        self.game.mark_resource_pattern(self.robot.team, loc)
 
     def assert_can_mark(self, loc: MapLocation) -> None:
         self.assert_is_robot_type(self.robot.type)

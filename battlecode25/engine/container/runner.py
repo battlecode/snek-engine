@@ -33,7 +33,9 @@ class RobotThread(Thread):
             if not self.runner.initialized:
                 self.runner.init_robot()
 
+            # print("bytecode before", self.runner.bytecode)
             self.runner.do_turn()
+            # print("bytecode after", self.runner.bytecode)
 
             self.run_event.clear()
             self.finished_event.set()
@@ -75,7 +77,10 @@ class RobotRunner:
             print(f"[{'A' if game_methods['get_team'][0]() == Team.A else 'B'}: #{game_methods['get_id'][0]()}@{game_methods['get_round_num'][0]()}] ", end="")
             print(*args)
 
-        self.globals['__builtins__']['log'] = format_print
+        def disable_print(*args):
+            pass
+
+        self.globals['__builtins__']['log'] = format_print if debug else disable_print
         self.globals['__builtins__']['enumerate'] = enumerate
         self.globals['__builtins__']['set'] = set
         self.globals['__builtins__']['frozenset'] = frozenset

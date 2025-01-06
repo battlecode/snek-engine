@@ -31,9 +31,9 @@ class UnitType(Enum):
     LEVEL_TWO_MONEY_TOWER = RobotAttributes(0, 250, 0, 1500, 2, 1000, 10, 9, 20, 10, 0, 15)
     LEVEL_THREE_MONEY_TOWER = RobotAttributes(0, 500, 0, 2000, 3, 1000, 10, 9, 20, 10, 0, 20)
 
-    LEVEL_ONE_DEFENSE_TOWER = RobotAttributes(0, 25, 0, 2500, 1, 1000, 10, 25, 60, 30, 0, 0)
-    LEVEL_TWO_DEFENSE_TOWER = RobotAttributes(0, 250, 0, 3000, 2, 1000, 10, 25, 65, 35, 0, 0)
-    LEVEL_THREE_DEFENSE_TOWER = RobotAttributes(0, 500, 0, 3500, 3, 1000, 10, 25, 70, 40, 0, 0)
+    LEVEL_ONE_DEFENSE_TOWER = RobotAttributes(0, 25, 0, 2500, 1, 1000, 10, 20, 60, 30, 0, 0)
+    LEVEL_TWO_DEFENSE_TOWER = RobotAttributes(0, 250, 0, 3000, 2, 1000, 10, 20, 65, 35, 0, 0)
+    LEVEL_THREE_DEFENSE_TOWER = RobotAttributes(0, 500, 0, 3500, 3, 1000, 10, 20, 70, 40, 0, 0)
 
     # Read-only property accessors for attributes
     @property

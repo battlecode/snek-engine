@@ -12,7 +12,7 @@ class CodeContainer:
         self.code = code
 
     @classmethod
-    def from_directory_dict(cls, dic):
+    def from_directory_dict(cls, dic, instrument=True):
         code = {}
 
         for filename in dic:
@@ -22,8 +22,10 @@ class CodeContainer:
             # print("CODE BEFORE INSTRUMENTATION:")
             # print(dis.dis(compiled, show_caches=True))
 
-            code[module_name] = Instrument.instrument(compiled)
-            # code[module_name] = compiled
+            if instrument:
+                code[module_name] = Instrument.instrument(compiled)
+            else:
+                code[module_name] = compiled
             
             # print("CODE AFTER INSTRUMENTATION:")
             # print(dis.dis(code[module_name], show_caches=True, adaptive=True))
@@ -32,7 +34,7 @@ class CodeContainer:
         return cls(code)
 
     @classmethod
-    def from_directory(cls, dirname):
+    def from_directory(cls, dirname, instrument=True):
         files = [(f, join(dirname,f)) for f in listdir(dirname) if f[-3:] == '.py' and isfile(join(dirname, f))]
 
         code = {}
@@ -40,7 +42,7 @@ class CodeContainer:
             with open(location) as f:
                 code[filename] = f.read()
 
-        return cls.from_directory_dict(code)
+        return cls.from_directory_dict(code, instrument)
 
     def to_bytes(self):
         packet = {}

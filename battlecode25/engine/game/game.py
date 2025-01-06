@@ -442,100 +442,6 @@ class Game:
         Marks resource pattern at center
         '''
         self.mark_pattern(team, center, Shape.RESOURCE)
-
-    def detect_pattern(self, center, team):
-        '''
-        Check if there is any transformation of a 5x5 pattern centered at "center" for a particular team
-        Returns detected pattern type (as Shape Enum), or None if there is no pattern
-        '''
-        class Transformation(Enum):
-            ORIGINAL = 0
-            FLIP_X = 1
-            FLIP_Y = 2
-            FLIP_D1 = 3
-            FLIP_D2 = 4
-            ROTATE_90 = 5
-            ROTATE_180 = 6
-            ROTATE_270 = 7
-        
-        if not self.is_valid_pattern_center(center):
-            return None
-        
-        patterns_list = list(Shape.__members__.values()) # list of Shape enum members 
-
-        def check_pattern(shape: Shape): 
-            debug_str = ""
-            '''
-            Check presence of a particular pattern type up to 8 symmetries
-            Returns True/False, whether pattern is present
-            '''
-            pattern_array = self.pattern[shape.value]
-            valid_transformations = [True] * len(Transformation) # T/F for whether a transformation is valid
-
-            offset = GameConstants.PATTERN_SIZE//2
-
-            for dx in range(-offset, offset + 1):
-                for dy in range(-offset, offset + 1):
-                    for variant in list(Transformation.__members__.values()):
-                        if(variant == Transformation.ORIGINAL):
-                            dx_ = dx
-                            dy_ = dy
-                        elif(variant == Transformation.FLIP_X):
-                            dx_ = -dx
-                            dy_ = dy
-                        elif(variant == Transformation.FLIP_Y):
-                            dx_ = dx
-                            dy_ = -dy
-                        elif(variant == Transformation.FLIP_D1): 
-                            dx_ = dy
-                            dy_ = dx
-                        elif(variant == Transformation.FLIP_D2): 
-                            dx_ = -dy
-                            dy_ = -dx
-                        elif(variant == Transformation.ROTATE_90):
-                            dx_ = -dy
-                            dy_ = dx
-                        elif(variant == Transformation.ROTATE_180):
-                            dx_ = -dx
-                            dy_ = -dy
-                        elif(variant == Transformation.ROTATE_270):
-                            dx_ = dy
-                            dy_ = -dx
-
-                        map_loc = MapLocation(center.x + dx_, center.y + dy_) # location on map after transforming pattern
-                        actual_paint = self.paint[self.loc_to_index(map_loc)]
-                        
-                        if(self.team_from_paint(actual_paint) != team): # wrong team
-                            valid_transformations[shape.value] = False
-                        
-                        #assumes pattern arrays have True as secondary, False as primary
-                        secondary_actual = not self.is_primary_paint(actual_paint)
-                        secondary_pattern = pattern_array[dy + offset][dx + offset]
-                        if secondary_actual != secondary_pattern and not self.has_ruin(map_loc):
-                            valid_transformations[variant.value] = False
-
-            return any(valid_transformations)
-        
-        for shape in patterns_list: 
-            if(check_pattern(shape)):
-                return shape
-        return None
-    
-    def create_pattern_array(self, pattern):
-        result = [[0 for i in range(GameConstants.PATTERN_SIZE)] for j in range(GameConstants.PATTERN_SIZE)]
-        for i in range(GameConstants.PATTERN_SIZE ** 2):
-            x = i // GameConstants.PATTERN_SIZE
-            y = i % GameConstants.PATTERN_SIZE
-            result[x][y] = (pattern >> i) & 1
-        return result
-
-    def create_test_pattern_array(self):
-        result = [[0 for i in range(GameConstants.PATTERN_SIZE)] for j in range(GameConstants.PATTERN_SIZE)]
-        for i in range(GameConstants.PATTERN_SIZE ** 2):
-            x = i // GameConstants.PATTERN_SIZE
-            y = i % GameConstants.PATTERN_SIZE
-            result[x][y] = i % 2
-        return result
     
     def is_passable(self, loc):
         idx = self.loc_to_index(loc)
@@ -640,7 +546,7 @@ class Game:
         resource_pattern = [
             [True, False, True, False, True],
             [False, True, False, True, False],
-            [True, False, True, False, True],
+            [True, False, False, False, True],
             [False, True, False, True, False],
             [True, False, True, False, True]
         ]
