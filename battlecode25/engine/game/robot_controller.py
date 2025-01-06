@@ -690,7 +690,7 @@ class RobotController:
         new_type = tower.type.get_next_level()
         self.game.team_info.add_coins(self.robot.team, -new_type.money_cost)
         tower.upgrade_tower()
-        self.game.update_defense_towers(new_type)
+        self.game.update_defense_towers(tower.team, new_type)
         self.game.game_fb.add_upgrade_action(tower.id, tower.type, tower.health, tower.paint)
 
     # DEBUG INDICATOR FUNCTIONS
