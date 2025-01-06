@@ -278,7 +278,7 @@ class Game:
         cardinal_directions = [Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST]
         while queue:
             loc = queue.pop(0)
-            if loc.equals(tower_loc):
+            if loc == tower_loc:
                 return True
 
             if loc in visited or self.team_from_paint(self.paint[self.loc_to_index(loc)]) != team:
