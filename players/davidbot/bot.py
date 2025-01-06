@@ -30,8 +30,12 @@ def turn():
             build_robot(UnitType.SPLASHER, spawn_loc)
 
         danger = sense_nearby_robots()
+        # log("danger is")
+        # log([(r.get_location().x, r.get_location().y) for r in danger])
+        # log()
         for robot in danger:
             if can_attack(robot.get_location()):
+                # log("BOOM")
                 attack(robot.get_location())
     
     else:

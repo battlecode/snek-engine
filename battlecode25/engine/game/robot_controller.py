@@ -276,6 +276,7 @@ class RobotController:
                 raise RobotError("Tower cannot use single tile attack more than once per turn.")
 
     def can_attack(self, loc: MapLocation) -> bool:
+        # self.assert_can_attack(loc)
         try:
             self.assert_can_attack(loc)
             return True

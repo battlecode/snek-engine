@@ -119,9 +119,9 @@ class Robot:
                 paint_penalty += 2 * len(adjacent_allies)
             self.add_paint(-paint_penalty)
 
-        if self.type.name == "TOWER":
+        if self.type.is_tower_type():
             self.add_paint(self.type.paint_per_turn)
-            self.game.team_info.add_coins(self.type.money_per_turn)
+            self.game.team_info.add_coins(self.team, self.type.money_per_turn)
             self.has_tower_area_attacked = False
             self.has_tower_single_attacked = False
 
