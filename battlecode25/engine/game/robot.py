@@ -107,16 +107,16 @@ class Robot:
         if self.type.is_robot_type():
             if self.game.team_from_paint(paint_status) == self.team:
                 paint_penalty = 0
-            elif self.game.team_from_paint(paint_status) is None:
+            elif self.game.team_from_paint(paint_status) == Team.NEUTRAL:
                 paint_penalty = GameConstants.PENALTY_NEUTRAL_TERRITORY
             else:
                 paint_penalty = GameConstants.PENALTY_ENEMY_TERRITORY
-                adjacent_allies = [
-                    loc for loc in self.game.get_all_locations_within_radius_squared(self.loc, 1)
-                    if self.game.robots[self.game.loc_to_index(loc)] 
-                    and self.game.robots[self.game.loc_to_index(loc)].team == self.team
-                ]
-                paint_penalty += 2 * len(adjacent_allies)
+                count = 0
+                for adj_loc in self.game.get_all_locations_within_radius_squared(self.loc, 2):
+                    adj_robot = self.game.get_robot(adj_loc)
+                    if adj_robot and adj_robot != self and adj_robot.team == self.team:
+                        count += 1
+                paint_penalty += 2 * count    
             self.add_paint(-paint_penalty)
 
         if self.type.name == "TOWER":

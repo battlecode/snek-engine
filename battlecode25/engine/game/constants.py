@@ -1,6 +1,6 @@
 class GameConstants:
 
-    SPEC_VERSION = "lol"
+    SPEC_VERSION = "1"
 
     # ****************************
     # ****** MAP CONSTANTS *******

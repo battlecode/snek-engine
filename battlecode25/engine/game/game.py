@@ -27,8 +27,9 @@ class Game:
         self.width = initial_map.width
         self.height = initial_map.height
         total_area = self.width * self.height
-        self.area_without_walls = total_area - sum(initial_map.walls)
+        self.area_without_walls = total_area - sum(initial_map.walls) - sum(initial_map.ruins)
         self.walls = initial_map.walls
+        self.ruins = initial_map.ruins
         self.team_a_markers = [0] * total_area
         self.team_b_markers = [0] * total_area
         self.round = 0
@@ -36,15 +37,16 @@ class Game:
         self.winner = None
         self.domination_factor = None
         self.initial_map = initial_map
-        self.paint = [0] * total_area
         self.team_info = TeamInfo(self)
         self.team_info.add_coins(Team.A, GameConstants.INITIAL_TEAM_MONEY)
         self.team_info.add_coins(Team.B, GameConstants.INITIAL_TEAM_MONEY)
+        self.paint = [0] * total_area
+        for idx, paint_val in enumerate(initial_map.paint):
+            self.set_paint(self.index_to_loc(idx), paint_val, write_fb=False)
         self.game_fb = game_fb
         self.pattern = self.create_patterns()
         self.resource_pattern_centers = []
         self.resouce_pattern_centers_by_loc = [Team.NEUTRAL] * total_area
-        self.ruins = initial_map.ruins
         self.code = code
         self.debug = game_args.debug
         self.running = True
@@ -319,7 +321,7 @@ class Game:
             return Shape.MONEY_TOWER
         return None
         
-    def set_paint(self, loc, paint):
+    def set_paint(self, loc, paint, write_fb=True):
         idx = self.loc_to_index(loc)
         if self.walls[idx] or self.ruins[idx]: return
 
@@ -330,12 +332,13 @@ class Game:
             self.team_info.add_painted_squares(-1, old_paint_team)
         if new_paint_team != Team.NEUTRAL:
             self.team_info.add_painted_squares(1, new_paint_team)
-
         self.paint[idx] = paint
-        if paint != 0:
-            self.game_fb.add_paint_action(loc, not self.is_primary_paint(paint))
-        else:
-            self.game_fb.add_unpaint_action(loc)
+
+        if write_fb:
+            if paint != 0:
+                self.game_fb.add_paint_action(loc, not self.is_primary_paint(paint))
+            else:
+                self.game_fb.add_unpaint_action(loc)
 
         if new_paint_team != Team.NEUTRAL:
             self.set_winner_if_paint_percent_reached(new_paint_team)
@@ -380,6 +383,8 @@ class Game:
         for row in range(-offset, offset + 1):
             for col in range(-offset, offset + 1):
                 loc = MapLocation(center.x + col, center.y + row)
+                if self.ruins[self.loc_to_index(loc)]:
+                    continue
                 secondary = pattern_array[row + offset][col + offset]
                 self.mark_location(team, loc, secondary)
                 self.game_fb.add_mark_action(loc, secondary)        
@@ -515,6 +520,9 @@ class Game:
     def loc_to_index(self, loc):
         return loc.y * self.width + loc.x
     
+    def index_to_loc(self, idx):
+        return MapLocation(idx % self.width, idx // self.width)
+        
     def log_info(self, msg):
         print(f'\u001b[32m[Game info] {msg}\u001b[0m')
 
