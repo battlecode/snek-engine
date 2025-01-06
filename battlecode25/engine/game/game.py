@@ -16,6 +16,7 @@ from .domination_factor import DominationFactor
 from .shape import Shape
 from .map_info import MapInfo
 from .paint_type import PaintType
+from typing import Generator
 
 import math
 
@@ -76,13 +77,13 @@ class Game:
         self.remove_robot_from_loc(start_loc)
 
     def add_robot_to_loc(self, loc, robot):
-        self.robots[self.loc_to_index(loc)] = robot
+        self.robots[loc.y * self.width + loc.x] = robot
 
     def remove_robot_from_loc(self, loc):
-        self.robots[self.loc_to_index(loc)] = None
+        self.robots[loc.y * self.width + loc.x] = None
 
     def get_robot(self, loc: MapLocation) -> Robot:
-        return self.robots[self.loc_to_index(loc)]
+        return self.robots[loc.y * self.width + loc.x]
     
     def get_robot_by_id(self, id) -> Robot:
         return self.id_to_robot.get(id, None)
@@ -92,31 +93,46 @@ class Game:
         return robot and robot.type.is_tower_type()
     
     def has_ruin(self, loc: MapLocation):
-        return self.ruins[self.loc_to_index(loc)]
+        return self.ruins[loc.y * self.width + loc.x]
     
     def has_wall(self, loc: MapLocation):
-        return self.walls[self.loc_to_index(loc)]
+        return self.walls[loc.y * self.width + loc.x]
     
     def get_paint_num(self, loc: MapLocation):
-        return self.paint[self.loc_to_index(loc)]
+        return self.paint[loc.y * self.width + loc.x]
     
     def get_marker(self, team: Team, loc: MapLocation) -> int:
         markers = self.team_a_markers if team == Team.A else self.team_b_markers
-        return markers[self.loc_to_index(loc)]
+        return markers[loc.y * self.width + loc.x]
     
     def mark_location(self, team: Team, loc: MapLocation, secondary: bool):
         markers = self.team_a_markers if team == Team.A else self.team_b_markers
-        markers[self.loc_to_index(loc)] = 2 if secondary else 1
+        markers[loc.y * self.width + loc.x] = 2 if secondary else 1
 
     def get_map_info(self, team, loc): 
         idx = self.loc_to_index(loc)
-        mark = self.get_marker(team, loc)
-        mark_type = PaintType.EMPTY
-        if mark == 1:
-            mark_type = PaintType.ALLY_PRIMARY
-        elif mark == 2:
-            mark_type = PaintType.ALLY_SECONDARY
-        return MapInfo(loc, self.is_passable(loc), self.walls[idx], self.get_paint_type(team, loc), mark_type, self.ruins[idx])    
+        paint = self.paint[idx]
+        match paint:
+            case 0:
+                paint_type = PaintType.EMPTY
+            case 1:
+                paint_type = PaintType.ALLY_PRIMARY if team == Team.A else PaintType.ENEMY_PRIMARY
+            case 2:
+                paint_type = PaintType.ALLY_SECONDARY if team == Team.A else PaintType.ENEMY_SECONDARY
+            case 3:
+                paint_type = PaintType.ENEMY_PRIMARY if team == Team.A else PaintType.ALLY_PRIMARY
+            case 4:
+                paint_type = PaintType.ENEMY_SECONDARY if team == Team.A else PaintType.ALLY_SECONDARY
+        mark = self.team_a_markers[idx] if team == Team.A else self.team_b_markers[idx]
+        match mark:
+            case 0:
+                mark_type = PaintType.EMPTY
+            case 1:
+                mark_type = PaintType.ALLY_PRIMARY
+            case 2:
+                mark_type = PaintType.ALLY_SECONDARY
+        passable = not self.walls[idx] and not self.ruins[idx]
+        return MapInfo(loc, passable, self.walls[idx], paint_type, mark_type, self.ruins[idx])
 
     def spawn_robot(self, type: UnitType, loc: MapLocation, team: Team, id=None):
         if id is None:
@@ -322,26 +338,25 @@ class Game:
         else:
             self.game_fb.add_unpaint_action(loc)
 
-    def get_all_locations_within_radius_squared(self, center: MapLocation, radius_squared) -> List[MapLocation]:
+    def get_all_locations_within_radius_squared(self, center: MapLocation, radius_squared) -> Generator[MapLocation, None, None]:
         """
         center: MapLocation object
         radius_squared: square of radius around center that we want locations for
 
         Returns a list of MapLocations within radius squared of center
         """
-        return_locations = []
-        ceiled_radius = math.ceil(math.sqrt(radius_squared)) + 1 # add +1 just to be safe
-        min_x = max(center.x - ceiled_radius, 0)
-        min_y = max(center.y - ceiled_radius, 0)
-        max_x = min(center.x + ceiled_radius, self.width - 1)
-        max_y = min(center.y + ceiled_radius, self.height - 1)
+        cx = center.x
+        cy = center.y
+        ceiled_radius = math.ceil(math.sqrt(radius_squared)) # add +1 just to be safe
+        min_x = max(cx - ceiled_radius, 0)
+        min_y = max(cy - ceiled_radius, 0)
+        max_x = min(cx + ceiled_radius, self.width - 1)
+        max_y = min(cy + ceiled_radius, self.height - 1)
 
         for x in range(min_x, max_x + 1):
             for y in range(min_y, max_y + 1):
-                new_location = MapLocation(x, y) 
-                if center.is_within_distance_squared(new_location, radius_squared):
-                    return_locations.append(new_location)
-        return return_locations
+                if (cx - x) ** 2 + (cy - y) ** 2 <= radius_squared:
+                    yield MapLocation(x, y)
 
     def is_valid_pattern_center(self, center):
         '''
