@@ -1,5 +1,8 @@
 import argparse
 
+import cProfile, pstats, io
+from pstats import SortKey
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--p1', required=True, help="Path to a folder containing a bot.py file.")
@@ -22,6 +25,16 @@ if __name__ == '__main__':
         out_dir="matches",
         out_name=None,
         show_indicators=True,
-        debug=True  # TODO: debug option
+        debug=False,
+        instrument=True
     )
+
+    # pr = cProfile.Profile()
+    # pr.enable()
     run_game(game_args)
+    # pr.disable()
+    # s = io.StringIO()
+    # sortby = SortKey.CUMULATIVE
+    # ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    # ps.print_stats()
+    # print(s.getvalue())
