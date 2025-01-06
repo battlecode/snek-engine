@@ -56,6 +56,7 @@ class Game:
         self.robot_exec_order = []
         for robot_info in initial_map.initial_bodies:
             self.spawn_robot(robot_info.type, robot_info.location, robot_info.team, id=robot_info.id)
+            self.ruins[self.loc_to_index(robot_info.location)] = True
 
     def run_round(self):
         if self.running:
@@ -222,7 +223,7 @@ class Game:
     def update_resource_patterns(self):
         for i, center in enumerate(self.resource_pattern_centers):
             team = self.resouce_pattern_centers_by_loc[self.loc_to_index(center)]
-            if self.detect_pattern(center, team) != Shape.RESOURCE:
+            if not self.simple_check_pattern(center, Shape.RESOURCE, team):
                 self.resource_pattern_centers.pop(i)
                 self.resouce_pattern_centers_by_loc[self.loc_to_index(center)] = Team.NEUTRAL
 
@@ -265,9 +266,6 @@ class Game:
                 if self.on_the_map(new_loc):
                     queue.append(new_loc)
         return False
-    
-    def update_resource_patterns(self):
-        pass
         
     def get_primary_paint(self, team):
         """
@@ -398,19 +396,19 @@ class Game:
         self.mark_pattern(team, center, self.shape_from_tower_type(tower_type))
 
     def simple_check_pattern(self, center, shape, team):
+        is_tower = not shape == Shape.RESOURCE
+        primary = self.get_primary_paint(team)
+        secondary = self.get_secondary_paint(team)
         offset = GameConstants.PATTERN_SIZE//2
         pattern_array = self.pattern[shape.value]
+
         for dx in range(-offset, offset + 1):
             for dy in range(-offset, offset + 1):
-                map_loc = MapLocation(center.x + dx, center.y + dy)
-                if self.has_ruin(map_loc):
+                if is_tower and dx == 0 and dy == 0:
                     continue
-                actual_paint = self.paint[self.loc_to_index(map_loc)]
-                if self.team_from_paint(actual_paint) != team:
-                    return False
-                secondary_actual = not self.is_primary_paint(actual_paint)
-                secondary_pattern = pattern_array[dy + offset][dx + offset]
-                if secondary_actual != secondary_pattern:
+                correct_paint = secondary if pattern_array[dy + offset][dx + offset] else primary
+                actual_paint = self.paint[(center.x + dx) + (center.y + dy) * self.width]
+                if correct_paint != actual_paint:
                     return False
         return True
 

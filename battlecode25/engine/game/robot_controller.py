@@ -588,7 +588,9 @@ class RobotController:
                 raise RobotError("Robot has already sent too many messages this round!")
         elif self.robot.sent_message_count >= GameConstants.MAX_MESSAGES_SENT_TOWER:
             raise RobotError("Tower has already sent too many messages this round!")
-        if not self.game.connected_by_paint(self.robot.loc, target.loc, self.robot.team):
+        robot_loc = self.robot.loc if self.robot.type.is_robot_type() else target.loc
+        tower_loc = target.loc if self.robot.type.is_robot_type() else self.robot.loc
+        if not self.game.connected_by_paint(robot_loc, tower_loc, self.robot.team):
             raise RobotError("Location specified is not connected to current location by paint!")
 
     def can_send_message(self, loc: MapLocation) -> bool:

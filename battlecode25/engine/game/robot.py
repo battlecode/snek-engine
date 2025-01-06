@@ -117,14 +117,11 @@ class Robot:
                     if adj_robot and adj_robot != self and adj_robot.team == self.team:
                         count += 1
                 paint_penalty += 2 * count    
+            self.game.game_fb.add_indicator_string(f"Round {self.game.round}, Location {self.loc.__str__()}, Penalty {paint_penalty}")
             self.add_paint(-paint_penalty)
 
-        if self.type.name == "TOWER":
-            self.add_paint(self.type.paint_per_turn)
-            self.game.team_info.add_coins(self.type.money_per_turn)
-            self.has_tower_area_attacked = False
-            self.has_tower_single_attacked = False
-
+        self.has_tower_area_attacked = False
+        self.has_tower_single_attacked = False
         self.message_buffer.next_round()
         self.sent_message_count = 0
 
