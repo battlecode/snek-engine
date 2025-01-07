@@ -49,6 +49,12 @@ def get_tower_pattern(tower_type: UnitType) -> List[List[bool]]:
     """
     pass
 
+def get_num_towers(self):
+    """
+    Returns the current number of allied towers on the map.
+    """
+    pass
+
 # ROBOT QUERY FUNCTIONS
 
 def get_id() -> int:
@@ -232,8 +238,8 @@ def move(direction: Direction) -> None:
 
 def can_attack(loc: MapLocation) -> bool:
     """
-    Tests whether this robot can attack the given location. Types of attacks for specific units determine whether
-    or not towers, other robots, or empty tiles can be attacked. 
+    Tests whether this robot can attack the given location. In most cases, if you are close enough, you can attack a location.
+    Units excluding splashers are not allowed to attack walls, and moppers are not allowed to mop towers or ruins.
     """
     pass
 
@@ -378,8 +384,8 @@ def read_messages(round=-1) -> List[Message]:
 def can_transfer_paint(target_location: MapLocation, amount: int) -> bool:
     """
     Tests whether you can transfer paint to a given robot/tower. You can give paint to an allied robot if you are a mopper
-    and can act at the given location. You can give/take paint from allied towers regardless of type, if you can act at the 
-    location.
+    and can act at the given location. You can take paint from allied towers regardless of type if you can act at the 
+    location. Pass a positive amount to give paint to another robot, and pass a negative amount to take paint.
     """
     pass
 
@@ -434,5 +440,11 @@ def set_timeline_marker(label: str, red: int, green: int, blue: int) -> None:
 def resign() -> None:
     """
     Causes your team to lose the game. It's like typing "gg."
+    """
+    pass
+
+def disintegrate() -> None:
+    """
+    Destroys this robot.
     """
     pass

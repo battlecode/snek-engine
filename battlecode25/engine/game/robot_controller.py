@@ -61,6 +61,9 @@ class RobotController:
         self.assert_is_tower_type(tower_type)
         return self.game.pattern[self.game.shape_from_tower_type(tower_type).value]
     
+    def get_num_towers(self):
+        return self.game.get_num_towers(self.robot.team)
+    
     # ROBOT QUERY FUNCTIONS
 
     def get_id(self) -> int:
@@ -266,6 +269,10 @@ class RobotController:
             self.assert_can_act_location(loc, self.robot.type.action_radius_squared)
             if self.robot.paint < self.robot.type.attack_cost:
                 raise RobotError("Insufficient paint to perform attack.")
+            if self.game.has_wall(loc) and self.robot.type != UnitType.SPLASHER:
+                raise RobotError("Cannot attack a wall.")
+            if self.game.has_ruin(loc) and self.robot.type == UnitType.MOPPER:
+                raise RobotError("Moppers cannot mop towers or ruins.")
         else:
             if loc is not None:
                 self.assert_can_act_location(loc, self.robot.type.action_radius_squared)
@@ -283,9 +290,9 @@ class RobotController:
 
     def attack(self, loc: MapLocation, use_secondary_color: bool=False) -> None:
         self.assert_can_attack(loc)
-        self.robot.add_action_cooldown()
 
         if self.robot.type == UnitType.SOLDIER:
+            self.robot.add_action_cooldown()
             paint_type = (
                 self.game.get_secondary_paint(self.robot.team) 
                 if use_secondary_color 
@@ -302,6 +309,7 @@ class RobotController:
                 self.game.set_paint(loc, paint_type)
 
         elif self.robot.type == UnitType.SPLASHER:
+            self.robot.add_action_cooldown()
             paint_type = (
                 self.game.get_secondary_paint(self.robot.team) 
                 if use_secondary_color 
@@ -324,6 +332,7 @@ class RobotController:
             self.game.game_fb.add_splash_action(loc)
 
         elif self.robot.type == UnitType.MOPPER:
+            self.robot.add_action_cooldown()
             if loc is None:
                 self.mop_swing() 
             else:
@@ -504,6 +513,8 @@ class RobotController:
             raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because there is a robot at the center of the ruin")
         if not self.game.simple_check_pattern(loc, self.game.shape_from_tower_type(tower_type), self.robot.team):
             raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because the paint pattern is wrong")
+        if self.game.get_num_towers(self.robot.team) >= GameConstants.MAX_NUMBER_OF_TOWERS:
+            raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because the maximum number of towers was reached.")
         
     def can_complete_tower_pattern(self, tower_type: UnitType, loc: MapLocation) -> bool:
         try:
@@ -700,11 +711,15 @@ class RobotController:
 
     def set_indicator_dot(self, loc: MapLocation, red: int, green: int, blue: int) -> None:
         self.assert_not_none(loc)
+        if not self.game.on_the_map(loc):
+            raise RobotError("Cannot place an indicator dot outside the map.")
         self.game.game_fb.add_indicator_dot(loc, red, green, blue)
 
     def set_indicator_line(self, start_loc: MapLocation, end_loc: MapLocation, red: int, green: int, blue: int) -> None:
         self.assert_not_none(start_loc)
         self.assert_not_none(end_loc)
+        if not self.game.on_the_map(start_loc) or not self.game.on_the_map(end_loc):
+            raise RobotError("Cannot place indicator line outside the map.")
         self.game.game_fb.add_indicator_line(start_loc, end_loc, red, green, blue)
 
     def set_timeline_marker(self, label: str, red: int, green: int, blue: int) -> None:
@@ -714,7 +729,10 @@ class RobotController:
 
     def resign(self) -> None:
         self.game.set_winner(self.robot.team.opponent(), DominationFactor.RESIGNATION)
-    
+
+    def disintegrate(self) -> None:
+        self.game.destroy_robot(self.robot.id)
+     
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
     pass
