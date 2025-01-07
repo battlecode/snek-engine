@@ -49,7 +49,7 @@ def get_tower_pattern(tower_type: UnitType) -> List[List[bool]]:
     """
     pass
 
-def get_num_towers(self):
+def get_num_towers(self) -> int:
     """
     Returns the current number of allied towers on the map.
     """
