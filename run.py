@@ -25,7 +25,7 @@ if __name__ == '__main__':
         out_dir="matches",
         out_name=None,
         show_indicators=True,
-        debug=False,
+        debug=True,
         instrument=True
     )
 

@@ -113,6 +113,9 @@ class Game:
         markers = self.team_a_markers if team == Team.A else self.team_b_markers
         markers[loc.y * self.width + loc.x] = 2 if secondary else 1
 
+    def get_num_towers(self, team: Team):
+        return [robot.team == team and robot.type.is_tower_type() for robot in self.id_to_robot.values()].count(True)
+
     def get_map_info(self, team, loc): 
         idx = self.loc_to_index(loc)
         paint = self.paint[idx]
@@ -194,8 +197,8 @@ class Game:
         return True
     
     def set_winner_if_more_allied_towers(self):
-        towers_a = [robot.team == Team.A and robot.type.is_tower_type() for robot in self.id_to_robot.values()].count(True)
-        towers_b = [robot.team == Team.B and robot.type.is_tower_type() for robot in self.id_to_robot.values()].count(True)
+        towers_a = self.get_num_towers(Team.A)
+        towers_b = self.get_num_towers(Team.B)
         if towers_a == towers_b:
             return False
         self.set_winner(Team.A if towers_a > towers_b else Team.B, DominationFactor.MORE_TOWERS_ALIVE)
@@ -490,6 +493,7 @@ class Game:
             'get_paint': (rc.get_paint, 1),
             'get_money': (rc.get_money, 1),
             'get_type': (rc.get_type, 1),
+            'get_num_towers': (rc.get_num_towers, 5),
             'on_the_map': (rc.on_the_map, 5),
             'can_sense_location': (rc.can_sense_location, 5),
             'is_location_occupied': (rc.is_location_occupied, 5),
@@ -536,6 +540,7 @@ class Game:
             'can_upgrade_tower': (rc.can_upgrade_tower, 2),
             'upgrade_tower': rc.upgrade_tower,
             'resign': rc.resign,
+            'disintegrate': rc.disintegrate,
             'set_indicator_string': rc.set_indicator_string,
             'set_indicator_dot': rc.set_indicator_dot,
             'set_indicator_line': rc.set_indicator_line,
