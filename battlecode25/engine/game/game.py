@@ -347,6 +347,15 @@ class Game:
         if tower_type in {UnitType.LEVEL_ONE_MONEY_TOWER, UnitType.LEVEL_TWO_MONEY_TOWER, UnitType.LEVEL_THREE_MONEY_TOWER}:
             return Shape.MONEY_TOWER
         return None
+    
+    def level_one_from_tower_type(self, tower_type):
+        if tower_type in {UnitType.LEVEL_ONE_PAINT_TOWER, UnitType.LEVEL_TWO_PAINT_TOWER, UnitType.LEVEL_THREE_PAINT_TOWER}:
+            return UnitType.LEVEL_ONE_PAINT_TOWER
+        if tower_type in {UnitType.LEVEL_ONE_DEFENSE_TOWER, UnitType.LEVEL_TWO_DEFENSE_TOWER, UnitType.LEVEL_THREE_DEFENSE_TOWER}:
+            return UnitType.LEVEL_ONE_DEFENSE_TOWER
+        if tower_type in {UnitType.LEVEL_ONE_MONEY_TOWER, UnitType.LEVEL_TWO_MONEY_TOWER, UnitType.LEVEL_THREE_MONEY_TOWER}:
+            return UnitType.LEVEL_ONE_MONEY_TOWER
+        return None
         
     def set_paint(self, loc, paint, write_fb=True):
         idx = self.loc_to_index(loc)
@@ -423,6 +432,16 @@ class Game:
         '''
         self.mark_pattern(team, center, self.shape_from_tower_type(tower_type))
 
+    def is_pattern_obstructed(self, center):
+        print("called this")
+        offset = GameConstants.PATTERN_SIZE//2
+        for dx in range(-offset, offset + 1):
+            for dy in range(-offset, offset + 1):
+                idx = (center.y + dy) * self.width + (center.x + dx)
+                if self.ruins[idx] or self.walls[idx]:
+                    return True
+        return False
+
     def simple_check_pattern(self, center, shape, team):
         is_tower = not shape == Shape.RESOURCE
         primary = self.get_primary_paint(team)
@@ -492,6 +511,7 @@ class Game:
             'get_health': (rc.get_health, 1),
             'get_paint': (rc.get_paint, 1),
             'get_money': (rc.get_money, 1),
+            'get_chips': (rc.get_chips, 1),
             'get_type': (rc.get_type, 1),
             'get_num_towers': (rc.get_num_towers, 5),
             'on_the_map': (rc.on_the_map, 5),
