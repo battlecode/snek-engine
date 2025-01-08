@@ -267,6 +267,12 @@ def mop_swing(dir: Direction) -> None:
     """
     pass
 
+def can_paint(loc: MapLocation) -> bool:
+    """
+    Checks whether an attack will be able to paint a tile according to the robot type and current paint on the tile
+    """
+    pass
+
 # MARKING FUNCTIONS
     
 def can_mark_tower_pattern(tower_type: UnitType, loc: MapLocation) -> bool:
