@@ -61,7 +61,7 @@ class RobotController:
         self.assert_is_tower_type(tower_type)
         return self.game.pattern[self.game.shape_from_tower_type(tower_type).value]
     
-    def get_num_towers(self):
+    def get_num_towers(self) -> int:
         return self.game.get_num_towers(self.robot.team)
     
     # ROBOT QUERY FUNCTIONS
@@ -83,6 +83,9 @@ class RobotController:
     
     def get_money(self) -> int:
         return self.game.team_info.get_coins(self.robot.team)
+    
+    def get_chips(self) -> int:
+        return self.get_money()
 
     def get_type(self) -> UnitType:
         return self.robot.type
@@ -438,6 +441,8 @@ class RobotController:
         
     def assert_can_mark_resource_pattern(self, loc: MapLocation) -> None:
         self.assert_can_mark_pattern(loc)
+        if self.game.is_pattern_obstructed(loc):
+            raise RobotError("Cannot mark resource pattern because there is a wall or ruin in the way.")
 
     def can_mark_tower_pattern(self, tower_type: UnitType, loc: MapLocation) -> bool:
         try:
@@ -511,6 +516,8 @@ class RobotController:
             raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because it is too close to the edge of the map")
         if self.game.get_robot(loc) is not None:
             raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because there is a robot at the center of the ruin")
+        if self.game.team_info.get_coins(self.robot.team) < self.game.level_one_from_tower_type(tower_type).money_cost:
+            raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because the team does not have enough money.")
         if not self.game.simple_check_pattern(loc, self.game.shape_from_tower_type(tower_type), self.robot.team):
             raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because the paint pattern is wrong")
         if self.game.get_num_towers(self.robot.team) >= GameConstants.MAX_NUMBER_OF_TOWERS:

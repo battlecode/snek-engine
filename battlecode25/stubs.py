@@ -93,6 +93,12 @@ def get_money() -> int:
     """
     pass
 
+def get_chips() -> int:
+    """
+    Returns the amount of money that this robot's team has (equivalent to get_money())
+    """
+    pass
+
 def get_type() -> UnitType:
     """
     Returns what type the robot is.
