@@ -111,3 +111,12 @@ class UnitType(Enum):
             return UnitType.LEVEL_TWO_DEFENSE_TOWER
         elif self ==  UnitType.LEVEL_TWO_DEFENSE_TOWER:
             return UnitType.LEVEL_THREE_DEFENSE_TOWER
+        
+    def get_base_type(self) -> 'UnitType':
+        if self in {UnitType.LEVEL_TWO_PAINT_TOWER, UnitType.LEVEL_THREE_PAINT_TOWER}:
+            return UnitType.LEVEL_ONE_PAINT_TOWER
+        if self in {UnitType.LEVEL_TWO_DEFENSE_TOWER, UnitType.LEVEL_THREE_DEFENSE_TOWER}:
+            return UnitType.LEVEL_ONE_DEFENSE_TOWER
+        if self in {UnitType.LEVEL_TWO_MONEY_TOWER, UnitType.LEVEL_THREE_MONEY_TOWER}:
+            return UnitType.LEVEL_ONE_MONEY_TOWER
+        return self

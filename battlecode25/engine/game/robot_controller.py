@@ -420,6 +420,21 @@ class RobotController:
                 target_ids.append(0)
         self.game.game_fb.add_mop_action(target_ids[0], target_ids[1], target_ids[2])
 
+    def can_paint(self, loc: MapLocation) -> bool:
+        self.assert_not_none(loc)
+        if not self.game.on_the_map(loc):
+            return False
+        if self.robot.type.is_tower_type() or self.robot.type == UnitType.MOPPER:
+            return False
+        if self.robot.type == UnitType.SOLDIER:
+            if loc.distance_squared_to(self.robot.loc) > UnitType.SOLDIER.action_radius_squared:
+                return False
+            return self.game.is_passable(loc) and self.game.team_from_paint(self.game.get_paint_num(loc)) != self.robot.team.opponent()
+        else:
+            if loc.distance_squared_to(self.robot.loc) > UnitType.SPLASHER.action_radius_squared:
+                return False
+            return self.game.is_passable(loc)
+
     # MARKING FUNCTIONS
 
     def assert_can_mark_pattern(self, loc: MapLocation) -> None:
@@ -516,7 +531,7 @@ class RobotController:
             raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because it is too close to the edge of the map")
         if self.game.get_robot(loc) is not None:
             raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because there is a robot at the center of the ruin")
-        if self.game.team_info.get_coins(self.robot.team) < self.game.level_one_from_tower_type(tower_type).money_cost:
+        if self.game.team_info.get_coins(self.robot.team) < tower_type.get_base_type().money_cost:
             raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because the team does not have enough money.")
         if not self.game.simple_check_pattern(loc, self.game.shape_from_tower_type(tower_type), self.robot.team):
             raise RobotError(f"Cannot complete tower pattern at ({loc.x}, {loc.y}) because the paint pattern is wrong")

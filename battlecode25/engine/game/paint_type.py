@@ -12,3 +12,6 @@ class PaintType(Enum):
 
     def is_secondary(self):
         return self in {PaintType.ALLY_SECONDARY, PaintType.ENEMY_SECONDARY}
+    
+    def is_enemy(self):
+        return self in {PaintType.ENEMY_PRIMARY, PaintType.ENEMY_SECONDARY}

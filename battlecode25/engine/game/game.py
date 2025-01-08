@@ -347,15 +347,6 @@ class Game:
         if tower_type in {UnitType.LEVEL_ONE_MONEY_TOWER, UnitType.LEVEL_TWO_MONEY_TOWER, UnitType.LEVEL_THREE_MONEY_TOWER}:
             return Shape.MONEY_TOWER
         return None
-    
-    def level_one_from_tower_type(self, tower_type):
-        if tower_type in {UnitType.LEVEL_ONE_PAINT_TOWER, UnitType.LEVEL_TWO_PAINT_TOWER, UnitType.LEVEL_THREE_PAINT_TOWER}:
-            return UnitType.LEVEL_ONE_PAINT_TOWER
-        if tower_type in {UnitType.LEVEL_ONE_DEFENSE_TOWER, UnitType.LEVEL_TWO_DEFENSE_TOWER, UnitType.LEVEL_THREE_DEFENSE_TOWER}:
-            return UnitType.LEVEL_ONE_DEFENSE_TOWER
-        if tower_type in {UnitType.LEVEL_ONE_MONEY_TOWER, UnitType.LEVEL_TWO_MONEY_TOWER, UnitType.LEVEL_THREE_MONEY_TOWER}:
-            return UnitType.LEVEL_ONE_MONEY_TOWER
-        return None
         
     def set_paint(self, loc, paint, write_fb=True):
         idx = self.loc_to_index(loc)
@@ -552,6 +543,7 @@ class Game:
             'attack': rc.attack,
             'can_mop_swing': (rc.can_mop_swing, 10),
             'mop_swing': rc.mop_swing,
+            'can_paint': (rc.can_paint, 10),
             'can_send_message': (rc.can_send_message, 50),
             'send_message': (rc.send_message, 50),
             'read_messages': (rc.read_messages, 10),
