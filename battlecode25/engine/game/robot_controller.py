@@ -519,6 +519,7 @@ class RobotController:
         self.game.game_fb.add_unmark_action(loc)
     
     def assert_can_complete_tower_pattern(self, tower_type: UnitType, loc: MapLocation) -> None:
+        tower_type = tower_type.get_base_type()
         self.assert_is_robot_type(self.robot.type)
         self.assert_is_tower_type(tower_type)
         self.assert_can_act_location(loc, GameConstants.BUILD_TOWER_RADIUS_SQUARED)
@@ -546,6 +547,7 @@ class RobotController:
             return False
         
     def complete_tower_pattern(self, tower_type: UnitType, loc: MapLocation) -> None:
+        tower_type = tower_type.get_base_type()
         self.assert_can_complete_tower_pattern(tower_type, loc)
         robot = self.game.spawn_robot(tower_type, loc, self.robot.team)
         self.game.game_fb.add_spawn_action(robot.id, loc, robot.team, robot.type)
