@@ -308,12 +308,12 @@ class GameFB:
     def add_remove_paint_action(self, affected_robot_id, paint):
         action_offset = DamageAction.CreateDamageAction(self.builder, affected_robot_id, paint)
         self.current_actions.append(action_offset)
-        self.current_actions.append(Action.Action().DamageAction)
+        self.current_action_types.append(Action.Action().DamageAction)
 
     def add_complete_resource_pattern_action(self, loc):
         action_offset = TransferAction.CreateTransferAction(self.builder, self.initial_map.loc_to_index(loc), 0)
         self.current_actions.append(action_offset)
-        self.current_actions.append(Action.Action().TransferAction)
+        self.current_action_types.append(Action.Action().TransferAction)
 
     def add_team_info(self, team, money_amount, coverage_amount, resource_patterns):
         self.team_ids.append(fb_from_team(team))
