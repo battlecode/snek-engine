@@ -79,6 +79,9 @@ class GameConstants:
     # The maximum turns a robot can have 0 paint before it dies.
     MAX_TURNS_WITHOUT_PAINT = 10
 
+    # Moppers face greater enemy territory paint penalties than other robots by this factor
+    MOPPER_PAINT_PENALTY_MULTIPLIER = 2
+
     # *****************************
     # ****** GAME MECHANICS *******
     # *****************************

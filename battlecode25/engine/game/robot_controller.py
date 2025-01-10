@@ -349,6 +349,7 @@ class RobotController:
                 target_robot = self.game.get_robot(loc)
                 if target_robot and target_robot.type.is_robot_type() and target_robot.team != self.robot.team:
                     target_robot.add_paint(-GameConstants.MOPPER_ATTACK_PAINT_DEPLETION)
+                    self.game.game_fb.add_remove_paint_action(target_robot.id, GameConstants.MOPPER_ATTACK_PAINT_DEPLETION)
                     self.robot.add_paint(GameConstants.MOPPER_ATTACK_PAINT_ADDITION)
                     self.game.game_fb.add_attack_action(target_robot.id)                    
                 
@@ -415,6 +416,7 @@ class RobotController:
             target_robot = self.game.get_robot(new_loc)
             if target_robot and target_robot.team != self.robot.team:
                 target_robot.add_paint(-GameConstants.MOPPER_SWING_PAINT_DEPLETION)
+                self.game.game_fb.add_remove_paint_action(target_robot.id, GameConstants.MOPPER_SWING_PAINT_DEPLETION)
                 target_ids.append(target_robot.id)
             else:
                 target_ids.append(0)
@@ -486,6 +488,8 @@ class RobotController:
     def assert_can_mark(self, loc: MapLocation) -> None:
         self.assert_is_robot_type(self.robot.type)
         self.assert_can_act_location(loc, GameConstants.MARK_RADIUS_SQUARED)
+        if not self.game.is_passable(loc):
+            raise RobotError("Cannot mark a square that is not paintable.")
 
     def can_mark(self, loc: MapLocation) -> bool:
         try:
@@ -572,6 +576,7 @@ class RobotController:
     def complete_resource_pattern(self, loc: MapLocation) -> None:
         self.assert_can_complete_resource_pattern(loc)
         self.game.complete_resource_pattern(self.robot.team, loc)
+        self.game.game_fb.add_complete_resource_pattern_action(loc)
            
     # BUILDING FUNCTIONS
 
