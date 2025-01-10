@@ -507,7 +507,7 @@ class RobotController:
         self.assert_is_robot_type(self.robot.type)
         self.assert_can_act_location(loc, GameConstants.MARK_RADIUS_SQUARED)
 
-        if self.game.get_marker(loc) == 0:
+        if self.game.get_marker(self.robot.team, loc) == 0:
             raise RobotError("Cannot remove mark from unmarked location")
 
     def can_remove_mark(self, loc: MapLocation) -> bool: 
