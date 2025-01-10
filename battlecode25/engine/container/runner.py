@@ -182,10 +182,12 @@ class RobotRunner:
             if name == 'random':
                 import random
                 return random
-            
             if name == 'math':
                 import math
                 return math
+            if name == 'enum':
+                import enum
+                return enum
 
             raise ImportError('Module "' + name + '" does not exist.')
 
