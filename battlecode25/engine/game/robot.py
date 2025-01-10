@@ -108,12 +108,13 @@ class Robot:
         paint_status = self.game.paint[loc_idx]
 
         if self.type.is_robot_type():
+            multiplier = GameConstants.MOPPER_PAINT_PENALTY_MULTIPLIER if self.type == UnitType.MOPPER else 1
             if self.game.team_from_paint(paint_status) == self.team:
                 paint_penalty = 0
             elif self.game.team_from_paint(paint_status) == Team.NEUTRAL:
-                paint_penalty = GameConstants.PENALTY_NEUTRAL_TERRITORY
+                paint_penalty = GameConstants.PENALTY_NEUTRAL_TERRITORY * multiplier
             else:
-                paint_penalty = GameConstants.PENALTY_ENEMY_TERRITORY
+                paint_penalty = GameConstants.PENALTY_ENEMY_TERRITORY * multiplier
                 count = 0
                 for adj_loc in self.game.get_all_locations_within_radius_squared(self.loc, 2):
                     adj_robot = self.game.get_robot(adj_loc)
