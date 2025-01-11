@@ -53,7 +53,7 @@ def get_winner_string(args: RunGameArgs, reason: DominationFactor, team: Team, r
 def run_game(args: RunGameArgs):
     container_a = CodeContainer.from_directory(args.player1_dir, args.instrument)
     container_b = CodeContainer.from_directory(args.player2_dir, args.instrument)
-    game_fb = GameFB(args)
+    game_fb = GameFB(args, None)
     game_fb.make_game_header()
     a_wins, b_wins = 0, 0
 
