@@ -34,9 +34,6 @@ class GameConstants:
     # The bytecode penalty that is imposed each time an exception is thrown.
     EXCEPTION_BYTECODE_PENALTY = 500
 
-    # Health each robot starts with
-    DEFAULT_HEALTH = 1000
-
     # Paint penalty for moving into enemy territory
     PENALTY_ENEMY_TERRITORY = 2
 
@@ -62,7 +59,7 @@ class GameConstants:
     INITIAL_ROBOT_PAINT_PERCENTAGE = 100
 
     # The amount of money each team starts with.
-    INITIAL_TEAM_MONEY = 1000
+    INITIAL_TEAM_MONEY = 2500
 
     # The percent of the map which a team needs to paint to win.
     PAINT_PERCENT_TO_WIN = 70
