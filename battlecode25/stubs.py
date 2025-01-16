@@ -391,6 +391,22 @@ def read_messages(round=-1) -> List[Message]:
     """
     pass
 
+def can_broadcast_message(self) -> bool:
+    """
+    Returns true if this tower can broadcast a message. You can broadcast a message if this robot is a tower and the tower has
+    not yet sent the maximum number of messages this round (broadcasting a message to other towers counts as one message sent, even
+    if multiple towers receive the message).
+    """
+    pass
+
+def broadcast_message(self, message_content: int) -> None:
+    """
+    Broadcasts a message to all friendly towers within the broadcasting radius. This works the same as sendMessage, but it can only
+    be performed by towers and sends the message to all friendly towers within range simultaneously. The towers need not be connected
+    by paint to receive the message.
+    """
+    pass
+
 # TRANSFER PAINT FUNCTIONS
 
 def can_transfer_paint(target_location: MapLocation, amount: int) -> bool:

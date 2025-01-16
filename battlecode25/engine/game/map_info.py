@@ -2,13 +2,14 @@ from .map_location import MapLocation
 from .paint_type import PaintType
 class MapInfo:
 
-    def __init__(self, loc: MapLocation, passable: bool, wall: bool, paint: PaintType, mark: PaintType, ruin: bool):
+    def __init__(self, loc: MapLocation, passable: bool, wall: bool, paint: PaintType, mark: PaintType, ruin: bool, resource_pattern_center: bool):
         self.loc = loc
         self.passable = passable
         self.wall = wall
         self.paint = paint
         self.mark = mark
         self.ruin = ruin
+        self.resource_pattern_center = resource_pattern_center
 
     def is_passable(self) -> bool: 
         return self.passable
@@ -27,6 +28,9 @@ class MapInfo:
     
     def get_map_location(self) -> MapLocation:
         return self.loc
+    
+    def is_resource_pattern_center(self) -> bool:
+        return self.resource_pattern_center
 
     def __str__(self):
         return f"Location: {self.loc} \n \
@@ -34,4 +38,5 @@ class MapInfo:
             is_wall: {self.wall} \n \
             has_ruin: {self.ruin} \n  \
             paint: {self.paint} \n \
-            mark: {self.mark} \n"
+            mark: {self.mark} \n \
+            is_resource_pattern_center: {self.resource_pattern_center}\n"

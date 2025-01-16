@@ -24,7 +24,7 @@ class GameConstants:
 
     GAME_MAX_NUMBER_OF_ROUNDS = 2000
 
-    ROBOT_BYTECODE_LIMIT = 15000
+    ROBOT_BYTECODE_LIMIT = 17500
 
     TOWER_BYTECODE_LIMIT = 20000
 
@@ -138,6 +138,15 @@ class GameConstants:
     # The increase in extra damage for ally towers for upgrading a defense tower
     EXTRA_TOWER_DAMAGE_LEVEL_INCREASE = 2
 
+    # The money cost of completing a resource pattern
+    COMPLETE_RESOURCE_PATTERN_COST = 200
+
+    # Resource patterns must exist for this many turns before they start producing resources
+    RESOURCE_PATTERN_ACTIVE_DELAY = 50
+
+    # A robot takes this much damage every time it ends a turn with 0 paint
+    NO_PAINT_DAMAGE = 20
+
     # ************************
     # ****** COOLDOWNS *******
     # ************************
@@ -155,7 +164,7 @@ class GameConstants:
     BUILD_ROBOT_COOLDOWN = 10
 
     # The amount added to the action cooldown counter after attacking (as a mopper for the swing attack)
-    ATTACK_MOPPER_SWING_COOLDOWN = 40
+    ATTACK_MOPPER_SWING_COOLDOWN = 20
 
     # THe amount added to the action cooldown counter after transferring paint
     PAINT_TRANSFER_COOLDOWN = 10
@@ -169,6 +178,9 @@ class GameConstants:
 
     # The maximum squared radius a robot can send a message to
     MESSAGE_RADIUS_SQUARED = 20
+
+    # The maximum squared radius that a tower can broadcast messages to
+    BROADCAST_RADIUS_SQUARED = 80
 
     # The maximum number of rounds a message will exist for
     MESSAGE_ROUND_DURATION = 5

@@ -47,7 +47,8 @@ class Game:
         self.game_fb = game_fb
         self.pattern = self.create_patterns()
         self.resource_pattern_centers = []
-        self.resouce_pattern_centers_by_loc = [Team.NEUTRAL] * total_area
+        self.resource_pattern_centers_by_loc = [Team.NEUTRAL] * total_area
+        self.resource_pattern_lifetimes = [0] * total_area
         self.code = code
         self.debug = game_args.debug
         self.running = True
@@ -102,6 +103,9 @@ class Game:
     def has_wall(self, loc: MapLocation):
         return self.walls[loc.y * self.width + loc.x]
     
+    def has_resource_pattern_center(self, loc: MapLocation, team: Team):
+        return self.resource_pattern_centers_by_loc[loc.y * self.width + loc.x] == team
+    
     def get_paint_num(self, loc: MapLocation):
         return self.paint[loc.y * self.width + loc.x]
     
@@ -139,7 +143,8 @@ class Game:
             case 2:
                 mark_type = PaintType.ALLY_SECONDARY
         passable = not self.walls[idx] and not self.ruins[idx]
-        return MapInfo(loc, passable, self.walls[idx], paint_type, mark_type, self.ruins[idx])
+        resource_pattern_center = self.resource_pattern_centers_by_loc[idx] == team
+        return MapInfo(loc, passable, self.walls[idx], paint_type, mark_type, self.ruins[idx], resource_pattern_center)
 
     def spawn_robot(self, type: UnitType, loc: MapLocation, team: Team, id=None):
         if id is None:
@@ -245,11 +250,15 @@ class Game:
         self.domination_factor = domination_factor
 
     def update_resource_patterns(self):
-        for i, center in enumerate(self.resource_pattern_centers):
-            team = self.resouce_pattern_centers_by_loc[self.loc_to_index(center)]
+        for i, center in enumerate(self.resource_pattern_centers[:]):
+            idx = self.loc_to_index(center)
+            team = self.resource_pattern_centers_by_loc[idx]
             if not self.simple_check_pattern(center, Shape.RESOURCE, team):
                 self.resource_pattern_centers.pop(i)
-                self.resouce_pattern_centers_by_loc[self.loc_to_index(center)] = Team.NEUTRAL
+                self.resource_pattern_centers_by_loc[idx] = Team.NEUTRAL
+                self.resource_pattern_lifetimes[idx] = 0
+            else:
+                self.resource_pattern_lifetimes[idx] += 1
 
     def serialize_team_info(self):
         coverage_a = math.floor(self.team_info.get_tiles_painted(Team.A) / self.area_without_walls * 1000)
@@ -259,13 +268,19 @@ class Game:
 
     def complete_resource_pattern(self, team, loc):
         idx = self.loc_to_index(loc)
-        if self.resouce_pattern_centers_by_loc[idx] != Team.NEUTRAL:
+        if self.resource_pattern_centers_by_loc[idx] != Team.NEUTRAL:
             return
         self.resource_pattern_centers.append(loc)
-        self.resouce_pattern_centers_by_loc[idx] = team
+        self.resource_pattern_centers_by_loc[idx] = team
+        self.resource_pattern_lifetimes[idx] = 0
 
     def count_resource_patterns(self, team):
-        return [self.resouce_pattern_centers_by_loc[self.loc_to_index(loc)] == team for loc in self.resource_pattern_centers].count(True)
+        count = 0
+        for loc in self.resource_pattern_centers:
+            idx = self.loc_to_index(loc)
+            if self.resource_pattern_centers_by_loc[idx] == team and self.resource_pattern_lifetimes[idx] >= GameConstants.RESOURCE_PATTERN_ACTIVE_DELAY:
+                count += 1
+        return count
     
     def update_defense_towers(self, team, new_tower_type):
         if new_tower_type == UnitType.LEVEL_TWO_DEFENSE_TOWER or new_tower_type == UnitType.LEVEL_THREE_DEFENSE_TOWER:
@@ -547,6 +562,8 @@ class Game:
             'can_send_message': (rc.can_send_message, 50),
             'send_message': (rc.send_message, 50),
             'read_messages': (rc.read_messages, 10),
+            'can_broadcast_message': (rc.can_broadcast_message, 5),
+            'broadcast_message': (rc.broadcast_message, 50),
             'can_transfer_paint': (rc.can_transfer_paint, 5),
             'transfer_paint': (rc.transfer_paint, 5),
             'can_upgrade_tower': (rc.can_upgrade_tower, 2),
@@ -561,11 +578,11 @@ class Game:
     
     def create_patterns(self):
         resource_pattern = [
-            [True, False, True, False, True],
-            [False, True, False, True, False],
+            [True, True, False, True, True],
             [True, False, False, False, True],
-            [False, True, False, True, False],
-            [True, False, True, False, True]
+            [False, False, True, False, False],
+            [True, False, False, False, True],
+            [True, True, False, True, True]
         ]
         money_tower_pattern = [
             [False, True, True, True, False],
