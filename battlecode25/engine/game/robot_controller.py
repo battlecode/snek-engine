@@ -358,6 +358,7 @@ class RobotController:
                     self.game.set_paint(loc, 0)
 
         else:  # Tower
+            attacked = False
             if loc is None:
                 self.robot.has_tower_area_attacked = True
                 damage = self.robot.type.aoe_attack_strength + self.game.team_info.get_defense_damage_increase(self.robot.team)
@@ -365,6 +366,7 @@ class RobotController:
                 for new_loc in all_locs:
                     target_robot = self.game.get_robot(new_loc)
                     if target_robot and target_robot.team != self.robot.team:
+                        attacked = True
                         target_robot.add_health(-damage)
                         self.game.game_fb.add_attack_action(target_robot.id)
                         self.game.game_fb.add_damage_action(target_robot.id, damage)
@@ -373,9 +375,12 @@ class RobotController:
                 self.robot.has_tower_single_attacked = True
                 target_robot = self.game.get_robot(loc)
                 if target_robot and target_robot.team != self.robot.team:
+                    attacked = True
                     target_robot.add_health(-damage)
                     self.game.game_fb.add_attack_action(target_robot.id)
                     self.game.game_fb.add_damage_action(target_robot.id, damage)
+            if attacked:
+                self.game.team_info.add_coins(self.robot.team, self.robot.type.attack_money_bonus)
 
     def assert_can_mop_swing(self, dir: Direction) -> None:
         self.assert_not_none(dir)
@@ -400,14 +405,14 @@ class RobotController:
         self.robot.add_action_cooldown(GameConstants.ATTACK_MOPPER_SWING_COOLDOWN)
 
         swing_offsets = {
-            Direction.NORTH: ((-1, 1), (0, 1), (1, 1)),
-            Direction.SOUTH: ((-1, -1), (0, -1), (1, -1)),
-            Direction.EAST: ((1, -1), (1, 0), (1, 1)),
-            Direction.WEST: ((-1, -1), (-1, 0), (-1, 1))
+            Direction.NORTH: ((-1, 1), (0, 1), (1, 1), (-1, 2), (0, 2), (1, 2)),
+            Direction.SOUTH: ((-1, -1), (0, -1), (1, -1), (-1, -2), (0, -2), (1, -2)),
+            Direction.EAST: ((1, -1), (1, 0), (1, 1), (2, -1), (2, 0), (2, 1)),
+            Direction.WEST: ((-1, -1), (-1, 0), (-1, 1), (-2, -1), (-2, 0), (-2, 1))
         }
 
         target_ids = []
-        for i in range(3):
+        for i in range(6):
             offset = swing_offsets[dir][i]
             new_loc = MapLocation(self.robot.loc.x + offset[0], self.robot.loc.y + offset[1])
             if not self.game.on_the_map(new_loc):
@@ -421,6 +426,7 @@ class RobotController:
             else:
                 target_ids.append(0)
         self.game.game_fb.add_mop_action(target_ids[0], target_ids[1], target_ids[2])
+        self.game.game_fb.add_mop_action(target_ids[3], target_ids[4], target_ids[5])
 
     def can_paint(self, loc: MapLocation) -> bool:
         self.assert_not_none(loc)
@@ -561,6 +567,10 @@ class RobotController:
         self.assert_is_robot_type(self.robot.type)
         self.assert_can_act_location(loc, GameConstants.RESOURCE_PATTERN_RADIUS_SQUARED)
 
+        if self.game.team_info.get_coins(self.robot.team) < GameConstants.COMPLETE_RESOURCE_PATTERN_COST:
+            raise RobotError(f"Not enough money to complete resource pattern")
+        if self.game.has_resource_pattern_center(loc, self.robot.team):
+            raise RobotError("Can't complete a resource pattern that has already been completed")
         if not self.game.is_valid_pattern_center(loc):
             raise RobotError(f"Cannot complete resource pattern at ({loc.x}, {loc.y}) because it is too close to the edge of the map")
         if not self.game.simple_check_pattern(loc, Shape.RESOURCE, self.robot.team):
@@ -576,6 +586,7 @@ class RobotController:
     def complete_resource_pattern(self, loc: MapLocation) -> None:
         self.assert_can_complete_resource_pattern(loc)
         self.game.complete_resource_pattern(self.robot.team, loc)
+        self.game.team_info.add_coins(self.robot.team, -GameConstants.COMPLETE_RESOURCE_PATTERN_COST)
         self.game.game_fb.add_complete_resource_pattern_action(loc)
            
     # BUILDING FUNCTIONS
@@ -648,6 +659,30 @@ class RobotController:
         target.message_buffer.add_message(message)
         self.robot.sent_message_count += 1
         self.game.game_fb.add_message_action(target.id, message_content)
+
+    def assert_can_broadcast_message(self):
+        if not self.robot.type.is_robot_type():
+            raise RobotError("Only towers can broadcast messages")
+        if self.robot.sent_message_count >= GameConstants.MAX_MESSAGES_SENT_TOWER:
+            raise RobotError("Tower has already sent too many messages this round")
+        
+    def can_broadcast_message(self) -> bool:
+        try:
+            self.assert_can_broadcast_message()
+            return True
+        except RobotError as e:
+            return False
+
+    def broadcast_message(self, message_content: int) -> None:
+        self.assert_can_broadcast_message()
+        message_content &= 0xFFFFFFFF
+        message = Message(message_content, self.robot.id, self.game.round)
+        all_locs = self.game.get_all_locations_within_radius_squared(self.robot.loc, GameConstants.BROADCAST_RADIUS_SQUARED)
+        for loc in all_locs:
+            robot = self.game.get_robot(loc)
+            if robot is not None and robot.type.is_tower_type() and robot.team == self.robot.team and robot != self.robot:
+                robot.message_buffer.add_message(message)
+        self.robot.sent_message_count += 1
 
     def read_messages(self, round=-1) -> List[Message]:
         if round == -1:

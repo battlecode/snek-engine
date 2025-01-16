@@ -109,19 +109,20 @@ class Robot:
 
         if self.type.is_robot_type():
             multiplier = GameConstants.MOPPER_PAINT_PENALTY_MULTIPLIER if self.type == UnitType.MOPPER else 1
+            count = 0
+            for adj_loc in self.game.get_all_locations_within_radius_squared(self.loc, 2):
+                adj_robot = self.game.get_robot(adj_loc)
+                if adj_robot and adj_robot != self and adj_robot.team == self.team:
+                    count += 1
+
             if self.game.team_from_paint(paint_status) == self.team:
-                paint_penalty = 0
+                paint_penalty = count
             elif self.game.team_from_paint(paint_status) == Team.NEUTRAL:
                 paint_penalty = GameConstants.PENALTY_NEUTRAL_TERRITORY * multiplier
+                paint_penalty += count
             else:
-                paint_penalty = GameConstants.PENALTY_ENEMY_TERRITORY * multiplier
-                count = 0
-                for adj_loc in self.game.get_all_locations_within_radius_squared(self.loc, 2):
-                    adj_robot = self.game.get_robot(adj_loc)
-                    if adj_robot and adj_robot != self and adj_robot.team == self.team:
-                        count += 1
+                paint_penalty = GameConstants.PENALTY_ENEMY_TERRITORY * multiplier  
                 paint_penalty += 2 * count    
-            self.game.game_fb.add_indicator_string(f"Round {self.game.round}, Location {self.loc.__str__()}, Penalty {paint_penalty}")
             self.add_paint(-paint_penalty)
 
         self.has_tower_area_attacked = False
@@ -129,12 +130,8 @@ class Robot:
         self.message_buffer.next_round()
         self.sent_message_count = 0
 
-        if self.paint == 0:
-            self.turns_without_paint += 1
-        else:
-            self.turns_without_paint = 0
-        if self.type.is_robot_type() and self.turns_without_paint >= GameConstants.MAX_TURNS_WITHOUT_PAINT:
-            self.game.destroy_robot(self.id)
+        if self.type.is_robot_type() and self.paint == 0:
+            self.add_health(-GameConstants.NO_PAINT_DAMAGE)
 
         self.game.game_fb.end_turn(self.id, self.health, self.paint, self.movement_cooldown, self.action_cooldown, self.bytecodes_used, self.loc)
         self.rounds_alive += 1
