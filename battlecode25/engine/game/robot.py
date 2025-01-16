@@ -33,7 +33,6 @@ class Robot:
         self.debug = False
         self.message_buffer = MessageBuffer(GameConstants.MESSAGE_ROUND_DURATION)
         self.sent_message_count = 0
-        self.turns_without_paint = 0
         self.has_tower_area_attacked = False
         self.has_tower_single_attacked = False
         self.logs = []
