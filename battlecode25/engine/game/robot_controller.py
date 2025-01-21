@@ -661,7 +661,7 @@ class RobotController:
         self.game.game_fb.add_message_action(target.id, message_content)
 
     def assert_can_broadcast_message(self):
-        if not self.robot.type.is_robot_type():
+        if self.robot.type.is_robot_type():
             raise RobotError("Only towers can broadcast messages")
         if self.robot.sent_message_count >= GameConstants.MAX_MESSAGES_SENT_TOWER:
             raise RobotError("Tower has already sent too many messages this round")
