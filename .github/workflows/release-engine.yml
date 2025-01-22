@@ -72,8 +72,10 @@ jobs:
           fi
           
       - name: Build python package 
+        shell: bash -el {0} # Make sure conda is activated
         run: |
-          python --version # Print python version
+          conda info
+          python --version
           pip install --upgrade build
           SETUPTOOLS_SCM_PRETEND_VERSION=${RELEASE_VERSION} python -m build
 
