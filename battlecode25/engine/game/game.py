@@ -56,8 +56,14 @@ class Game:
         self.id_to_robot: dict[int, RobotInfo] = {}
         self.robot_exec_order = []
         for robot_info in initial_map.initial_bodies:
-            self.spawn_robot(robot_info.type, robot_info.location, robot_info.team, id=robot_info.id)
+            robot = self.spawn_robot(robot_info.type, robot_info.location, robot_info.team, id=robot_info.id)
             self.ruins[self.loc_to_index(robot_info.location)] = True
+
+            # Start towers at lvl 2, defer upgrade action until first turn
+            if robot.type.is_tower_type():
+                new_type = robot.type.get_next_level()
+                robot.upgrade_tower()
+                self.update_defense_towers(robot.team, new_type)
 
     def run_round(self):
         if self.running:

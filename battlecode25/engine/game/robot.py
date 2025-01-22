@@ -95,6 +95,9 @@ class Robot:
         if self.type.money_per_turn != 0:
             self.game.team_info.add_coins(self.team,
                             self.type.money_per_turn + self.game.count_resource_patterns(self.team) * GameConstants.EXTRA_RESOURCES_FROM_PATTERN)
+        # Add upgrade action for initial upgrade
+        if self.type.is_tower_type() and self.game.round == 1 and self.type.level == 2:
+            self.game.game_fb.add_upgrade_action(self.id, self.type, self.health, self.paint)
 
     def process_beginning_of_turn(self):
         self.action_cooldown
