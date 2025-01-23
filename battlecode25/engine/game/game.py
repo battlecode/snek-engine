@@ -260,15 +260,17 @@ class Game:
         self.domination_factor = domination_factor
 
     def update_resource_patterns(self):
-        for i, center in enumerate(self.resource_pattern_centers[:]):
+        new_resource_pattern_centers = []
+        for i, center in enumerate(self.resource_pattern_centers):
             idx = self.loc_to_index(center)
             team = self.resource_pattern_centers_by_loc[idx]
-            if not self.simple_check_pattern(center, Shape.RESOURCE, team):
-                self.resource_pattern_centers.pop(i)
+            if self.simple_check_pattern(center, Shape.RESOURCE, team):
+                new_resource_pattern_centers.append(center)
+                self.resource_pattern_lifetimes[idx] += 1
+            else:
                 self.resource_pattern_centers_by_loc[idx] = Team.NEUTRAL
                 self.resource_pattern_lifetimes[idx] = 0
-            else:
-                self.resource_pattern_lifetimes[idx] += 1
+        self.resource_pattern_centers = new_resource_pattern_centers
 
     def serialize_team_info(self):
         coverage_a = math.floor(self.team_info.get_tiles_painted(Team.A) / self.area_without_walls * 1000)
