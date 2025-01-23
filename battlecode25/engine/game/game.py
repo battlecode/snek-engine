@@ -261,7 +261,7 @@ class Game:
 
     def update_resource_patterns(self):
         new_resource_pattern_centers = []
-        for i, center in enumerate(self.resource_pattern_centers):
+        for center in self.resource_pattern_centers:
             idx = self.loc_to_index(center)
             team = self.resource_pattern_centers_by_loc[idx]
             if self.simple_check_pattern(center, Shape.RESOURCE, team):
