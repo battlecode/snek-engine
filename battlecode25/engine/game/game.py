@@ -123,6 +123,10 @@ class Game:
         markers = self.team_a_markers if team == Team.A else self.team_b_markers
         markers[loc.y * self.width + loc.x] = 2 if secondary else 1
 
+    def mark_location_int(self, team: Team, loc: MapLocation, val: int):
+        markers = self.team_a_markers if team == Team.A else self.team_b_markers
+        markers[loc.y * self.width + loc.x] = val
+
     def get_num_towers(self, team: Team):
         return [robot.team == team and robot.type.is_tower_type() for robot in self.id_to_robot.values()].count(True)
 
@@ -445,7 +449,6 @@ class Game:
         self.mark_pattern(team, center, self.shape_from_tower_type(tower_type))
 
     def is_pattern_obstructed(self, center):
-        print("called this")
         offset = GameConstants.PATTERN_SIZE//2
         for dx in range(-offset, offset + 1):
             for dy in range(-offset, offset + 1):
