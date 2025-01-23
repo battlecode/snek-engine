@@ -525,7 +525,7 @@ class RobotController:
 
     def remove_mark(self, loc: MapLocation) -> None:
         self.assert_can_remove_mark(loc)
-        self.game.mark_location(self.robot.team, loc, 0) 
+        self.game.mark_location_int(self.robot.team, loc, 0) 
         self.game.game_fb.add_unmark_action(loc)
     
     def assert_can_complete_tower_pattern(self, tower_type: UnitType, loc: MapLocation) -> None:
