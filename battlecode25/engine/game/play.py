@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 import importlib.resources
+import gzip
 import time
 import os
 
@@ -56,10 +57,14 @@ def run_game(args: RunGameArgs):
     game_fb = GameFB(args)
     game_fb.make_game_header()
     a_wins, b_wins = 0, 0
+    valid_replay = True
 
     builtin_maps_dir = importlib.resources.files("battlecode25.maps")
     for map_name in args.map_names.split(","):
         map_name = f"{map_name.strip()}.map25"
+
+        if not valid_replay:
+            break
 
         # Load map
         try:
@@ -78,20 +83,24 @@ def run_game(args: RunGameArgs):
         print(f"[server] {args.player1_name} vs. {args.player2_name} on {map_name}")
 
         game_fb.make_match_header(initial_map)
-        while game.running:
-            game.run_round()
+        try:
+            while game.running:
+                game.run_round()
 
-        if game.winner == Team.A:
-            a_wins += 1
-        else:
-            b_wins += 1
-        game_fb.make_match_footer(game.winner, game.domination_factor, game.round)
+            if game.winner == Team.A:
+                a_wins += 1
+            else:
+                b_wins += 1
+            game_fb.make_match_footer(game.winner, game.domination_factor, game.round)
+        except Exception as e:
+            print("[server:error] An internal engine error has occurred. Please report this to the devs. This match has been terminated.")
+            game.set_winner_arbitrary()
+            game.stop()
+            # Internal engine occurred, we have to throw away this replay
+            valid_replay = False
 
         print("[server]", get_winner_string(args, game.domination_factor, game.winner, game.round))
         print("[server] -------------------- Match Finished --------------------")
-
-    winner = Team.A if a_wins >= b_wins else Team.B
-    game_fb.make_game_footer(winner)
 
     if not os.path.exists(args.out_dir):
         os.makedirs(args.out_dir)
@@ -100,4 +109,12 @@ def run_game(args: RunGameArgs):
     else:
         timestamp = int(time.time())
         filename = f"{args.player1_name}-vs-{args.player2_name}-on-{args.map_names}-{timestamp}.bc25"
-    game_fb.finish_and_save(Path(args.out_dir) / filename)
+
+    out_path = Path(args.out_dir) / filename
+    if valid_replay:
+        winner = Team.A if a_wins >= b_wins else Team.B
+        game_fb.make_game_footer(winner)
+        game_fb.finish_and_save(out_path)
+    else:
+        with gzip.open(out_path, "wb") as file:
+            file.write(str.encode("invalid replay"))

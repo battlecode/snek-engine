@@ -78,10 +78,13 @@ class Game:
             if self.winner == None and self.round >= self.initial_map.rounds:
                 self.run_tiebreakers()
             if self.winner != None:
-                self.running = False
-                self.each_robot_update(lambda robot: self.destroy_robot(robot.id))
+                self.stop()
         else:
             raise GameError('Game is not running!')
+
+    def stop(self):
+        self.running = False
+        self.each_robot_update(lambda robot: self.destroy_robot(robot.id))
 
     def move_robot(self, start_loc, end_loc):
         self.add_robot_to_loc(end_loc, self.get_robot(start_loc))
@@ -260,15 +263,17 @@ class Game:
         self.domination_factor = domination_factor
 
     def update_resource_patterns(self):
-        for i, center in enumerate(self.resource_pattern_centers[:]):
+        new_resource_pattern_centers = []
+        for center in self.resource_pattern_centers:
             idx = self.loc_to_index(center)
             team = self.resource_pattern_centers_by_loc[idx]
-            if not self.simple_check_pattern(center, Shape.RESOURCE, team):
-                self.resource_pattern_centers.pop(i)
+            if self.simple_check_pattern(center, Shape.RESOURCE, team):
+                new_resource_pattern_centers.append(center)
+                self.resource_pattern_lifetimes[idx] += 1
+            else:
                 self.resource_pattern_centers_by_loc[idx] = Team.NEUTRAL
                 self.resource_pattern_lifetimes[idx] = 0
-            else:
-                self.resource_pattern_lifetimes[idx] += 1
+        self.resource_pattern_centers = new_resource_pattern_centers
 
     def serialize_team_info(self):
         coverage_a = math.floor(self.team_info.get_tiles_painted(Team.A) / self.area_without_walls * 1000)
