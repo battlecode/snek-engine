@@ -78,10 +78,13 @@ class Game:
             if self.winner == None and self.round >= self.initial_map.rounds:
                 self.run_tiebreakers()
             if self.winner != None:
-                self.running = False
-                self.each_robot_update(lambda robot: self.destroy_robot(robot.id))
+                self.stop()
         else:
             raise GameError('Game is not running!')
+
+    def stop(self):
+        self.running = False
+        self.each_robot_update(lambda robot: self.destroy_robot(robot.id))
 
     def move_robot(self, start_loc, end_loc):
         self.add_robot_to_loc(end_loc, self.get_robot(start_loc))
