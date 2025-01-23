@@ -445,7 +445,6 @@ class Game:
         self.mark_pattern(team, center, self.shape_from_tower_type(tower_type))
 
     def is_pattern_obstructed(self, center):
-        print("called this")
         offset = GameConstants.PATTERN_SIZE//2
         for dx in range(-offset, offset + 1):
             for dy in range(-offset, offset + 1):

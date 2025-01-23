@@ -658,7 +658,7 @@ class RobotController:
         target = self.game.get_robot(loc)
         target.message_buffer.add_message(message)
         self.robot.sent_message_count += 1
-        self.game.game_fb.add_message_action(target.id, message_content)
+        #self.game.game_fb.add_message_action(target.id, message_content)
 
     def assert_can_broadcast_message(self):
         if self.robot.type.is_robot_type():
