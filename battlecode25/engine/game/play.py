@@ -93,7 +93,7 @@ def run_game(args: RunGameArgs):
                 b_wins += 1
             game_fb.make_match_footer(game.winner, game.domination_factor, game.round)
         except Exception as e:
-            print("[server:error] An internal engine error has occurred. Please report this to the devs. This match has been terminated.")
+            print(f"[server:error] An internal engine error has occurred. Please report this to the devs. This match has been terminated : {e}")
             game.set_winner_arbitrary()
             game.stop()
             # Internal engine occurred, we have to throw away this replay

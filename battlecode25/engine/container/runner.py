@@ -167,13 +167,13 @@ class RobotRunner:
         self.bytecode -= 1
         if self.bytecode <= 0:
             self.error_method(f'Ran out of bytecode. Remaining bytecode: {self.bytecode}')
-            self.thread.wait()
+            self.pause()
 
     def multinstrument_call(self, n):
         self.bytecode -= n
         if self.bytecode <= 0:
             self.error_method(f'Ran out of bytecode. Remaining bytecode: {self.bytecode}')
-            self.thread.wait()
+            self.pause()
 
     def import_call(self, name, globals=None, locals=None, fromlist=(), level=0, caller='robot'):
         if not isinstance(name, str) or not (isinstance(fromlist, tuple) or fromlist is None):
@@ -258,6 +258,9 @@ class RobotRunner:
         # Wait until the robot either pauses or completes its turn
         self.thread.finished_event.wait()
         self.thread.finished_event.clear()
+
+    def pause(self):
+        self.thread.wait()
 
     def kill(self):
         self.thread.kill()

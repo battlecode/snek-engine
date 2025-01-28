@@ -10,6 +10,7 @@ class TeamInfo:
         self.old_coin_counts = [0] * 2
         self.unit_counts = [0] * 2
         self.defense_damage_increase = [0] * 2
+        self.execution_time = [0] * 2
 
     # ***** GETTER METHODS *****
 
@@ -33,6 +34,9 @@ class TeamInfo:
     
     def get_defense_damage_increase(self, team):
         return self.defense_damage_increase[team.value]
+
+    def get_execution_time(self, team):
+        return self.execution_time[team.value]
     
     # ***** UPDATE METHODS *****
 
@@ -56,3 +60,6 @@ class TeamInfo:
     
     def add_defense_damage_increase(self, team, amount):
         self.defense_damage_increase[team.value] += amount
+
+    def add_execution_time(self, team, amount):
+        self.execution_time[team.value] += amount
