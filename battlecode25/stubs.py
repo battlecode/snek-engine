@@ -476,3 +476,37 @@ def disintegrate() -> None:
     Destroys this robot.
     """
     pass
+
+# CLOCK METHODS
+
+def yield_turn() -> None:
+    """
+    Ends the processing of this robot during the current round.
+    """
+    pass
+
+def get_bytecode_num() -> int:
+    """
+    Returns the number of bytecodes the current robot has executed since the
+    beginning of the current round.
+    """
+    pass
+
+def get_bytecodes_left() -> int:
+    """
+    Returns the number of bytecodes this robot has left in this round.
+    """
+    pass
+
+def get_time_elapsed() -> int:
+    """
+    Returns the total amount of time, in nanoseconds, that this team's robots have collectively spent executing
+    since the beginning of the match.
+    """
+    pass
+
+def get_time_left() -> int:
+    """
+    Returns the total amount of execution time, in nanoseconds, left this team has before they timeout
+    """
+    pass

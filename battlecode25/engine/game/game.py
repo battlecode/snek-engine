@@ -1,3 +1,5 @@
+import math
+import time
 import random
 from enum import Enum
 from .robot import Robot
@@ -18,8 +20,6 @@ from .map_info import MapInfo
 from .paint_type import PaintType
 from typing import Generator
 from .message import Message
-
-import math
 
 class Game:
 
@@ -66,12 +66,20 @@ class Game:
                 self.update_defense_towers(robot.team, new_type)
 
     def run_round(self):
+        def run_turn(robot: Robot):
+            start_time = time.time_ns()
+            robot.turn()
+            run_time = time.time_ns() - start_time
+            self.team_info.add_execution_time(robot.team, run_time)
+            if self.team_info.get_execution_time(robot.team) >= GameConstants.MAX_TEAM_EXECUTION_TIME:
+                self.resign(robot.team)
+
         if self.running:
             self.round += 1
             self.game_fb.start_round(self.round)
             self.update_resource_patterns()
             self.each_robot(lambda robot: robot.process_beginning_of_round())
-            self.each_robot_update(lambda robot: robot.turn())
+            self.each_robot_update(run_turn)
             self.serialize_team_info()
             self.team_info.process_end_of_round()
             self.game_fb.end_round()
@@ -249,6 +257,9 @@ class Game:
     def set_winner_arbitrary(self):
         self.set_winner(Team.A if random.random() < 0.5 else Team.B, DominationFactor.WON_BY_DUBIOUS_REASONS)
         return True
+
+    def resign(self, team: Team):
+        self.set_winner(team.opponent(), DominationFactor.RESIGNATION)
 
     def run_tiebreakers(self):
         if self.set_winner_if_more_area(): return
@@ -584,12 +595,17 @@ class Game:
             'upgrade_tower': rc.upgrade_tower,
             'resign': rc.resign,
             'disintegrate': rc.disintegrate,
+            'yield_turn': (rc.yield_turn, 0),
+            'get_bytecode_num': (rc.get_bytecode_num, 0),
+            'get_bytecodes_left': (rc.get_bytecodes_left, 0),
+            'get_time_elapsed': (rc.get_time_elapsed, 0),
+            'get_time_left': (rc.get_time_left, 0),
             'set_indicator_string': rc.set_indicator_string,
             'set_indicator_dot': rc.set_indicator_dot,
             'set_indicator_line': rc.set_indicator_line,
-            'set_timeline_marker': rc.set_timeline_marker,
+            'set_timeline_marker': rc.set_timeline_marker
         }
-    
+
     def create_patterns(self):
         resource_pattern = [
             [True, True, False, True, True],

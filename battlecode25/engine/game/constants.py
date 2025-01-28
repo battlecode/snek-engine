@@ -28,6 +28,10 @@ class GameConstants:
 
     TOWER_BYTECODE_LIMIT = 20000
 
+    # The maximum execution time that can be spent on a team in one match. If the total time spent executing a team's bots
+    # exceeds this limit, the team will immediately lose the game. Execution time is measured in ns.
+    MAX_TEAM_EXECUTION_TIME = 1200000000000
+
     # The maximum length of indicator strings that a player can associate with a robot.
     INDICATOR_STRING_MAX_LENGTH = 64
 

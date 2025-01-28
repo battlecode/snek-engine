@@ -25,7 +25,6 @@ class Robot:
             self.paint = round(self.type.paint_capacity * GameConstants.INITIAL_ROBOT_PAINT_PERCENTAGE / 100)
         else:
             self.paint = GameConstants.INITIAL_TOWER_PAINT_AMOUNT
-        self.bytecodes_used = 0
         self.rounds_alive = 0
         self.action_cooldown = type.action_cooldown
         self.movement_cooldown = GameConstants.COOLDOWN_LIMIT
@@ -52,12 +51,12 @@ class Robot:
         if paint_percent < 0.5:
             return 2 - 2 * paint_percent
         return 1
-    
+
     def add_action_cooldown(self, cooldown=-1):
         if cooldown == -1:
             cooldown = self.type.action_cooldown
         self.action_cooldown += round(cooldown * self.calc_paint_cooldown_multiplier())
-    
+
     def add_movement_cooldown(self):
         self.movement_cooldown += round(GameConstants.MOVEMENT_COOLDOWN * self.calc_paint_cooldown_multiplier())
 
@@ -68,7 +67,7 @@ class Robot:
 
     def log(self, msg):
         self.logs.append(msg)
-        
+
     def error(self, msg):
         self.logs.append(msg)
 
@@ -79,6 +78,15 @@ class Robot:
 
     def kill(self):
         self.runner.kill()
+
+    def get_bytecode_limit(self):
+        return self.runner.bytecode_limit
+
+    def get_bytecodes_left(self):
+        return self.runner.bytecode
+
+    def get_bytecodes_used(self):
+        return max(self.runner.bytecode_limit - self.runner.bytecode, 0)
 
     def turn(self):
         self.process_beginning_of_turn()
@@ -104,7 +112,7 @@ class Robot:
         self.action_cooldown = max(0, self.action_cooldown - GameConstants.COOLDOWNS_PER_TURN)
         self.movement_cooldown = max(0, self.movement_cooldown - GameConstants.COOLDOWNS_PER_TURN)
         self.game.game_fb.start_turn(self.id)
-    
+
     def process_end_of_turn(self):
         loc_idx = self.game.loc_to_index(self.loc)
         paint_status = self.game.paint[loc_idx]
@@ -135,7 +143,7 @@ class Robot:
         if self.type.is_robot_type() and self.paint == 0:
             self.add_health(-GameConstants.NO_PAINT_DAMAGE)
 
-        self.game.game_fb.end_turn(self.id, self.health, self.paint, self.movement_cooldown, self.action_cooldown, self.bytecodes_used, self.loc)
+        self.game.game_fb.end_turn(self.id, self.health, self.paint, self.movement_cooldown, self.action_cooldown, self.get_bytecodes_used(), self.loc)
         self.rounds_alive += 1
 
     def get_robot_info(self) -> RobotInfo:

@@ -792,11 +792,28 @@ class RobotController:
         self.game.game_fb.add_timeline_marker(self.robot.team, label, red, green, blue)
 
     def resign(self) -> None:
-        self.game.set_winner(self.robot.team.opponent(), DominationFactor.RESIGNATION)
+        self.game.resign(self.robot.team)
 
     def disintegrate(self) -> None:
         self.game.destroy_robot(self.robot.id)
-     
+
+    # CLOCK METHODS
+
+    def yield_turn(self) -> None:
+        self.robot.runner.pause()
+
+    def get_bytecode_num(self) -> int:
+        return self.robot.get_bytecodes_used()
+
+    def get_bytecodes_left(self) -> int:
+        return self.robot.get_bytecodes_left()
+
+    def get_time_elapsed(self) -> int:
+        return self.game.team_info.get_execution_time(self.robot.team)
+
+    def get_time_left(self) -> int:
+        return max(GameConstants.MAX_TEAM_EXECUTION_TIME - self.get_time_elapsed(), 0)
+
 class RobotError(Exception):
     """Raised for illegal robot inputs"""
     pass
