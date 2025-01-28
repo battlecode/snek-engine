@@ -25,7 +25,6 @@ class Robot:
             self.paint = round(self.type.paint_capacity * GameConstants.INITIAL_ROBOT_PAINT_PERCENTAGE / 100)
         else:
             self.paint = GameConstants.INITIAL_TOWER_PAINT_AMOUNT
-        self.bytecodes_used = 0
         self.rounds_alive = 0
         self.action_cooldown = type.action_cooldown
         self.movement_cooldown = GameConstants.COOLDOWN_LIMIT
@@ -33,7 +32,6 @@ class Robot:
         self.debug = False
         self.message_buffer = MessageBuffer(GameConstants.MESSAGE_ROUND_DURATION)
         self.sent_message_count = 0
-        self.turns_without_paint = 0
         self.has_tower_area_attacked = False
         self.has_tower_single_attacked = False
         self.logs = []
@@ -53,12 +51,12 @@ class Robot:
         if paint_percent < 0.5:
             return 2 - 2 * paint_percent
         return 1
-    
+
     def add_action_cooldown(self, cooldown=-1):
         if cooldown == -1:
             cooldown = self.type.action_cooldown
         self.action_cooldown += round(cooldown * self.calc_paint_cooldown_multiplier())
-    
+
     def add_movement_cooldown(self):
         self.movement_cooldown += round(GameConstants.MOVEMENT_COOLDOWN * self.calc_paint_cooldown_multiplier())
 
@@ -69,7 +67,7 @@ class Robot:
 
     def log(self, msg):
         self.logs.append(msg)
-        
+
     def error(self, msg):
         self.logs.append(msg)
 
@@ -80,6 +78,15 @@ class Robot:
 
     def kill(self):
         self.runner.kill()
+
+    def get_bytecode_limit(self):
+        return self.runner.bytecode_limit
+
+    def get_bytecodes_left(self):
+        return self.runner.bytecode
+
+    def get_bytecodes_used(self):
+        return max(self.runner.bytecode_limit - self.runner.bytecode, 0)
 
     def turn(self):
         self.process_beginning_of_turn()
@@ -96,32 +103,36 @@ class Robot:
         if self.type.money_per_turn != 0:
             self.game.team_info.add_coins(self.team,
                             self.type.money_per_turn + self.game.count_resource_patterns(self.team) * GameConstants.EXTRA_RESOURCES_FROM_PATTERN)
+        # Add upgrade action for initial upgrade
+        if self.type.is_tower_type() and self.game.round == 1 and self.type.level == 2:
+            self.game.game_fb.add_upgrade_action(self.id, self.type, self.health, self.paint)
 
     def process_beginning_of_turn(self):
         self.action_cooldown
         self.action_cooldown = max(0, self.action_cooldown - GameConstants.COOLDOWNS_PER_TURN)
         self.movement_cooldown = max(0, self.movement_cooldown - GameConstants.COOLDOWNS_PER_TURN)
         self.game.game_fb.start_turn(self.id)
-    
+
     def process_end_of_turn(self):
         loc_idx = self.game.loc_to_index(self.loc)
         paint_status = self.game.paint[loc_idx]
 
         if self.type.is_robot_type():
             multiplier = GameConstants.MOPPER_PAINT_PENALTY_MULTIPLIER if self.type == UnitType.MOPPER else 1
+            count = 0
+            for adj_loc in self.game.get_all_locations_within_radius_squared(self.loc, 2):
+                adj_robot = self.game.get_robot(adj_loc)
+                if adj_robot and adj_robot != self and adj_robot.team == self.team:
+                    count += 1
+
             if self.game.team_from_paint(paint_status) == self.team:
-                paint_penalty = 0
+                paint_penalty = count
             elif self.game.team_from_paint(paint_status) == Team.NEUTRAL:
                 paint_penalty = GameConstants.PENALTY_NEUTRAL_TERRITORY * multiplier
+                paint_penalty += count
             else:
-                paint_penalty = GameConstants.PENALTY_ENEMY_TERRITORY * multiplier
-                count = 0
-                for adj_loc in self.game.get_all_locations_within_radius_squared(self.loc, 2):
-                    adj_robot = self.game.get_robot(adj_loc)
-                    if adj_robot and adj_robot != self and adj_robot.team == self.team:
-                        count += 1
+                paint_penalty = GameConstants.PENALTY_ENEMY_TERRITORY * multiplier  
                 paint_penalty += 2 * count    
-            self.game.game_fb.add_indicator_string(f"Round {self.game.round}, Location {self.loc.__str__()}, Penalty {paint_penalty}")
             self.add_paint(-paint_penalty)
 
         self.has_tower_area_attacked = False
@@ -129,14 +140,10 @@ class Robot:
         self.message_buffer.next_round()
         self.sent_message_count = 0
 
-        if self.paint == 0:
-            self.turns_without_paint += 1
-        else:
-            self.turns_without_paint = 0
-        if self.type.is_robot_type() and self.turns_without_paint >= GameConstants.MAX_TURNS_WITHOUT_PAINT:
-            self.game.destroy_robot(self.id)
+        if self.type.is_robot_type() and self.paint == 0:
+            self.add_health(-GameConstants.NO_PAINT_DAMAGE)
 
-        self.game.game_fb.end_turn(self.id, self.health, self.paint, self.movement_cooldown, self.action_cooldown, self.bytecodes_used, self.loc)
+        self.game.game_fb.end_turn(self.id, self.health, self.paint, self.movement_cooldown, self.action_cooldown, self.get_bytecodes_used(), self.loc)
         self.rounds_alive += 1
 
     def get_robot_info(self) -> RobotInfo:

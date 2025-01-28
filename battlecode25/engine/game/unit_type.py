@@ -16,24 +16,25 @@ class RobotAttributes:
     aoe_attack_strength: int
     paint_per_turn: int
     money_per_turn: int
+    attack_money_bonus: int
 
 class UnitType(Enum):
     # Define enum members with RobotAttributes dataclass
-    SOLDIER = RobotAttributes(200, 250, 5, 250, -1, 200, 10, 9, 50, -1, 0, 0)
-    SPLASHER = RobotAttributes(300, 400, 50, 150, -1, 300, 50, 4, -1, 100, 0, 0)
-    MOPPER = RobotAttributes(100, 300, 0, 50, -1, 100, 30, 2, -1, -1, 0, 0)
+    SOLDIER = RobotAttributes(200, 250, 5, 250, -1, 200, 10, 9, 50, -1, 0, 0, 0)
+    SPLASHER = RobotAttributes(300, 400, 50, 150, -1, 300, 50, 4, -1, 100, 0, 0, 0)
+    MOPPER = RobotAttributes(100, 300, 0, 50, -1, 100, 30, 2, -1, -1, 0, 0, 0)
 
-    LEVEL_ONE_PAINT_TOWER = RobotAttributes(0, 1000, 0, 1000, 1, 1000, 10, 9, 20, 10, 5, 0)
-    LEVEL_TWO_PAINT_TOWER = RobotAttributes(0, 2500, 0, 1500, 2, 1000, 10, 9, 20, 10, 10, 0)
-    LEVEL_THREE_PAINT_TOWER = RobotAttributes(0, 5000, 0, 2000, 3, 1000, 10, 9, 20, 10, 15, 0)
+    LEVEL_ONE_PAINT_TOWER = RobotAttributes(0, 1000, 0, 1000, 1, 1000, 10, 9, 20, 10, 5, 0, 0)
+    LEVEL_TWO_PAINT_TOWER = RobotAttributes(0, 2500, 0, 1500, 2, 1000, 10, 9, 20, 10, 10, 0, 0)
+    LEVEL_THREE_PAINT_TOWER = RobotAttributes(0, 5000, 0, 2000, 3, 1000, 10, 9, 20, 10, 15, 0, 0)
 
-    LEVEL_ONE_MONEY_TOWER = RobotAttributes(0, 1000, 0, 1000, 1, 1000, 10, 9, 20, 10, 0, 20)
-    LEVEL_TWO_MONEY_TOWER = RobotAttributes(0, 2500, 0, 1500, 2, 1000, 10, 9, 20, 10, 0, 30)
-    LEVEL_THREE_MONEY_TOWER = RobotAttributes(0, 5000, 0, 2000, 3, 1000, 10, 9, 20, 10, 0, 40)
+    LEVEL_ONE_MONEY_TOWER = RobotAttributes(0, 1000, 0, 1000, 1, 1000, 10, 9, 20, 10, 0, 20, 0)
+    LEVEL_TWO_MONEY_TOWER = RobotAttributes(0, 2500, 0, 1500, 2, 1000, 10, 9, 20, 10, 0, 30, 0)
+    LEVEL_THREE_MONEY_TOWER = RobotAttributes(0, 5000, 0, 2000, 3, 1000, 10, 9, 20, 10, 0, 40, 0)
 
-    LEVEL_ONE_DEFENSE_TOWER = RobotAttributes(0, 1000, 0, 2000, 1, 1000, 10, 16, 40, 20, 0, 0)
-    LEVEL_TWO_DEFENSE_TOWER = RobotAttributes(0, 2500, 0, 2500, 2, 1000, 10, 16, 50, 25, 0, 0)
-    LEVEL_THREE_DEFENSE_TOWER = RobotAttributes(0, 5000, 0, 3000, 3, 1000, 10, 16, 60, 30, 0, 0)
+    LEVEL_ONE_DEFENSE_TOWER = RobotAttributes(0, 1000, 0, 2000, 1, 1000, 10, 16, 40, 20, 0, 0, 20)
+    LEVEL_TWO_DEFENSE_TOWER = RobotAttributes(0, 2500, 0, 2500, 2, 1000, 10, 16, 50, 25, 0, 0, 30)
+    LEVEL_THREE_DEFENSE_TOWER = RobotAttributes(0, 5000, 0, 3000, 3, 1000, 10, 16, 60, 30, 0, 0, 40)
 
     # Read-only property accessors for attributes
     @property
@@ -83,6 +84,10 @@ class UnitType(Enum):
     @property
     def money_per_turn(self):
         return self.value.money_per_turn
+    
+    @property
+    def attack_money_bonus(self):
+        return self.value.attack_money_bonus
 
     def can_attack(self): 
         return self == UnitType.SOLDIER or self == UnitType.SPLASHER

@@ -2,7 +2,7 @@ import sys
 import traceback
 
 from RestrictedPython import safe_builtins, limited_builtins, utility_builtins, Guards
-from threading import Thread, Event, Condition
+from threading import Thread, Event, Lock
 from time import sleep
 from .instrument import Instrument
 from types import CodeType, MethodType
@@ -12,6 +12,9 @@ from ..game.constants import GameConstants
 from ..game.team import Team
 import dis
 import inspect
+
+class GameFinishedException(Exception):
+    pass
 
 class RobotThread(Thread):
     def __init__(self, runner):
@@ -30,17 +33,18 @@ class RobotThread(Thread):
             if not self.running:
                 return
 
+            #print("bytecode before", self.runner.bytecode)
             if not self.runner.initialized:
                 self.runner.init_robot()
-
-            # print("bytecode before", self.runner.bytecode)
             self.runner.do_turn()
-            # print("bytecode after", self.runner.bytecode)
+            #print("bytecode after", self.runner.bytecode)
 
             self.run_event.clear()
             self.finished_event.set()
 
     def wait(self):
+        if not self.running:
+            raise GameFinishedException
         self.paused = True
         self.finished_event.set()  # External signal that we are finished for now
         self.pause_event.wait()  # Wait for unpause
@@ -62,6 +66,7 @@ class RobotRunner:
             '__name__': '__main__'
         }
     
+        self.globals['__builtins__']['range'] = range
         self.globals['__builtins__']['__metaclass__'] = type
         self.globals['__builtins__']['instrument'] = self.instrument_call
         self.globals['__builtins__']['__multinstrument__'] = self.multinstrument_call
@@ -162,13 +167,13 @@ class RobotRunner:
         self.bytecode -= 1
         if self.bytecode <= 0:
             self.error_method(f'Ran out of bytecode. Remaining bytecode: {self.bytecode}')
-            self.thread.wait()
+            self.pause()
 
     def multinstrument_call(self, n):
         self.bytecode -= n
         if self.bytecode <= 0:
             self.error_method(f'Ran out of bytecode. Remaining bytecode: {self.bytecode}')
-            self.thread.wait()
+            self.pause()
 
     def import_call(self, name, globals=None, locals=None, fromlist=(), level=0, caller='robot'):
         if not isinstance(name, str) or not (isinstance(fromlist, tuple) or fromlist is None):
@@ -234,10 +239,9 @@ class RobotRunner:
         if 'turn' in self.locals and isinstance(self.locals['turn'], type(lambda: 1)):
             try:
                 exec(self.locals['turn'].__code__, self.globals, self.locals)
-            except:
-                # print("in except block")
-                # print(dis.dis(self.locals['turn'].__code__, show_caches=True, adaptive=False))
-                self.error_method(traceback.format_exc(limit=5))
+            except Exception as e:
+                if not isinstance(e, GameFinishedException):
+                    self.error_method(traceback.format_exc(limit=5))
         else:
             self.error_method('Couldn\'t find turn function.')
 
@@ -255,5 +259,9 @@ class RobotRunner:
         self.thread.finished_event.wait()
         self.thread.finished_event.clear()
 
+    def pause(self):
+        self.thread.wait()
+
     def kill(self):
         self.thread.kill()
+        self.thread.join()

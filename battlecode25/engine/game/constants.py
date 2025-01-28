@@ -24,18 +24,19 @@ class GameConstants:
 
     GAME_MAX_NUMBER_OF_ROUNDS = 2000
 
-    ROBOT_BYTECODE_LIMIT = 15000
+    ROBOT_BYTECODE_LIMIT = 17500
 
     TOWER_BYTECODE_LIMIT = 20000
+
+    # The maximum execution time that can be spent on a team in one match. If the total time spent executing a team's bots
+    # exceeds this limit, the team will immediately lose the game. Execution time is measured in ns.
+    MAX_TEAM_EXECUTION_TIME = 1200000000000
 
     # The maximum length of indicator strings that a player can associate with a robot.
     INDICATOR_STRING_MAX_LENGTH = 64
 
     # The bytecode penalty that is imposed each time an exception is thrown.
     EXCEPTION_BYTECODE_PENALTY = 500
-
-    # Health each robot starts with
-    DEFAULT_HEALTH = 1000
 
     # Paint penalty for moving into enemy territory
     PENALTY_ENEMY_TERRITORY = 2
@@ -62,7 +63,7 @@ class GameConstants:
     INITIAL_ROBOT_PAINT_PERCENTAGE = 100
 
     # The amount of money each team starts with.
-    INITIAL_TEAM_MONEY = 1000
+    INITIAL_TEAM_MONEY = 2500
 
     # The percent of the map which a team needs to paint to win.
     PAINT_PERCENT_TO_WIN = 70
@@ -141,6 +142,15 @@ class GameConstants:
     # The increase in extra damage for ally towers for upgrading a defense tower
     EXTRA_TOWER_DAMAGE_LEVEL_INCREASE = 2
 
+    # The money cost of completing a resource pattern
+    COMPLETE_RESOURCE_PATTERN_COST = 200
+
+    # Resource patterns must exist for this many turns before they start producing resources
+    RESOURCE_PATTERN_ACTIVE_DELAY = 50
+
+    # A robot takes this much damage every time it ends a turn with 0 paint
+    NO_PAINT_DAMAGE = 20
+
     # ************************
     # ****** COOLDOWNS *******
     # ************************
@@ -158,7 +168,7 @@ class GameConstants:
     BUILD_ROBOT_COOLDOWN = 10
 
     # The amount added to the action cooldown counter after attacking (as a mopper for the swing attack)
-    ATTACK_MOPPER_SWING_COOLDOWN = 40
+    ATTACK_MOPPER_SWING_COOLDOWN = 20
 
     # THe amount added to the action cooldown counter after transferring paint
     PAINT_TRANSFER_COOLDOWN = 10
@@ -172,6 +182,9 @@ class GameConstants:
 
     # The maximum squared radius a robot can send a message to
     MESSAGE_RADIUS_SQUARED = 20
+
+    # The maximum squared radius that a tower can broadcast messages to
+    BROADCAST_RADIUS_SQUARED = 80
 
     # The maximum number of rounds a message will exist for
     MESSAGE_ROUND_DURATION = 5

@@ -1,3 +1,5 @@
+import math
+import time
 import random
 from enum import Enum
 from .robot import Robot
@@ -18,8 +20,6 @@ from .map_info import MapInfo
 from .paint_type import PaintType
 from typing import Generator
 from .message import Message
-
-import math
 
 class Game:
 
@@ -47,7 +47,8 @@ class Game:
         self.game_fb = game_fb
         self.pattern = self.create_patterns()
         self.resource_pattern_centers = []
-        self.resouce_pattern_centers_by_loc = [Team.NEUTRAL] * total_area
+        self.resource_pattern_centers_by_loc = [Team.NEUTRAL] * total_area
+        self.resource_pattern_lifetimes = [0] * total_area
         self.code = code
         self.debug = game_args.debug
         self.running = True
@@ -55,26 +56,43 @@ class Game:
         self.id_to_robot: dict[int, RobotInfo] = {}
         self.robot_exec_order = []
         for robot_info in initial_map.initial_bodies:
-            self.spawn_robot(robot_info.type, robot_info.location, robot_info.team, id=robot_info.id)
+            robot = self.spawn_robot(robot_info.type, robot_info.location, robot_info.team, id=robot_info.id)
             self.ruins[self.loc_to_index(robot_info.location)] = True
 
+            # Start towers at lvl 2, defer upgrade action until first turn
+            if robot.type.is_tower_type():
+                new_type = robot.type.get_next_level()
+                robot.upgrade_tower()
+                self.update_defense_towers(robot.team, new_type)
+
     def run_round(self):
+        def run_turn(robot: Robot):
+            start_time = time.time_ns()
+            robot.turn()
+            run_time = time.time_ns() - start_time
+            self.team_info.add_execution_time(robot.team, run_time)
+            if self.team_info.get_execution_time(robot.team) >= GameConstants.MAX_TEAM_EXECUTION_TIME:
+                self.resign(robot.team)
+
         if self.running:
             self.round += 1
             self.game_fb.start_round(self.round)
             self.update_resource_patterns()
             self.each_robot(lambda robot: robot.process_beginning_of_round())
-            self.each_robot_update(lambda robot: robot.turn())
+            self.each_robot_update(run_turn)
             self.serialize_team_info()
             self.team_info.process_end_of_round()
             self.game_fb.end_round()
             if self.winner == None and self.round >= self.initial_map.rounds:
                 self.run_tiebreakers()
             if self.winner != None:
-                self.running = False
-                self.each_robot_update(lambda robot: self.destroy_robot(robot.id))
+                self.stop()
         else:
             raise GameError('Game is not running!')
+
+    def stop(self):
+        self.running = False
+        self.each_robot_update(lambda robot: self.destroy_robot(robot.id))
 
     def move_robot(self, start_loc, end_loc):
         self.add_robot_to_loc(end_loc, self.get_robot(start_loc))
@@ -102,6 +120,9 @@ class Game:
     def has_wall(self, loc: MapLocation):
         return self.walls[loc.y * self.width + loc.x]
     
+    def has_resource_pattern_center(self, loc: MapLocation, team: Team):
+        return self.resource_pattern_centers_by_loc[loc.y * self.width + loc.x] == team
+    
     def get_paint_num(self, loc: MapLocation):
         return self.paint[loc.y * self.width + loc.x]
     
@@ -112,6 +133,10 @@ class Game:
     def mark_location(self, team: Team, loc: MapLocation, secondary: bool):
         markers = self.team_a_markers if team == Team.A else self.team_b_markers
         markers[loc.y * self.width + loc.x] = 2 if secondary else 1
+
+    def mark_location_int(self, team: Team, loc: MapLocation, val: int):
+        markers = self.team_a_markers if team == Team.A else self.team_b_markers
+        markers[loc.y * self.width + loc.x] = val
 
     def get_num_towers(self, team: Team):
         return [robot.team == team and robot.type.is_tower_type() for robot in self.id_to_robot.values()].count(True)
@@ -139,7 +164,8 @@ class Game:
             case 2:
                 mark_type = PaintType.ALLY_SECONDARY
         passable = not self.walls[idx] and not self.ruins[idx]
-        return MapInfo(loc, passable, self.walls[idx], paint_type, mark_type, self.ruins[idx])
+        resource_pattern_center = self.resource_pattern_centers_by_loc[idx] == team
+        return MapInfo(loc, passable, self.walls[idx], paint_type, mark_type, self.ruins[idx], resource_pattern_center)
 
     def spawn_robot(self, type: UnitType, loc: MapLocation, team: Team, id=None):
         if id is None:
@@ -232,6 +258,9 @@ class Game:
         self.set_winner(Team.A if random.random() < 0.5 else Team.B, DominationFactor.WON_BY_DUBIOUS_REASONS)
         return True
 
+    def resign(self, team: Team):
+        self.set_winner(team.opponent(), DominationFactor.RESIGNATION)
+
     def run_tiebreakers(self):
         if self.set_winner_if_more_area(): return
         if self.set_winner_if_more_allied_towers(): return
@@ -245,11 +274,17 @@ class Game:
         self.domination_factor = domination_factor
 
     def update_resource_patterns(self):
-        for i, center in enumerate(self.resource_pattern_centers):
-            team = self.resouce_pattern_centers_by_loc[self.loc_to_index(center)]
-            if not self.simple_check_pattern(center, Shape.RESOURCE, team):
-                self.resource_pattern_centers.pop(i)
-                self.resouce_pattern_centers_by_loc[self.loc_to_index(center)] = Team.NEUTRAL
+        new_resource_pattern_centers = []
+        for center in self.resource_pattern_centers:
+            idx = self.loc_to_index(center)
+            team = self.resource_pattern_centers_by_loc[idx]
+            if self.simple_check_pattern(center, Shape.RESOURCE, team):
+                new_resource_pattern_centers.append(center)
+                self.resource_pattern_lifetimes[idx] += 1
+            else:
+                self.resource_pattern_centers_by_loc[idx] = Team.NEUTRAL
+                self.resource_pattern_lifetimes[idx] = 0
+        self.resource_pattern_centers = new_resource_pattern_centers
 
     def serialize_team_info(self):
         coverage_a = math.floor(self.team_info.get_tiles_painted(Team.A) / self.area_without_walls * 1000)
@@ -259,13 +294,19 @@ class Game:
 
     def complete_resource_pattern(self, team, loc):
         idx = self.loc_to_index(loc)
-        if self.resouce_pattern_centers_by_loc[idx] != Team.NEUTRAL:
+        if self.resource_pattern_centers_by_loc[idx] != Team.NEUTRAL:
             return
         self.resource_pattern_centers.append(loc)
-        self.resouce_pattern_centers_by_loc[idx] = team
+        self.resource_pattern_centers_by_loc[idx] = team
+        self.resource_pattern_lifetimes[idx] = 0
 
     def count_resource_patterns(self, team):
-        return [self.resouce_pattern_centers_by_loc[self.loc_to_index(loc)] == team for loc in self.resource_pattern_centers].count(True)
+        count = 0
+        for loc in self.resource_pattern_centers:
+            idx = self.loc_to_index(loc)
+            if self.resource_pattern_centers_by_loc[idx] == team and self.resource_pattern_lifetimes[idx] >= GameConstants.RESOURCE_PATTERN_ACTIVE_DELAY:
+                count += 1
+        return count
     
     def update_defense_towers(self, team, new_tower_type):
         if new_tower_type == UnitType.LEVEL_TWO_DEFENSE_TOWER or new_tower_type == UnitType.LEVEL_THREE_DEFENSE_TOWER:
@@ -424,7 +465,6 @@ class Game:
         self.mark_pattern(team, center, self.shape_from_tower_type(tower_type))
 
     def is_pattern_obstructed(self, center):
-        print("called this")
         offset = GameConstants.PATTERN_SIZE//2
         for dx in range(-offset, offset + 1):
             for dy in range(-offset, offset + 1):
@@ -547,25 +587,32 @@ class Game:
             'can_send_message': (rc.can_send_message, 50),
             'send_message': (rc.send_message, 50),
             'read_messages': (rc.read_messages, 10),
+            'can_broadcast_message': (rc.can_broadcast_message, 5),
+            'broadcast_message': (rc.broadcast_message, 50),
             'can_transfer_paint': (rc.can_transfer_paint, 5),
             'transfer_paint': (rc.transfer_paint, 5),
             'can_upgrade_tower': (rc.can_upgrade_tower, 2),
             'upgrade_tower': rc.upgrade_tower,
             'resign': rc.resign,
             'disintegrate': rc.disintegrate,
+            'yield_turn': (rc.yield_turn, 0),
+            'get_bytecode_num': (rc.get_bytecode_num, 0),
+            'get_bytecodes_left': (rc.get_bytecodes_left, 0),
+            'get_time_elapsed': (rc.get_time_elapsed, 0),
+            'get_time_left': (rc.get_time_left, 0),
             'set_indicator_string': rc.set_indicator_string,
             'set_indicator_dot': rc.set_indicator_dot,
             'set_indicator_line': rc.set_indicator_line,
-            'set_timeline_marker': rc.set_timeline_marker,
+            'set_timeline_marker': rc.set_timeline_marker
         }
-    
+
     def create_patterns(self):
         resource_pattern = [
-            [True, False, True, False, True],
-            [False, True, False, True, False],
+            [True, True, False, True, True],
             [True, False, False, False, True],
-            [False, True, False, True, False],
-            [True, False, True, False, True]
+            [False, False, True, False, False],
+            [True, False, False, False, True],
+            [True, True, False, True, True]
         ]
         money_tower_pattern = [
             [False, True, True, True, False],
