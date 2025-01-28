@@ -4,6 +4,7 @@ import importlib.resources
 import gzip
 import time
 import os
+import traceback
 
 from ..container.code_container import CodeContainer
 from .team import Team
@@ -11,6 +12,7 @@ from .game_fb import GameFB
 from .game import Game
 from .domination_factor import DominationFactor
 from . import map_fb
+from .websocket_server import WebSocketServer
 
 
 @dataclass
@@ -54,7 +56,9 @@ def get_winner_string(args: RunGameArgs, reason: DominationFactor, team: Team, r
 def run_game(args: RunGameArgs):
     container_a = CodeContainer.from_directory(args.player1_dir, args.instrument)
     container_b = CodeContainer.from_directory(args.player2_dir, args.instrument)
-    game_fb = GameFB(args, None)
+    server = WebSocketServer()
+    server.start_server_thread(6175)
+    game_fb = GameFB(args, server)
     game_fb.make_game_header()
     a_wins, b_wins = 0, 0
     valid_replay = True
@@ -94,6 +98,7 @@ def run_game(args: RunGameArgs):
             game_fb.make_match_footer(game.winner, game.domination_factor, game.round)
         except Exception as e:
             print(f"[server:error] An internal engine error has occurred. Please report this to the devs. This match has been terminated : {e}")
+            print(traceback.format_exc())
             game.set_winner_arbitrary()
             game.stop()
             # Internal engine occurred, we have to throw away this replay
@@ -118,3 +123,4 @@ def run_game(args: RunGameArgs):
     else:
         with gzip.open(out_path, "wb") as file:
             file.write(str.encode("invalid replay"))
+    server.stop()

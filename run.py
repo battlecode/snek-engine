@@ -5,9 +5,10 @@ from pstats import SortKey
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument("task", type=str, help="The task to run.")
     parser.add_argument('--p1', required=True, help="Path to a folder containing a bot.py file.")
     parser.add_argument('--p2', required=True, help="Path to a folder containing a bot.py file.")
-    parser.add_argument('--map', required=True, help="Path to a map file.")
+    parser.add_argument('--maps', required=True, help="Path to a map file.")
     parser.add_argument('--show_indicators', default='false', choices=('true', 'false'), help="Show debug indicators in output file")
     args = parser.parse_args()
     
@@ -21,7 +22,7 @@ if __name__ == '__main__':
         player1_name=args.p1,
         player2_name=args.p2,
         map_dir="maps",
-        map_names=args.map,
+        map_names=args.maps,
         out_dir="matches",
         out_name=None,
         show_indicators=True,

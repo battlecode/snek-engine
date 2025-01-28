@@ -70,7 +70,7 @@ class GameFB:
         self.died_ids = []
         self.current_round = 0
         self.logger = []
-        self.timeline_markers = [[], []]
+        self.timeline_markers = []
         self.current_actions = [[], []]
         self.current_action_types = [[], []]
 
@@ -86,6 +86,7 @@ class GameFB:
             event_offset = func(self.packet_builder, 1)
             self.packet_builder.Finish(event_offset)
             buf = self.packet_builder.Output()
+            self.packet_builder.Clear()
             self.websocket_server.add_message_to_queue(buf)
 
     def make_game_header(self):
@@ -201,7 +202,17 @@ class GameFB:
     def make_match_footer(self, win_team, win_type, total_rounds):
         self.state = self.State.IN_GAME
         def write_match_footer(builder, idx):
-            timeline_offset = create_vector(builder, MatchFooter.StartTimelineMarkersVector, self.timeline_markers)
+            timeline_marker_offsets = []
+            for marker in self.timeline_markers:
+                label_offset = builder.CreateString(marker["label"])
+                TimelineMarker.Start(builder)
+                TimelineMarker.AddTeam(builder, marker["team"])
+                TimelineMarker.AddLabel(builder, label_offset)
+                TimelineMarker.AddRound(builder, marker["round"])
+                TimelineMarker.AddColorHex(builder, marker["color"])
+                marker_offset = TimelineMarker.End(builder)
+                timeline_marker_offsets.append(marker_offset)
+            timeline_offset = create_vector(builder, MatchFooter.StartTimelineMarkersVector, timeline_marker_offsets)
 
             MatchFooter.Start(builder)
             MatchFooter.AddWinner(builder, fb_from_team(win_team))
@@ -211,9 +222,9 @@ class GameFB:
             match_footer_offset = MatchFooter.End(builder)
             return create_event_wrapper(builder, Event.Event().MatchFooter, match_footer_offset)
         
-        self.clear_match()
         self.for_all_builders_handle_event(write_match_footer)
         self.match_footers.append(len(self.events) - 1)
+        self.clear_match()
 
     def start_round(self, round_num):
         assert self.state == self.State.IN_MATCH, "Can't start a round while not in a match"
@@ -239,8 +250,8 @@ class GameFB:
             round_offset = Round.End(builder)
             return create_event_wrapper(builder, Event.Event().Round, round_offset)
         
-        self.clear_round()
         self.for_all_builders_handle_event(write_end_round)
+        self.clear_round()
 
     def start_turn(self, robot_id):
         pass
@@ -264,8 +275,8 @@ class GameFB:
             turn_offset = Turn.End(builder)
             self.turns[idx].append(turn_offset)
 
-        self.clear_turn()
         self.for_all_builders(write_end_turn)
+        self.clear_turn()
 
     def add_damage_action(self, damaged_robot_id, damage):
         def add_action(builder, idx):
@@ -420,16 +431,12 @@ class GameFB:
     def add_timeline_marker(self, team, label, red, green, blue):
         if not self.show_indicators:
             return
-        def add_action(builder, idx):
-            label_offset = builder.CreateString(label)
-            TimelineMarker.Start(builder)
-            TimelineMarker.AddTeam(builder, fb_from_team(team) - 1)
-            TimelineMarker.AddLabel(builder, label_offset)
-            TimelineMarker.AddRound(builder, self.current_round)
-            TimelineMarker.AddColorHex(builder, int_rgb(red, green, blue))
-            marker_offset = TimelineMarker.End(builder)
-            self.timeline_markers[idx].append(marker_offset)
-        self.for_all_builders(add_action)
+        self.timeline_markers.append({
+            "team": fb_from_team(team) - 1, 
+            "label": label, 
+            "round": self.current_round, 
+            "color": int_rgb(red, green, blue)
+        })
 
     def add_died(self, id):
         self.died_ids.append(id)
