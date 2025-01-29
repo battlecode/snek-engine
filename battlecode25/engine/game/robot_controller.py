@@ -795,7 +795,8 @@ class RobotController:
         self.game.resign(self.robot.team)
 
     def disintegrate(self) -> None:
-        self.game.destroy_robot(self.robot.id)
+        self.robot.disintegrated = True
+        self.yield_turn()
 
     # CLOCK METHODS
 
