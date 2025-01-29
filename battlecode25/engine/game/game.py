@@ -73,6 +73,8 @@ class Game:
             self.team_info.add_execution_time(robot.team, run_time)
             if self.team_info.get_execution_time(robot.team) >= GameConstants.MAX_TEAM_EXECUTION_TIME:
                 self.resign(robot.team)
+            if robot.disintegrated:
+                self.destroy_robot(robot.id)
 
         if self.running:
             self.round += 1

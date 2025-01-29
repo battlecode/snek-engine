@@ -30,6 +30,7 @@ class Robot:
         self.movement_cooldown = GameConstants.COOLDOWN_LIMIT
         self.runner = None
         self.debug = False
+        self.disintegrated = False
         self.message_buffer = MessageBuffer(GameConstants.MESSAGE_ROUND_DURATION)
         self.sent_message_count = 0
         self.has_tower_area_attacked = False
