@@ -45,7 +45,7 @@ class Robot:
         self.health += amount
         self.health = min(self.health, self.type.health)
         if self.health <= 0:
-            self.game.destroy_robot(self.id)
+            self.game.destroy_robot(self.id, True)
 
     def calc_paint_cooldown_multiplier(self):
         paint_percent = self.paint / self.type.paint_capacity
