@@ -30,6 +30,7 @@ class Robot:
         self.movement_cooldown = GameConstants.COOLDOWN_LIMIT
         self.runner = None
         self.debug = False
+        self.disintegrated = False
         self.message_buffer = MessageBuffer(GameConstants.MESSAGE_ROUND_DURATION)
         self.sent_message_count = 0
         self.has_tower_area_attacked = False
@@ -44,7 +45,7 @@ class Robot:
         self.health += amount
         self.health = min(self.health, self.type.health)
         if self.health <= 0:
-            self.game.destroy_robot(self.id)
+            self.game.destroy_robot(self.id, True)
 
     def calc_paint_cooldown_multiplier(self):
         paint_percent = self.paint / self.type.paint_capacity

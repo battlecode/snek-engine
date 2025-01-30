@@ -73,6 +73,8 @@ class Game:
             self.team_info.add_execution_time(robot.team, run_time)
             if self.team_info.get_execution_time(robot.team) >= GameConstants.MAX_TEAM_EXECUTION_TIME:
                 self.resign(robot.team)
+            if robot.disintegrated:
+                self.destroy_robot(robot.id, True)
 
         if self.running:
             self.round += 1
@@ -92,7 +94,7 @@ class Game:
 
     def stop(self):
         self.running = False
-        self.each_robot_update(lambda robot: self.destroy_robot(robot.id))
+        self.each_robot_update(lambda robot: self.destroy_robot(robot.id, False))
 
     def move_robot(self, start_loc, end_loc):
         self.add_robot_to_loc(end_loc, self.get_robot(start_loc))
@@ -181,14 +183,16 @@ class Game:
             self.team_info.add_defense_damage_increase(team, GameConstants.EXTRA_DAMAGE_FROM_DEFENSE_TOWER)
         return robot
 
-    def destroy_robot(self, id):
+    def destroy_robot(self, id, is_turn):
         robot: Robot = self.id_to_robot[id]
         self.robot_exec_order.remove(id)
         del self.id_to_robot[id]
         self.remove_robot_from_loc(robot.loc)
         robot.kill()
-        self.game_fb.add_die_action(id, False)
-        self.game_fb.add_died(id)
+        if is_turn:
+            self.game_fb.add_die_action(id, False)
+        else:
+            self.game_fb.add_died(id)
         self.team_info.add_unit_count(robot.team, -1)
         damage_decrease = 0
         if robot.type == UnitType.LEVEL_ONE_DEFENSE_TOWER:
